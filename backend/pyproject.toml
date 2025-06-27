@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[project]
+name = "mbhealth-backend"
+version = "0.1.0"
+description = "MBHealth - A comprehensive health data tracking application backend"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "MBHealth Team", email = "team@mbhealth.com"}
+]
+maintainers = [
+    {name = "MBHealth Team", email = "team@mbhealth.com"}
+]
+keywords = ["health", "tracking", "fastapi", "python", "medical", "data"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Framework :: FastAPI",
+]
+requires-python = ">=3.12"
+dependencies = [
+    "alembic==1.12.1",
+    "fastapi==0.104.1",
+    "google-generativeai==0.3.2",
+    "httpx==0.25.2",
+    "matplotlib==3.8.2",
+    "numpy==1.26.4",
+    "openai==1.3.7",
+    "pandas==2.1.4",
+    "passlib[bcrypt]==1.7.4",
+    "psycopg2-binary==2.9.9",
+    "pydantic[email]==2.5.0",
+    "pydantic-settings==2.1.0",
+    "python-dotenv==1.0.0",
+    "python-jose[cryptography]==3.3.0",
+    "python-multipart==0.0.6",
+    "seaborn==0.13.0",
+    "sqlalchemy==2.0.23",
+    "uvicorn[standard]==0.24.0",
+]
