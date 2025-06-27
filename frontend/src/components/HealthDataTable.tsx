@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { healthService } from '../services/health';
 import { HealthData } from '../types/health';
 import NotesModal from './NotesModal';
+import EditHealthDataModal from './EditHealthDataModal';
 
 interface HealthDataTableProps {
   data: HealthData[];
@@ -11,10 +12,11 @@ interface HealthDataTableProps {
 }
 
 const HealthDataTable: React.FC<HealthDataTableProps> = ({ data, onDataChange }) => {
-  const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [notesModalOpen, setNotesModalOpen] = useState(false);
   const [selectedHealthData, setSelectedHealthData] = useState<HealthData | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingHealthData, setEditingHealthData] = useState<HealthData | null>(null);
 
   const getMetricDisplay = (data: HealthData) => {
     switch (data.metric_type) {
@@ -78,6 +80,16 @@ const HealthDataTable: React.FC<HealthDataTableProps> = ({ data, onDataChange })
   const handleCloseNotes = () => {
     setNotesModalOpen(false);
     setSelectedHealthData(null);
+  };
+
+  const handleEdit = (healthData: HealthData) => {
+    setEditingHealthData(healthData);
+    setEditModalOpen(true);
+  };
+
+  const handleCloseEdit = () => {
+    setEditModalOpen(false);
+    setEditingHealthData(null);
   };
 
   if (data.length === 0) {
@@ -150,9 +162,8 @@ const HealthDataTable: React.FC<HealthDataTableProps> = ({ data, onDataChange })
                       📝
                     </button>
                     <button
-                      onClick={() => setEditingId(entry.id)}
+                      onClick={() => handleEdit(entry)}
                       className="text-primary-600 hover:text-primary-900"
-                      disabled={editingId === entry.id}
                     >
                       Edit
                     </button>
@@ -177,6 +188,16 @@ const HealthDataTable: React.FC<HealthDataTableProps> = ({ data, onDataChange })
           healthData={selectedHealthData}
           isOpen={notesModalOpen}
           onClose={handleCloseNotes}
+        />
+      )}
+
+      {/* Edit Health Data Modal */}
+      {editingHealthData && (
+        <EditHealthDataModal
+          healthData={editingHealthData}
+          isOpen={editModalOpen}
+          onClose={handleCloseEdit}
+          onDataChange={onDataChange}
         />
       )}
     </>

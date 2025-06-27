@@ -10,6 +10,7 @@ interface QuickAddFormData {
   systolic?: string;
   diastolic?: string;
   notes?: string;
+  recorded_at: string;
 }
 
 const metricTypes = [
@@ -30,7 +31,11 @@ const QuickAddForm: React.FC = () => {
     reset,
     watch,
     formState: { errors },
-  } = useForm<QuickAddFormData>();
+  } = useForm<QuickAddFormData>({
+    defaultValues: {
+      recorded_at: new Date().toISOString().slice(0, 16), // Current date/time in local format
+    }
+  });
 
   const selectedMetric = watch('metric_type');
   const currentMetric = metricTypes.find(m => m.value === selectedMetric);
@@ -43,7 +48,7 @@ const QuickAddForm: React.FC = () => {
         value: parseFloat(data.value),
         unit: currentMetric?.unit || '',
         notes: data.notes,
-        recorded_at: new Date().toISOString(),
+        recorded_at: new Date(data.recorded_at).toISOString(),
       };
 
       // Handle blood pressure special case
@@ -57,7 +62,9 @@ const QuickAddForm: React.FC = () => {
 
       await healthService.createHealthData(healthData);
       toast.success('Health data added successfully!');
-      reset();
+      reset({
+        recorded_at: new Date().toISOString().slice(0, 16), // Reset to current time
+      });
       setIsOpen(false);
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to add health data');
@@ -178,6 +185,23 @@ const QuickAddForm: React.FC = () => {
             rows={2}
             placeholder="Any additional notes..."
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Recorded At
+          </label>
+          <input
+            {...register('recorded_at', { 
+              required: 'Recorded at is required',
+              pattern: { value: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, message: 'Must be a valid date and time' }
+            })}
+            type="datetime-local"
+            className="input-field"
+          />
+          {errors.recorded_at && (
+            <p className="mt-1 text-sm text-red-600">{errors.recorded_at.message}</p>
+          )}
         </div>
 
         <div className="flex gap-3">
