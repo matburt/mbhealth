@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { aiAnalysisService } from '../services/aiAnalysis';
 import { AIProviderCreate, SupportedProviderType, ProviderTestRequest } from '../types/aiAnalysis';
@@ -79,7 +79,7 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({
       const testRequest: ProviderTestRequest = {
         type: formData.type,
         endpoint: formData.endpoint || undefined,
-        api_key: formData.api_key
+        api_key: formData.api_key || ''
       };
 
       const result = await aiAnalysisService.testProviderConfig(testRequest);
@@ -87,10 +87,10 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({
       
       if (result.success && result.available_models) {
         setAvailableModels(result.available_models);
-        if (result.available_models.length > 0 && !formData.default_model) {
+        if (result.available_models && result.available_models.length > 0 && !formData.default_model) {
           setFormData(prev => ({
             ...prev,
-            default_model: result.available_models[0]
+            default_model: result.available_models![0]
           }));
         }
       }

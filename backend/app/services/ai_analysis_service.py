@@ -13,6 +13,7 @@ from app.core.config import settings
 from cryptography.fernet import Fernet
 import uuid
 import base64
+import hashlib
 import os
 from datetime import datetime
 
@@ -27,8 +28,11 @@ class AIAnalysisService:
         """Get or create encryption key for API keys"""
         key = getattr(settings, 'ENCRYPTION_KEY', None)
         if not key:
-            # Generate a key for development - in production, use a secure key
-            key = Fernet.generate_key()
+            # Use SECRET_KEY as base for encryption key to ensure consistency
+            # This ensures the same key is used across service restarts
+            import hashlib
+            key_bytes = hashlib.sha256(settings.SECRET_KEY.encode()).digest()
+            key = base64.urlsafe_b64encode(key_bytes)
         elif isinstance(key, str):
             key = key.encode()
         return Fernet(key)
@@ -37,13 +41,21 @@ class AIAnalysisService:
         """Encrypt an API key for storage"""
         if not api_key:
             return ""
-        return self._encryption_key.encrypt(api_key.encode()).decode()
+        try:
+            return self._encryption_key.encrypt(api_key.encode()).decode()
+        except Exception as e:
+            raise ValueError(f"Failed to encrypt API key: {str(e)}")
     
     def _decrypt_api_key(self, encrypted_key: str) -> str:
         """Decrypt an API key from storage"""
         if not encrypted_key:
             return ""
-        return self._encryption_key.decrypt(encrypted_key.encode()).decode()
+        try:
+            return self._encryption_key.decrypt(encrypted_key.encode()).decode()
+        except Exception as e:
+            # Log the error but don't expose it to the user
+            print(f"Failed to decrypt API key: {str(e)}")
+            return ""
     
     # AI Provider Management
     async def create_provider(self, user_id: int, provider_data: AIProviderCreate) -> AIProvider:
@@ -122,6 +134,9 @@ class AIAnalysisService:
         
         try:
             api_key = self._decrypt_api_key(provider.api_key_encrypted)
+            if not api_key:
+                return {"success": False, "message": "API key could not be decrypted. Please update your API key."}
+            
             ai_provider = ProviderFactory.create_provider(
                 provider.type,
                 api_key,
@@ -147,38 +162,96 @@ class AIAnalysisService:
     # AI Analysis Management
     async def create_analysis(self, user_id: int, analysis_data: AIAnalysisCreate, background: bool = True) -> AIAnalysis:
         """Create a new AI analysis"""
-        # Generate request prompt based on analysis type
-        system_prompt = self._generate_analysis_prompt(analysis_data.analysis_type)
+        import logging
+        logger = logging.getLogger(__name__)
         
-        # Create analysis record
-        db_analysis = AIAnalysis(
-            user_id=user_id,
-            provider_id=analysis_data.provider_id,
-            health_data_ids=analysis_data.health_data_ids,
-            analysis_type=analysis_data.analysis_type,
-            provider_name=analysis_data.provider_name,
-            request_prompt=system_prompt,
-            status="pending"
-        )
-        
-        self.db.add(db_analysis)
-        self.db.commit()
-        self.db.refresh(db_analysis)
-        
-        if background:
-            # Queue analysis for background processing
-            from app.tasks.ai_analysis import create_analysis_job
-            create_analysis_job.delay(
-                db_analysis.id, 
-                user_id, 
-                analysis_data.provider_id,
-                priority=5  # Normal priority
+        try:
+            # Resolve provider information
+            provider_id = analysis_data.provider_id
+            provider_name = analysis_data.provider
+            
+            # If no provider_id is set, try to resolve from provider name
+            if not provider_id:
+                # Check if provider is a UUID (indicating it's actually a provider ID)
+                try:
+                    import uuid
+                    uuid.UUID(analysis_data.provider)
+                    provider_id = analysis_data.provider
+                    logger.info(f"Using provider ID from provider field: {provider_id}")
+                except ValueError:
+                    # It's a provider name, try to find the provider
+                    provider = self.db.query(AIProvider).filter(
+                        AIProvider.user_id == user_id,
+                        AIProvider.name == analysis_data.provider,
+                        AIProvider.enabled == True
+                    ).first()
+                    
+                    if provider:
+                        provider_id = provider.id
+                        provider_name = provider.name
+                        logger.info(f"Resolved provider name '{analysis_data.provider}' to ID: {provider_id}")
+                    else:
+                        logger.warning(f"Provider '{analysis_data.provider}' not found, using as name")
+                        provider_name = analysis_data.provider
+            else:
+                # We have a provider_id, get the name for compatibility
+                provider = self.get_provider(user_id, provider_id)
+                if provider:
+                    provider_name = provider.name
+                    logger.info(f"Using provider ID {provider_id} with name: {provider_name}")
+            
+            # Generate request prompt based on analysis type
+            system_prompt = self._generate_analysis_prompt(analysis_data.analysis_type)
+            
+            # Add user context if provided
+            if analysis_data.additional_context:
+                system_prompt += f"\n\nAdditional context from user: {analysis_data.additional_context}"
+            
+            # Create analysis record
+            db_analysis = AIAnalysis(
+                user_id=user_id,
+                provider_id=provider_id,
+                health_data_ids=analysis_data.health_data_ids,
+                analysis_type=analysis_data.analysis_type,
+                provider_name=provider_name,
+                request_prompt=system_prompt,
+                status="pending"
             )
-        else:
-            # Execute analysis immediately (for testing/debugging)
-            await self._execute_analysis(db_analysis, analysis_data.additional_context)
-        
-        return db_analysis
+            
+            self.db.add(db_analysis)
+            self.db.commit()
+            self.db.refresh(db_analysis)
+            
+            logger.info(f"Created analysis {db_analysis.id} for user {user_id}")
+            
+            if background:
+                # Queue analysis for background processing
+                from app.tasks.ai_analysis import create_analysis_job
+                create_analysis_job.delay(
+                    db_analysis.id, 
+                    user_id, 
+                    provider_id,
+                priority=5  # Normal priority
+                )
+            else:
+                # Execute analysis immediately (for testing/debugging)
+                await self._execute_analysis(db_analysis, analysis_data.additional_context)
+            
+            return db_analysis
+            
+        except Exception as e:
+            logger.error(f"Failed to create analysis: {str(e)}")
+            logger.error(f"Analysis data: {analysis_data}")
+            # If we have a database record, mark it as failed
+            try:
+                if 'db_analysis' in locals():
+                    db_analysis.status = "failed"
+                    db_analysis.error_message = f"Creation failed: {str(e)}"
+                    db_analysis.completed_at = datetime.utcnow()
+                    self.db.commit()
+            except:
+                pass  # Don't raise during error handling
+            raise
     
     async def _execute_analysis(self, analysis: AIAnalysis, additional_context: Optional[str] = None):
         """Execute the AI analysis"""

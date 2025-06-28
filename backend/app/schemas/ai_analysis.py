@@ -48,11 +48,11 @@ class AIProviderWithoutKey(AIProviderInDBBase):
 class AIAnalysisBase(BaseModel):
     health_data_ids: List[int]
     analysis_type: str  # trends, insights, recommendations, anomalies
-    provider_name: str
+    provider: str  # This can be provider name or provider ID
     additional_context: Optional[str] = None
 
 class AIAnalysisCreate(AIAnalysisBase):
-    provider_id: Optional[str] = None
+    provider_id: Optional[str] = None  # Will be resolved from provider name if needed
 
 class AIAnalysisUpdate(BaseModel):
     status: Optional[str] = None

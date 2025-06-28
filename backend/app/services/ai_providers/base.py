@@ -15,6 +15,9 @@ class AIProviderResponse(BaseModel):
     processing_time: float
     cost: Optional[float] = None
     metadata: Optional[Dict[str, Any]] = None
+    
+    class Config:
+        protected_namespaces = ()
 
 class BaseAIProvider(ABC):
     """Abstract base class for all AI providers"""

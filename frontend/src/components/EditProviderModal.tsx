@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { aiAnalysisService } from '../services/aiAnalysis';
 import { AIProvider, AIProviderUpdate, SupportedProviderType, ProviderTestRequest } from '../types/aiAnalysis';
@@ -120,7 +120,7 @@ const EditProviderModal: React.FC<EditProviderModalProps> = ({
     }
   };
 
-  const selectedType = supportedTypes[formData.type];
+  const selectedType = formData.type ? supportedTypes[formData.type] : undefined;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

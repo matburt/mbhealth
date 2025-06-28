@@ -14,14 +14,14 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [progress, setProgress] = useState<any>(null);
-  const [currentStatus, setCurrentStatus] = useState(analysis.status);
+  const [currentStatus, setCurrentStatus] = useState<'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'>(analysis.status);
 
   // Poll for status updates if analysis is pending or processing
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+    let interval: number | null = null;
     
     if (currentStatus === 'pending' || currentStatus === 'processing') {
-      interval = setInterval(async () => {
+      interval = window.setInterval(async () => {
         try {
           const statusInfo = await aiAnalysisService.getAnalysisStatus(analysis.id);
           setCurrentStatus(statusInfo.status);

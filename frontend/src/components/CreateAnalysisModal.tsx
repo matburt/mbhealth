@@ -115,10 +115,17 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     }
 
     try {
+      // Find the selected provider to get its type
+      const selectedProviderData = providers.find(p => p.id === data.provider);
+      if (!selectedProviderData) {
+        toast.error('Selected provider not found');
+        return;
+      }
+
       const analysisData: AIAnalysisCreate = {
         health_data_ids: selectedDataIds,
         analysis_type: data.analysis_type,
-        provider: data.provider,
+        provider: selectedProviderData.type as 'openai' | 'openrouter' | 'google',
         additional_context: data.additional_context.trim() || undefined,
       };
 

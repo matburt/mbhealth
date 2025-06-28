@@ -13,7 +13,7 @@ export interface AIAnalysisResponse {
   provider: string;
   request_prompt: string;
   response_content: string;
-  status: 'pending' | 'completed' | 'failed';
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   created_at: string;
   completed_at?: string;
   error_message?: string;

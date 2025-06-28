@@ -216,40 +216,53 @@ async def create_analysis(
     analysis_request: AIAnalysisRequest
 ) -> Any:
     """Create a new AI analysis"""
-    service = AIAnalysisService(db)
+    import traceback
+    import logging
     
-    # Convert request to create schema
-    analysis_data = AIAnalysisCreate(
-        health_data_ids=analysis_request.health_data_ids,
-        analysis_type=analysis_request.analysis_type,
-        provider_name=analysis_request.provider,
-        additional_context=analysis_request.additional_context,
-        provider_id=analysis_request.provider if len(analysis_request.provider) > 10 else None  # Assume UUID if long
-    )
+    logger = logging.getLogger(__name__)
     
     try:
+        service = AIAnalysisService(db)
+        
+        # Convert request to create schema
+        analysis_data = AIAnalysisCreate(
+            health_data_ids=analysis_request.health_data_ids,
+            analysis_type=analysis_request.analysis_type,
+            provider=analysis_request.provider,
+            additional_context=analysis_request.additional_context,
+            provider_id=analysis_request.provider if len(analysis_request.provider) > 10 else None  # Assume UUID if long
+        )
+        
+        logger.info(f"Creating analysis for user {current_user.id}: {analysis_data}")
+        
         analysis = await service.create_analysis(current_user.id, analysis_data)
         
-        return AIAnalysisResponse(
+        response = AIAnalysisResponse(
             id=analysis.id,
             user_id=analysis.user_id,
             health_data_ids=analysis.health_data_ids,
             analysis_type=analysis.analysis_type,
             provider=analysis.provider_name,
             request_prompt=analysis.request_prompt,
-            response_content=analysis.response_content,
+            response_content=analysis.response_content or "",
             status=analysis.status,
             created_at=analysis.created_at.isoformat(),
             completed_at=analysis.completed_at.isoformat() if analysis.completed_at else None,
             error_message=analysis.error_message
         )
         
+        logger.info(f"Successfully created analysis {analysis.id}")
+        return response
+        
     except AIProviderError as e:
+        logger.error(f"AI provider error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"AI provider error: {str(e)}"
         )
     except Exception as e:
+        logger.error(f"Analysis creation failed: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Analysis failed: {str(e)}"
@@ -382,46 +395,68 @@ def cancel_analysis(
     analysis_id: int
 ) -> Any:
     """Cancel a running analysis"""
-    service = AIAnalysisService(db)
-    analysis = service.get_analysis(current_user.id, analysis_id)
+    import logging
+    import traceback
     
-    if not analysis:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Analysis not found"
-        )
-    
-    if analysis.status not in ["pending", "processing"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Analysis cannot be cancelled in its current state"
-        )
+    logger = logging.getLogger(__name__)
     
     try:
+        service = AIAnalysisService(db)
+        analysis = service.get_analysis(current_user.id, analysis_id)
+        
+        if not analysis:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Analysis not found"
+            )
+        
+        logger.info(f"Cancelling analysis {analysis_id} with status: {analysis.status}")
+        
+        if analysis.status not in ["pending", "processing"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Analysis cannot be cancelled in its current state: {analysis.status}"
+            )
+        
         # Get the job to find the task ID
         from app.models.ai_analysis import AnalysisJob
         job = db.query(AnalysisJob).filter(
             AnalysisJob.analysis_id == analysis_id
         ).first()
         
+        cancelled_task = False
         if job and job.job_id:
-            # Revoke the Celery task
-            celery_app.control.revoke(job.job_id, terminate=True)
-            
-            # Update job status
-            job.status = "cancelled"
-            job.completed_at = datetime.utcnow()
+            try:
+                # Revoke the Celery task
+                celery_app.control.revoke(job.job_id, terminate=True)
+                logger.info(f"Revoked Celery task {job.job_id}")
+                
+                # Update job status
+                job.status = "cancelled"
+                job.completed_at = datetime.utcnow()
+                cancelled_task = True
+            except Exception as e:
+                logger.warning(f"Failed to revoke Celery task {job.job_id}: {str(e)}")
         
-        # Update analysis status
+        # Update analysis status regardless of Celery task status
         analysis.status = "cancelled"
         analysis.completed_at = datetime.utcnow()
         analysis.error_message = "Analysis cancelled by user"
         
         db.commit()
         
-        return {"message": "Analysis cancelled successfully"}
+        message = "Analysis cancelled successfully"
+        if not cancelled_task and job:
+            message += " (background task may still be running)"
         
+        logger.info(f"Successfully cancelled analysis {analysis_id}")
+        return {"message": message}
+        
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Failed to cancel analysis {analysis_id}: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to cancel analysis: {str(e)}"
