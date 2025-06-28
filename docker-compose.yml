@@ -55,6 +55,46 @@ services:
       - /app/__pycache__
     command: ["uv", "run", "python", "-m", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
 
+  # Celery Worker for background tasks
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://mbhealth:mbhealth_password@postgres:5432/mbhealth
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - SECRET_KEY=your-super-secret-key-here-make-it-long-and-random
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    command: ["uv", "run", "celery", "-A", "app.core.celery_app", "worker", "--loglevel=info"]
+
+  # Celery Flower for monitoring (optional)
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: ["uv", "run", "celery", "-A", "app.core.celery_app", "flower", "--port=5555"]
+    profiles:
+      - monitoring
+
   # Frontend
   frontend:
     build:

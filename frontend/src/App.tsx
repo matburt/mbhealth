@@ -11,6 +11,7 @@ import NotesPage from './pages/NotesPage';
 import FamiliesPage from './pages/FamiliesPage';
 import CareTeamsPage from './pages/CareTeamsPage';
 import AIAnalysisPage from './pages/AIAnalysisPage';
+import AIProvidersPage from './pages/AIProvidersPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -69,6 +70,7 @@ const App: React.FC = () => {
         <Route path="families" element={<FamiliesPage />} />
         <Route path="care-teams" element={<CareTeamsPage />} />
         <Route path="ai-analysis" element={<AIAnalysisPage />} />
+        <Route path="ai-providers" element={<AIProvidersPage />} />
       </Route>
       
       <Route path="*" element={<NotFoundPage />} />

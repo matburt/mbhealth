@@ -19,6 +19,15 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: Optional[str] = None
     GOOGLE_AI_API_KEY: Optional[str] = None
     
+    # Encryption
+    ENCRYPTION_KEY: Optional[str] = None
+    
+    # Redis/Celery
+    REDIS_URL: str = "redis://localhost:6379/0"
+    
+    # WebSocket
+    WEBSOCKET_URL: str = "ws://localhost:8000/ws"
+    
     # CORS
     BACKEND_CORS_ORIGINS: list = ["*"]
     

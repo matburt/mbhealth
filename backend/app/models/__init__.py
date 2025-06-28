@@ -4,6 +4,7 @@ from .health_data import HealthData
 from .note import Note
 from .family import Family, FamilyMember
 from .care_team import CareTeam, CareTeamMember
+from .ai_analysis import AIProvider, AIAnalysis, AnalysisJob, AnalysisSettings
 
 __all__ = [
     "User",
@@ -12,5 +13,9 @@ __all__ = [
     "Family",
     "FamilyMember",
     "CareTeam",
-    "CareTeamMember"
+    "CareTeamMember",
+    "AIProvider",
+    "AIAnalysis", 
+    "AnalysisJob",
+    "AnalysisSettings"
 ] 

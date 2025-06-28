@@ -32,6 +32,22 @@ run-dev: ## Run the application in development mode
 run-debug: ## Run the application in debug mode
 	uv run python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level debug
 
+# Background processing targets
+worker: ## Start Celery worker for background tasks
+	uv run celery -A app.core.celery_app worker --loglevel=info
+
+worker-debug: ## Start Celery worker in debug mode
+	uv run celery -A app.core.celery_app worker --loglevel=debug
+
+monitor: ## Monitor Celery tasks and workers
+	uv run celery -A app.core.celery_app flower
+
+purge: ## Purge all Celery tasks from queue
+	uv run celery -A app.core.celery_app purge -f
+
+inspect: ## Inspect active Celery workers and tasks
+	uv run celery -A app.core.celery_app inspect active
+
 # Testing targets
 test: ## Run tests
 	uv run pytest
