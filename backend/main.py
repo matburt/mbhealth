@@ -1,8 +1,9 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.api_v1.api import api_router
+from app.api.websocket import websocket_endpoint
 # Import models to ensure they're registered with SQLAlchemy
 from app.models import *
 
@@ -24,6 +25,11 @@ app.add_middleware(
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# WebSocket endpoint
+@app.websocket("/ws")
+async def websocket_handler(websocket: WebSocket, token: str = None):
+    await websocket_endpoint(websocket, token)
 
 @app.get("/")
 async def root():

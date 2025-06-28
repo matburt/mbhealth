@@ -14,7 +14,7 @@ interface CreateAnalysisModalProps {
 
 interface CreateAnalysisFormData {
   analysis_type: 'trends' | 'insights' | 'recommendations' | 'anomalies';
-  provider: 'openai' | 'openrouter' | 'google';
+  provider: string; // Can be provider ID or legacy provider name
   additional_context: string;
 }
 
@@ -25,6 +25,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
 }) => {
   const [healthData, setHealthData] = useState<HealthData[]>([]);
   const [selectedDataIds, setSelectedDataIds] = useState<number[]>([]);
+  const [providers, setProviders] = useState<AIProvider[]>([]);
   const [loading, setLoading] = useState(false);
 
   const {
@@ -35,7 +36,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   } = useForm<CreateAnalysisFormData>({
     defaultValues: {
       analysis_type: 'insights',
-      provider: 'openai',
+      provider: '',
       additional_context: ''
     }
   });
@@ -45,18 +46,22 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchHealthData();
+      fetchData();
     }
   }, [isOpen]);
 
-  const fetchHealthData = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const data = await aiAnalysisService.getHealthDataForAnalysis();
-      setHealthData(data);
+      const [healthDataResult, providersResult] = await Promise.all([
+        aiAnalysisService.getHealthDataForAnalysis(),
+        aiAnalysisService.getProviders(true) // Only enabled providers
+      ]);
+      setHealthData(healthDataResult);
+      setProviders(providersResult);
     } catch (error) {
-      console.error('Failed to fetch health data:', error);
-      toast.error('Failed to load health data');
+      console.error('Failed to fetch data:', error);
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -93,29 +98,15 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     }
   ];
 
-  const providers: AIProvider[] = [
-    {
-      id: 'openai',
-      name: 'OpenAI GPT-4',
-      description: 'Advanced AI model with deep medical knowledge',
-      icon: '🤖',
-      available_models: ['GPT-4', 'GPT-4 Turbo']
-    },
-    {
-      id: 'openrouter',
-      name: 'OpenRouter',
-      description: 'Access to multiple AI models and providers',
-      icon: '🔗',
-      available_models: ['Claude', 'Gemini', 'GPT-4']
-    },
-    {
-      id: 'google',
-      name: 'Google Gemini',
-      description: 'Google\'s advanced AI with medical expertise',
-      icon: '🔍',
-      available_models: ['Gemini Pro', 'Gemini Ultra']
+  const getProviderIcon = (type: string) => {
+    switch (type) {
+      case 'openai': return '🤖';
+      case 'anthropic': return '🔮';
+      case 'google': return '🔍';
+      case 'custom': return '⚙️';
+      default: return '🤖';
     }
-  ];
+  };
 
   const onSubmit = async (data: CreateAnalysisFormData) => {
     if (selectedDataIds.length === 0) {
@@ -124,10 +115,17 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     }
 
     try {
+      // Find the selected provider to get its type
+      const selectedProviderData = providers.find(p => p.id === data.provider);
+      if (!selectedProviderData) {
+        toast.error('Selected provider not found');
+        return;
+      }
+
       const analysisData: AIAnalysisCreate = {
         health_data_ids: selectedDataIds,
         analysis_type: data.analysis_type,
-        provider: data.provider,
+        provider: data.provider, // Send the provider ID, not the type
         additional_context: data.additional_context.trim() || undefined,
       };
 
@@ -250,7 +248,17 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
                   AI Provider *
                 </label>
                 <div className="grid grid-cols-1 gap-3">
-                  {providers.map((provider) => (
+                  {providers.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <p className="mb-2">No AI providers configured</p>
+                      <p className="text-sm">
+                        <a href="/ai-providers" className="text-blue-600 hover:text-blue-800">
+                          Configure AI providers
+                        </a> to enable analysis
+                      </p>
+                    </div>
+                  ) : (
+                    providers.map((provider) => (
                     <label
                       key={provider.id}
                       className={`relative flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -266,17 +274,26 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
                         className="sr-only"
                       />
                       <div className="flex items-start space-x-3">
-                        <span className="text-2xl">{provider.icon}</span>
+                        <span className="text-2xl">{getProviderIcon(provider.type)}</span>
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900">{provider.name}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{provider.description}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Models: {provider.available_models.join(', ')}
-                          </p>
+                          <p className="text-sm text-gray-600 mt-1">{provider.type}</p>
+                          {provider.default_model && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Default Model: {provider.default_model}
+                            </p>
+                          )}
+                          {provider.models?.available && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Available: {provider.models.available.slice(0, 3).join(', ')}
+                              {provider.models.available.length > 3 && ` +${provider.models.available.length - 3} more`}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </label>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 

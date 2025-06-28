@@ -90,6 +90,7 @@ mbhealth/
 - **Python 3.8+** with uv (recommended) or pip
 - **Node.js 16+** with npm
 - **Git** for version control
+- **Redis** (for background processing and caching)
 - **Docker & Docker Compose** (optional, for containerized setup)
 - **SQLite** (included with Python) or **PostgreSQL** for production
 
@@ -130,7 +131,21 @@ mbhealth/
    npm install
    ```
 
-5. **Start the application**:
+5. **Start Redis** (required for background processing):
+   ```bash
+   # On macOS (with Homebrew):
+   brew install redis
+   brew services start redis
+   
+   # On Ubuntu/Debian:
+   sudo apt install redis-server
+   sudo systemctl start redis-server
+   
+   # Using Docker:
+   docker run -d --name redis -p 6379:6379 redis:alpine
+   ```
+
+6. **Start the application**:
    ```bash
    # Using the setup script:
    ./scripts/setup.sh start    # macOS/Linux
@@ -141,7 +156,11 @@ mbhealth/
    cd backend
    uv run python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
    
-   # Terminal 2 - Frontend
+   # Terminal 2 - Background Worker (for AI analysis)
+   cd backend
+   uv run celery -A app.core.celery_app worker --loglevel=info
+   
+   # Terminal 3 - Frontend
    cd frontend
    npm run dev
    ```
@@ -157,6 +176,7 @@ mbhealth/
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:8000
    - API Documentation: http://localhost:8000/docs
+   - Celery Flower (with monitoring profile): http://localhost:5555
 
 ### Backend Setup (Detailed)
 
@@ -244,8 +264,10 @@ SMTP_PORT=587
 SMTP_USERNAME=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
 
-# Redis (for caching and sessions)
+# Redis (for background processing and caching)
 REDIS_URL=redis://localhost:6379
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/1
 ```
 
 ### Frontend Configuration
@@ -261,9 +283,16 @@ The frontend automatically connects to `http://localhost:8000` for the API. To c
 
 #### Using uv (Recommended)
 ```bash
+# Start Redis first
+redis-server  # or start as service
+
 # Backend
 cd backend
 uv run python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Background Worker (separate terminal)
+cd backend
+uv run celery -A app.core.celery_app worker --loglevel=info
 
 # Frontend
 cd frontend
@@ -276,15 +305,24 @@ cd backend
 make run-dev          # Development mode
 make run-debug        # Debug mode
 make run              # Production mode
+make worker           # Start Celery worker
+make monitor          # Monitor Celery tasks
 ```
 
 #### Using Docker Compose
 ```bash
-# Start all services
+# Start all services (includes Redis, PostgreSQL, backend, worker, frontend)
 docker-compose up -d
+
+# Start with monitoring (includes Flower for Celery monitoring)
+docker-compose --profile monitoring up -d
 
 # View logs
 docker-compose logs -f
+
+# View specific service logs
+docker-compose logs -f worker    # Celery worker logs
+docker-compose logs -f backend   # Backend API logs
 
 # Stop services
 docker-compose down

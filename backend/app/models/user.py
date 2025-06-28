@@ -20,4 +20,7 @@ class User(Base):
     health_data = relationship("HealthData", back_populates="user")
     families = relationship("FamilyMember", back_populates="user")
     care_teams = relationship("CareTeamMember", back_populates="user")
-    notes = relationship("Note", back_populates="user") 
+    notes = relationship("Note", back_populates="user")
+    ai_providers = relationship("AIProvider", back_populates="user")
+    ai_analyses = relationship("AIAnalysis", back_populates="user")
+    analysis_settings = relationship("AnalysisSettings", back_populates="user", uselist=False) 
