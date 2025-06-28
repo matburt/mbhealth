@@ -238,6 +238,7 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
                     strokeWidth={2}
                     dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
                     activeDot={{ r: 6 }}
+                    name="Systolic"
                   />
                   <Line 
                     type="monotone" 
@@ -246,6 +247,7 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
                     strokeWidth={2}
                     dot={{ fill: '#f97316', strokeWidth: 2, r: 4 }}
                     activeDot={{ r: 6 }}
+                    name="Diastolic"
                   />
                 </>
               ) : (

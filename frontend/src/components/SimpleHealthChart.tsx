@@ -50,17 +50,42 @@ const SimpleHealthChart: React.FC<SimpleHealthChartProps> = ({
   const stats = useMemo(() => {
     if (processedData.length === 0) return null;
     
-    const values = processedData.map(d => d.value).filter(v => v !== undefined);
-    if (values.length === 0) return null;
-    
-    const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const recent = values.slice(-5);
-    const recentAvg = recent.reduce((sum, val) => sum + val, 0) / recent.length;
-    
-    return { avg, min, max, recentAvg, trend: recentAvg > avg ? 'up' : 'down' };
-  }, [processedData]);
+    if (metricType === 'blood_pressure') {
+      // Calculate separate stats for systolic and diastolic
+      const systolicValues = processedData.map(d => d.systolic).filter(v => v !== undefined);
+      const diastolicValues = processedData.map(d => d.diastolic).filter(v => v !== undefined);
+      
+      if (systolicValues.length === 0 && diastolicValues.length === 0) return null;
+      
+      const allValues = [...systolicValues, ...diastolicValues];
+      const min = Math.min(...allValues);
+      const max = Math.max(...allValues);
+      
+      const sysAvg = systolicValues.length > 0 ? systolicValues.reduce((sum, val) => sum + val, 0) / systolicValues.length : 0;
+      const diaAvg = diastolicValues.length > 0 ? diastolicValues.reduce((sum, val) => sum + val, 0) / diastolicValues.length : 0;
+      
+      return { 
+        avg: (sysAvg + diaAvg) / 2, 
+        min, 
+        max, 
+        recentAvg: (sysAvg + diaAvg) / 2, 
+        trend: sysAvg > 120 || diaAvg > 80 ? 'up' : 'down',
+        systolic: { avg: sysAvg, values: systolicValues },
+        diastolic: { avg: diaAvg, values: diastolicValues }
+      };
+    } else {
+      const values = processedData.map(d => d.value).filter(v => v !== undefined);
+      if (values.length === 0) return null;
+      
+      const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const recent = values.slice(-5);
+      const recentAvg = recent.reduce((sum, val) => sum + val, 0) / recent.length;
+      
+      return { avg, min, max, recentAvg, trend: recentAvg > avg ? 'up' : 'down' };
+    }
+  }, [processedData, metricType]);
 
   // Chart dimensions
   const width = 800;
@@ -86,14 +111,17 @@ const SimpleHealthChart: React.FC<SimpleHealthChartProps> = ({
   };
 
   // Generate path for line chart
-  const generatePath = () => {
+  const generatePath = (dataKey: 'value' | 'systolic' | 'diastolic' = 'value') => {
     if (processedData.length === 0) return '';
     
-    const points = processedData.map((item, index) => {
-      const x = xScale(item.date);
-      const y = yScale(item.value || 0);
-      return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-    });
+    const points = processedData
+      .filter(item => dataKey === 'value' ? item.value !== undefined : item[dataKey] !== undefined)
+      .map((item, index) => {
+        const x = xScale(item.date);
+        const value = dataKey === 'value' ? item.value : item[dataKey];
+        const y = yScale(value || 0);
+        return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+      });
     
     return points.join(' ');
   };
@@ -140,18 +168,41 @@ const SimpleHealthChart: React.FC<SimpleHealthChartProps> = ({
         {/* Statistics */}
         {stats && (
           <div className="flex space-x-4 text-sm">
-            <div className="text-center">
-              <p className="font-medium text-gray-900">{stats.avg.toFixed(1)}</p>
-              <p className="text-gray-500">Average</p>
-            </div>
-            <div className="text-center">
-              <p className="font-medium text-gray-900">{stats.min.toFixed(1)}</p>
-              <p className="text-gray-500">Min</p>
-            </div>
-            <div className="text-center">
-              <p className="font-medium text-gray-900">{stats.max.toFixed(1)}</p>
-              <p className="text-gray-500">Max</p>
-            </div>
+            {metricType === 'blood_pressure' && stats.systolic && stats.diastolic ? (
+              <>
+                <div className="text-center">
+                  <p className="font-medium text-red-600">{stats.systolic.avg.toFixed(1)}</p>
+                  <p className="text-gray-500">Avg Systolic</p>
+                </div>
+                <div className="text-center">
+                  <p className="font-medium text-orange-600">{stats.diastolic.avg.toFixed(1)}</p>
+                  <p className="text-gray-500">Avg Diastolic</p>
+                </div>
+                <div className="text-center">
+                  <p className="font-medium text-gray-900">{stats.min.toFixed(1)}</p>
+                  <p className="text-gray-500">Min</p>
+                </div>
+                <div className="text-center">
+                  <p className="font-medium text-gray-900">{stats.max.toFixed(1)}</p>
+                  <p className="text-gray-500">Max</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-center">
+                  <p className="font-medium text-gray-900">{stats.avg.toFixed(1)}</p>
+                  <p className="text-gray-500">Average</p>
+                </div>
+                <div className="text-center">
+                  <p className="font-medium text-gray-900">{stats.min.toFixed(1)}</p>
+                  <p className="text-gray-500">Min</p>
+                </div>
+                <div className="text-center">
+                  <p className="font-medium text-gray-900">{stats.max.toFixed(1)}</p>
+                  <p className="text-gray-500">Max</p>
+                </div>
+              </>
+            )}
             {showTrends && (
               <div className="text-center">
                 <p className={`font-medium ${stats.trend === 'up' ? 'text-red-600' : 'text-green-600'}`}>
@@ -163,6 +214,20 @@ const SimpleHealthChart: React.FC<SimpleHealthChartProps> = ({
           </div>
         )}
       </div>
+
+      {/* Legend for blood pressure */}
+      {metricType === 'blood_pressure' && (
+        <div className="flex justify-center space-x-6 mb-4">
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-1 bg-red-500"></div>
+            <span className="text-sm text-gray-600">Systolic</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-1 bg-orange-500"></div>
+            <span className="text-sm text-gray-600">Diastolic</span>
+          </div>
+        </div>
+      )}
 
       {/* Chart */}
       <div className="overflow-x-auto">
@@ -229,30 +294,89 @@ const SimpleHealthChart: React.FC<SimpleHealthChartProps> = ({
               />
             )}
             
-            {/* Data line */}
-            <path
-              d={generatePath()}
-              stroke="#3b82f6"
-              strokeWidth={3}
-              fill="none"
-            />
-            
-            {/* Data points */}
-            {processedData.map((item, index) => {
-              const x = xScale(item.date);
-              const y = yScale(item.value || 0);
-              return (
-                <circle
-                  key={index}
-                  cx={x}
-                  cy={y}
-                  r={4}
-                  fill="#3b82f6"
-                  stroke="white"
-                  strokeWidth={2}
+            {/* Data lines and points */}
+            {metricType === 'blood_pressure' ? (
+              <>
+                {/* Systolic line */}
+                <path
+                  d={generatePath('systolic')}
+                  stroke="#ef4444"
+                  strokeWidth={3}
+                  fill="none"
                 />
-              );
-            })}
+                
+                {/* Diastolic line */}
+                <path
+                  d={generatePath('diastolic')}
+                  stroke="#f97316"
+                  strokeWidth={3}
+                  fill="none"
+                />
+                
+                {/* Systolic points */}
+                {processedData.map((item, index) => {
+                  if (item.systolic === undefined) return null;
+                  const x = xScale(item.date);
+                  const y = yScale(item.systolic);
+                  return (
+                    <circle
+                      key={`sys-${index}`}
+                      cx={x}
+                      cy={y}
+                      r={4}
+                      fill="#ef4444"
+                      stroke="white"
+                      strokeWidth={2}
+                    />
+                  );
+                })}
+                
+                {/* Diastolic points */}
+                {processedData.map((item, index) => {
+                  if (item.diastolic === undefined) return null;
+                  const x = xScale(item.date);
+                  const y = yScale(item.diastolic);
+                  return (
+                    <circle
+                      key={`dia-${index}`}
+                      cx={x}
+                      cy={y}
+                      r={4}
+                      fill="#f97316"
+                      stroke="white"
+                      strokeWidth={2}
+                    />
+                  );
+                })}
+              </>
+            ) : (
+              <>
+                {/* Regular data line */}
+                <path
+                  d={generatePath()}
+                  stroke="#3b82f6"
+                  strokeWidth={3}
+                  fill="none"
+                />
+                
+                {/* Regular data points */}
+                {processedData.map((item, index) => {
+                  const x = xScale(item.date);
+                  const y = yScale(item.value || 0);
+                  return (
+                    <circle
+                      key={index}
+                      cx={x}
+                      cy={y}
+                      r={4}
+                      fill="#3b82f6"
+                      stroke="white"
+                      strokeWidth={2}
+                    />
+                  );
+                })}
+              </>
+            )}
           </g>
         </svg>
       </div>

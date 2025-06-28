@@ -61,24 +61,66 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
     const stats: Record<string, any> = {};
     
     Object.entries(dataByMetric).forEach(([metricType, metricData]) => {
-      const values = metricData.map(d => d.value).filter(v => v !== undefined);
-      if (values.length === 0) return;
-      
-      const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
-      const min = Math.min(...values);
-      const max = Math.max(...values);
-      const recent = values.slice(-5);
-      const recentAvg = recent.reduce((sum, val) => sum + val, 0) / recent.length;
-      
-      stats[metricType] = {
-        count: values.length,
-        average: avg,
-        min,
-        max,
-        recentAverage: recentAvg,
-        trend: recentAvg > avg ? 'up' : 'down',
-        unit: metricData[0]?.unit || ''
-      };
+      if (metricType === 'blood_pressure') {
+        // Handle blood pressure separately for systolic and diastolic
+        const systolicValues = metricData.map(d => d.systolic).filter(v => v !== undefined);
+        const diastolicValues = metricData.map(d => d.diastolic).filter(v => v !== undefined);
+        
+        if (systolicValues.length > 0) {
+          const sysAvg = systolicValues.reduce((sum, val) => sum + val, 0) / systolicValues.length;
+          const sysMin = Math.min(...systolicValues);
+          const sysMax = Math.max(...systolicValues);
+          const sysRecent = systolicValues.slice(-5);
+          const sysRecentAvg = sysRecent.reduce((sum, val) => sum + val, 0) / sysRecent.length;
+          
+          stats['blood_pressure_systolic'] = {
+            count: systolicValues.length,
+            average: sysAvg,
+            min: sysMin,
+            max: sysMax,
+            recentAverage: sysRecentAvg,
+            trend: sysRecentAvg > sysAvg ? 'up' : 'down',
+            unit: metricData[0]?.unit || 'mmHg'
+          };
+        }
+        
+        if (diastolicValues.length > 0) {
+          const diaAvg = diastolicValues.reduce((sum, val) => sum + val, 0) / diastolicValues.length;
+          const diaMin = Math.min(...diastolicValues);
+          const diaMax = Math.max(...diastolicValues);
+          const diaRecent = diastolicValues.slice(-5);
+          const diaRecentAvg = diaRecent.reduce((sum, val) => sum + val, 0) / diaRecent.length;
+          
+          stats['blood_pressure_diastolic'] = {
+            count: diastolicValues.length,
+            average: diaAvg,
+            min: diaMin,
+            max: diaMax,
+            recentAverage: diaRecentAvg,
+            trend: diaRecentAvg > diaAvg ? 'up' : 'down',
+            unit: metricData[0]?.unit || 'mmHg'
+          };
+        }
+      } else {
+        const values = metricData.map(d => d.value).filter(v => v !== undefined);
+        if (values.length === 0) return;
+        
+        const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const recent = values.slice(-5);
+        const recentAvg = recent.reduce((sum, val) => sum + val, 0) / recent.length;
+        
+        stats[metricType] = {
+          count: values.length,
+          average: avg,
+          min,
+          max,
+          recentAverage: recentAvg,
+          trend: recentAvg > avg ? 'up' : 'down',
+          unit: metricData[0]?.unit || ''
+        };
+      }
     });
     
     return stats;
@@ -97,8 +139,21 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
       metricData.forEach(item => {
         const date = format(new Date(item.recorded_at), 'yyyy-MM-dd');
         if (!dailyData[date]) dailyData[date] = {};
-        if (!dailyData[date][metric]) dailyData[date][metric] = 0;
-        dailyData[date][metric] += item.value || 0;
+        
+        if (metric === 'blood_pressure') {
+          // Handle blood pressure with separate systolic and diastolic
+          if (item.systolic !== undefined) {
+            if (!dailyData[date]['blood_pressure_systolic']) dailyData[date]['blood_pressure_systolic'] = 0;
+            dailyData[date]['blood_pressure_systolic'] += item.systolic;
+          }
+          if (item.diastolic !== undefined) {
+            if (!dailyData[date]['blood_pressure_diastolic']) dailyData[date]['blood_pressure_diastolic'] = 0;
+            dailyData[date]['blood_pressure_diastolic'] += item.diastolic;
+          }
+        } else {
+          if (!dailyData[date][metric]) dailyData[date][metric] = 0;
+          dailyData[date][metric] += item.value || 0;
+        }
       });
     });
     
@@ -113,6 +168,8 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
   const getMetricColor = (metricType: string) => {
     const colors: Record<string, string> = {
       blood_pressure: '#ef4444',
+      blood_pressure_systolic: '#ef4444',
+      blood_pressure_diastolic: '#f97316',
       blood_sugar: '#f59e0b',
       weight: '#10b981',
       heart_rate: '#3b82f6',
@@ -126,14 +183,25 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
   // Custom tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const data = payload[0]?.payload;
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm text-gray-600">
-              {entry.name}: <span className="font-medium">{entry.value}</span>
-            </p>
-          ))}
+          {payload.map((entry: any, index: number) => {
+            // Handle blood pressure special formatting
+            if (entry.dataKey === 'systolic' || entry.dataKey === 'diastolic') {
+              return (
+                <p key={index} className="text-sm text-gray-600">
+                  {entry.name}: <span className="font-medium">{entry.value} {data?.unit || 'mmHg'}</span>
+                </p>
+              );
+            }
+            return (
+              <p key={index} className="text-sm text-gray-600">
+                {entry.name}: <span className="font-medium">{entry.value} {data?.unit || ''}</span>
+              </p>
+            );
+          })}
         </div>
       );
     }
@@ -145,27 +213,36 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Object.entries(summaryStats).map(([metricType, stats]) => (
-          <div key={metricType} className="bg-white rounded-lg p-4 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 capitalize">
-                  {metricType.replace('_', ' ')}
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {stats.average.toFixed(1)}
-                </p>
-                <p className="text-xs text-gray-500">{stats.unit}</p>
+        {Object.entries(summaryStats).map(([metricType, stats]) => {
+          let displayName = metricType.replace('_', ' ');
+          if (metricType === 'blood_pressure_systolic') {
+            displayName = 'Systolic BP';
+          } else if (metricType === 'blood_pressure_diastolic') {
+            displayName = 'Diastolic BP';
+          }
+          
+          return (
+            <div key={metricType} className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 capitalize">
+                    {displayName}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.average.toFixed(1)}
+                  </p>
+                  <p className="text-xs text-gray-500">{stats.unit}</p>
+                </div>
+                <div className={`text-2xl ${stats.trend === 'up' ? 'text-red-500' : 'text-green-500'}`}>
+                  {stats.trend === 'up' ? '↗' : '↘'}
+                </div>
               </div>
-              <div className={`text-2xl ${stats.trend === 'up' ? 'text-red-500' : 'text-green-500'}`}>
-                {stats.trend === 'up' ? '↗' : '↘'}
+              <div className="mt-2 text-xs text-gray-500">
+                {stats.count} readings • Range: {stats.min.toFixed(1)} - {stats.max.toFixed(1)}
               </div>
             </div>
-            <div className="mt-2 text-xs text-gray-500">
-              {stats.count} readings • Range: {stats.min.toFixed(1)} - {stats.max.toFixed(1)}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Combined Chart */}
@@ -184,17 +261,44 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
               <YAxis stroke="#6b7280" fontSize={12} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              {Object.keys(dataByMetric).map((metricType) => (
-                <Line
-                  key={metricType}
-                  type="monotone"
-                  dataKey={metricType}
-                  stroke={getMetricColor(metricType)}
-                  strokeWidth={2}
-                  dot={{ fill: getMetricColor(metricType), strokeWidth: 2, r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-              ))}
+              {Object.keys(dataByMetric).map((metricType) => {
+                if (metricType === 'blood_pressure') {
+                  return [
+                    <Line
+                      key="blood_pressure_systolic"
+                      type="monotone"
+                      dataKey="blood_pressure_systolic"
+                      stroke={getMetricColor('blood_pressure_systolic')}
+                      strokeWidth={2}
+                      dot={{ fill: getMetricColor('blood_pressure_systolic'), strokeWidth: 2, r: 3 }}
+                      activeDot={{ r: 5 }}
+                      name="Systolic BP"
+                    />,
+                    <Line
+                      key="blood_pressure_diastolic"
+                      type="monotone"
+                      dataKey="blood_pressure_diastolic"
+                      stroke={getMetricColor('blood_pressure_diastolic')}
+                      strokeWidth={2}
+                      dot={{ fill: getMetricColor('blood_pressure_diastolic'), strokeWidth: 2, r: 3 }}
+                      activeDot={{ r: 5 }}
+                      name="Diastolic BP"
+                    />
+                  ];
+                }
+                return (
+                  <Line
+                    key={metricType}
+                    type="monotone"
+                    dataKey={metricType}
+                    stroke={getMetricColor(metricType)}
+                    strokeWidth={2}
+                    dot={{ fill: getMetricColor(metricType), strokeWidth: 2, r: 3 }}
+                    activeDot={{ r: 5 }}
+                    name={metricType.replace('_', ' ')}
+                  />
+                );
+              })}
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -234,6 +338,8 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
           .map(item => ({
             date: format(new Date(item.recorded_at), 'MMM dd'),
             value: item.value,
+            systolic: item.systolic,
+            diastolic: item.diastolic,
             unit: item.unit
           }));
 
@@ -250,14 +356,39 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
                     <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
                     <YAxis stroke="#6b7280" fontSize={12} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke={getMetricColor(metricType)}
-                      strokeWidth={2}
-                      dot={{ fill: getMetricColor(metricType), strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
+                    <Legend />
+                    {metricType === 'blood_pressure' ? (
+                      <>
+                        <Line
+                          type="monotone"
+                          dataKey="systolic"
+                          stroke={getMetricColor('blood_pressure_systolic')}
+                          strokeWidth={2}
+                          dot={{ fill: getMetricColor('blood_pressure_systolic'), strokeWidth: 2, r: 4 }}
+                          activeDot={{ r: 6 }}
+                          name="Systolic"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="diastolic"
+                          stroke={getMetricColor('blood_pressure_diastolic')}
+                          strokeWidth={2}
+                          dot={{ fill: getMetricColor('blood_pressure_diastolic'), strokeWidth: 2, r: 4 }}
+                          activeDot={{ r: 6 }}
+                          name="Diastolic"
+                        />
+                      </>
+                    ) : (
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke={getMetricColor(metricType)}
+                        strokeWidth={2}
+                        dot={{ fill: getMetricColor(metricType), strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6 }}
+                        name={metricType.replace('_', ' ')}
+                      />
+                    )}
                   </LineChart>
                 ) : selectedChartType === 'bar' ? (
                   <BarChart data={chartData}>
@@ -265,11 +396,30 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
                     <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
                     <YAxis stroke="#6b7280" fontSize={12} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar
-                      dataKey="value"
-                      fill={getMetricColor(metricType)}
-                      radius={[4, 4, 0, 0]}
-                    />
+                    <Legend />
+                    {metricType === 'blood_pressure' ? (
+                      <>
+                        <Bar
+                          dataKey="systolic"
+                          fill={getMetricColor('blood_pressure_systolic')}
+                          radius={[4, 4, 0, 0]}
+                          name="Systolic"
+                        />
+                        <Bar
+                          dataKey="diastolic"
+                          fill={getMetricColor('blood_pressure_diastolic')}
+                          radius={[4, 4, 0, 0]}
+                          name="Diastolic"
+                        />
+                      </>
+                    ) : (
+                      <Bar
+                        dataKey="value"
+                        fill={getMetricColor(metricType)}
+                        radius={[4, 4, 0, 0]}
+                        name={metricType.replace('_', ' ')}
+                      />
+                    )}
                   </BarChart>
                 ) : selectedChartType === 'area' ? (
                   <AreaChart data={chartData}>
@@ -277,14 +427,41 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
                     <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
                     <YAxis stroke="#6b7280" fontSize={12} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke={getMetricColor(metricType)}
-                      fill={getMetricColor(metricType)}
-                      fillOpacity={0.3}
-                      strokeWidth={2}
-                    />
+                    <Legend />
+                    {metricType === 'blood_pressure' ? (
+                      <>
+                        <Area
+                          type="monotone"
+                          dataKey="systolic"
+                          stackId="1"
+                          stroke={getMetricColor('blood_pressure_systolic')}
+                          fill={getMetricColor('blood_pressure_systolic')}
+                          fillOpacity={0.3}
+                          strokeWidth={2}
+                          name="Systolic"
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="diastolic"
+                          stackId="2"
+                          stroke={getMetricColor('blood_pressure_diastolic')}
+                          fill={getMetricColor('blood_pressure_diastolic')}
+                          fillOpacity={0.3}
+                          strokeWidth={2}
+                          name="Diastolic"
+                        />
+                      </>
+                    ) : (
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke={getMetricColor(metricType)}
+                        fill={getMetricColor(metricType)}
+                        fillOpacity={0.3}
+                        strokeWidth={2}
+                        name={metricType.replace('_', ' ')}
+                      />
+                    )}
                   </AreaChart>
                 ) : selectedChartType === 'scatter' ? (
                   <ScatterChart data={chartData}>
@@ -292,11 +469,30 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
                     <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
                     <YAxis stroke="#6b7280" fontSize={12} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Scatter
-                      dataKey="value"
-                      fill={getMetricColor(metricType)}
-                      stroke={getMetricColor(metricType)}
-                    />
+                    <Legend />
+                    {metricType === 'blood_pressure' ? (
+                      <>
+                        <Scatter
+                          dataKey="systolic"
+                          fill={getMetricColor('blood_pressure_systolic')}
+                          stroke={getMetricColor('blood_pressure_systolic')}
+                          name="Systolic"
+                        />
+                        <Scatter
+                          dataKey="diastolic"
+                          fill={getMetricColor('blood_pressure_diastolic')}
+                          stroke={getMetricColor('blood_pressure_diastolic')}
+                          name="Diastolic"
+                        />
+                      </>
+                    ) : (
+                      <Scatter
+                        dataKey="value"
+                        fill={getMetricColor(metricType)}
+                        stroke={getMetricColor(metricType)}
+                        name={metricType.replace('_', ' ')}
+                      />
+                    )}
                   </ScatterChart>
                 ) : (
                   <div />
