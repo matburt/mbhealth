@@ -54,24 +54,25 @@ const EditProviderModal: React.FC<EditProviderModalProps> = ({
   };
 
   const handleTestConnection = async () => {
-    const apiKey = formData.api_key || 'existing-key';
-    
-    if (!formData.type || (!apiKey && supportedTypes[formData.type]?.requires_api_key)) {
-      toast.error('Please fill in all required fields before testing');
-      return;
-    }
-
     setTesting(true);
     setTestResult(null);
 
     try {
-      const testRequest: ProviderTestRequest = {
-        type: formData.type,
-        endpoint: formData.endpoint || undefined,
-        api_key: apiKey
-      };
-
-      const result = await aiAnalysisService.testProviderConfig(testRequest);
+      let result;
+      
+      // If user provided a new API key, test the configuration
+      if (formData.api_key) {
+        const testRequest: ProviderTestRequest = {
+          type: formData.type || provider.type,
+          endpoint: formData.endpoint || undefined,
+          api_key: formData.api_key
+        };
+        result = await aiAnalysisService.testProviderConfig(testRequest);
+      } else {
+        // If no new API key provided, test the saved provider
+        result = await aiAnalysisService.testProvider(provider.id);
+      }
+      
       setTestResult(result);
       
       if (result.success && result.available_models) {

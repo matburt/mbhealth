@@ -125,7 +125,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
       const analysisData: AIAnalysisCreate = {
         health_data_ids: selectedDataIds,
         analysis_type: data.analysis_type,
-        provider: selectedProviderData.type as 'openai' | 'openrouter' | 'google',
+        provider: data.provider, // Send the provider ID, not the type
         additional_context: data.additional_context.trim() || undefined,
       };
 

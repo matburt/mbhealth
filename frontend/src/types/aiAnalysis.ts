@@ -22,7 +22,7 @@ export interface AIAnalysisResponse {
 export interface AIAnalysisCreate {
   health_data_ids: number[];
   analysis_type: 'trends' | 'insights' | 'recommendations' | 'anomalies';
-  provider: 'openai' | 'openrouter' | 'google';
+  provider: 'openai' | 'openrouter' | 'google' | string;
   additional_context?: string;
 }
 
