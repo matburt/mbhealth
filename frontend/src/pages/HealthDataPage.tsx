@@ -14,6 +14,8 @@ const HealthDataPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<HealthDataFilters>({});
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Initialize filters from URL params
   useEffect(() => {
@@ -66,6 +68,41 @@ const HealthDataPage: React.FC = () => {
     return filters.metric_type || (data.length > 0 ? data[0].metric_type : '');
   };
 
+  const handleExportCSV = async () => {
+    setExporting(true);
+    try {
+      await healthService.exportHealthDataCSV();
+      toast.success('Health data exported successfully');
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to export health data');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const result = await healthService.importHealthDataCSV(file);
+      toast.success(result.message);
+      if (result.errors.length > 0) {
+        console.warn('Import errors:', result.errors);
+        toast.error(`${result.errors.length} rows had errors. Check console for details.`);
+      }
+      // Refresh data after import
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to import health data');
+    } finally {
+      setImporting(false);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -77,6 +114,27 @@ const HealthDataPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center space-x-4">
+          {/* CSV Import/Export */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleExportCSV}
+              disabled={exporting || data.length === 0}
+              className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exporting ? 'Exporting...' : 'Export CSV'}
+            </button>
+            <label className="bg-purple-600 text-white px-3 py-2 rounded-md hover:bg-purple-700 transition-colors text-sm font-medium cursor-pointer">
+              {importing ? 'Importing...' : 'Import CSV'}
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleImportCSV}
+                disabled={importing}
+                className="hidden"
+              />
+            </label>
+          </div>
+          
           <Link
             to="/data-visualization"
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"

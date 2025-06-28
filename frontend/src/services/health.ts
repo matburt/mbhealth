@@ -38,5 +38,34 @@ export const healthService = {
 
   async getHealthDataByType(metricType: string, limit?: number): Promise<HealthData[]> {
     return this.getHealthData({ metric_type: metricType, limit });
+  },
+
+  async exportHealthDataCSV(): Promise<void> {
+    const response = await api.get('/health-data/export/csv', {
+      responseType: 'blob',
+    });
+    
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'health_data.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async importHealthDataCSV(file: File): Promise<{ message: string; imported_count: number; errors: string[] }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await api.post('/health-data/import/csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return response.data;
   }
 }; 
