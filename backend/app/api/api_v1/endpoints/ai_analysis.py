@@ -553,3 +553,115 @@ def get_queue_status(
             "total_pending": 0,
             "workers_available": 0
         }
+
+@router.get("/{analysis_id}/debug")
+def debug_analysis(
+    *,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    analysis_id: int
+) -> Any:
+    """Debug endpoint to get detailed analysis information"""
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        service = AIAnalysisService(db)
+        analysis = service.get_analysis(current_user.id, analysis_id)
+        
+        if not analysis:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Analysis not found"
+            )
+        
+        # Get associated job
+        from app.models.ai_analysis import AnalysisJob
+        job = db.query(AnalysisJob).filter(
+            AnalysisJob.analysis_id == analysis_id
+        ).first()
+        
+        # Get provider details
+        provider_info = None
+        if analysis.provider_id:
+            provider = service.get_provider(current_user.id, analysis.provider_id)
+            if provider:
+                provider_info = {
+                    "id": provider.id,
+                    "name": provider.name,
+                    "type": provider.type,
+                    "enabled": provider.enabled,
+                    "has_api_key": bool(provider.api_key_encrypted),
+                    "endpoint": provider.endpoint,
+                    "models": provider.models,
+                    "default_model": provider.default_model
+                }
+        
+        # Get health data info
+        from app.models.health_data import HealthData
+        health_data_count = db.query(HealthData).filter(
+            and_(
+                HealthData.id.in_(analysis.health_data_ids),
+                HealthData.user_id == analysis.user_id
+            )
+        ).count()
+        
+        debug_info = {
+            "analysis": {
+                "id": analysis.id,
+                "status": analysis.status,
+                "provider_name": analysis.provider_name,
+                "provider_id": analysis.provider_id,
+                "analysis_type": analysis.analysis_type,
+                "health_data_ids": analysis.health_data_ids,
+                "health_data_count": health_data_count,
+                "created_at": analysis.created_at.isoformat(),
+                "completed_at": analysis.completed_at.isoformat() if analysis.completed_at else None,
+                "error_message": analysis.error_message,
+                "model_used": analysis.model_used,
+                "processing_time": analysis.processing_time,
+                "cost": analysis.cost
+            },
+            "provider": provider_info,
+            "job": None
+        }
+        
+        if job:
+            debug_info["job"] = {
+                "id": str(job.id),
+                "job_id": job.job_id,
+                "status": job.status,
+                "priority": job.priority,
+                "retry_count": job.retry_count,
+                "max_retries": job.max_retries,
+                "created_at": job.created_at.isoformat(),
+                "started_at": job.started_at.isoformat() if job.started_at else None,
+                "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+                "error_message": job.error_message
+            }
+            
+            # Get Celery task status if available
+            if job.job_id:
+                try:
+                    task_result = celery_app.AsyncResult(job.job_id)
+                    debug_info["celery_task"] = {
+                        "task_id": job.job_id,
+                        "status": task_result.status,
+                        "result": str(task_result.result) if task_result.result else None,
+                        "info": task_result.info if task_result.info else None,
+                        "traceback": task_result.traceback if hasattr(task_result, 'traceback') else None
+                    }
+                except Exception as e:
+                    debug_info["celery_task"] = {"error": str(e)}
+        
+        return debug_info
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Debug endpoint error for analysis {analysis_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Debug failed: {str(e)}"
+        )
