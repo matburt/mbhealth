@@ -255,6 +255,12 @@ class AIAnalysisService:
     
     async def _execute_analysis(self, analysis: AIAnalysis, additional_context: Optional[str] = None):
         """Execute the AI analysis"""
+        import logging
+        import traceback
+        
+        logger = logging.getLogger(__name__)
+        logger.info(f"Starting analysis execution for analysis {analysis.id}")
+        
         try:
             # Get health data
             health_data = self.db.query(HealthData).filter(
@@ -265,8 +271,9 @@ class AIAnalysisService:
             ).all()
             
             if not health_data:
+                logger.error(f"No health data found for analysis {analysis.id} with IDs: {analysis.health_data_ids}")
                 analysis.status = "failed"
-                analysis.error_message = "No health data found"
+                analysis.error_message = "No health data found for the selected entries"
                 analysis.completed_at = datetime.utcnow()
                 self.db.commit()
                 return
@@ -288,15 +295,27 @@ class AIAnalysisService:
             
             # Get provider and create AI provider instance
             if analysis.provider_id:
+                logger.info(f"Getting provider {analysis.provider_id} for analysis {analysis.id}")
                 provider = self.get_provider(analysis.user_id, analysis.provider_id)
                 if not provider or not provider.enabled:
+                    logger.error(f"Provider {analysis.provider_id} not found or disabled for analysis {analysis.id}")
                     analysis.status = "failed"
                     analysis.error_message = "Provider not found or disabled"
                     analysis.completed_at = datetime.utcnow()
                     self.db.commit()
                     return
                 
+                logger.info(f"Decrypting API key for provider {provider.name}")
                 api_key = self._decrypt_api_key(provider.api_key_encrypted)
+                if not api_key:
+                    logger.error(f"Failed to decrypt API key for provider {provider.name}")
+                    analysis.status = "failed"
+                    analysis.error_message = "Failed to decrypt provider API key"
+                    analysis.completed_at = datetime.utcnow()
+                    self.db.commit()
+                    return
+                
+                logger.info(f"Creating AI provider instance of type {provider.type}")
                 ai_provider = ProviderFactory.create_provider(
                     provider.type,
                     api_key,
@@ -305,16 +324,20 @@ class AIAnalysisService:
                     **(provider.parameters or {})
                 )
                 model = provider.default_model
+                logger.info(f"Using model: {model}")
             else:
                 # Fallback to legacy provider logic
+                logger.info(f"Using legacy provider {analysis.provider_name}")
                 ai_provider = await self._create_legacy_provider(analysis.provider_name)
                 if not ai_provider:
+                    logger.error(f"Legacy provider {analysis.provider_name} not configured")
                     analysis.status = "failed"
                     analysis.error_message = f"Legacy provider {analysis.provider_name} not configured"
                     analysis.completed_at = datetime.utcnow()
                     self.db.commit()
                     return
                 model = ai_provider.get_default_model()
+                logger.info(f"Using legacy model: {model}")
             
             # Add additional context to prompt if provided
             prompt = analysis.request_prompt
@@ -322,6 +345,7 @@ class AIAnalysisService:
                 prompt += f"\n\nAdditional context: {additional_context}"
             
             # Execute analysis
+            logger.info(f"Executing AI analysis for analysis {analysis.id}")
             result = await ai_provider.generate_analysis(
                 prompt, 
                 health_data_list, 
@@ -329,6 +353,7 @@ class AIAnalysisService:
             )
             
             # Update analysis with results
+            logger.info(f"Analysis {analysis.id} completed successfully")
             analysis.status = "completed"
             analysis.response_content = result.content
             analysis.model_used = result.model_used
@@ -338,15 +363,24 @@ class AIAnalysisService:
             analysis.completed_at = datetime.utcnow()
             
         except AIProviderError as e:
+            logger.error(f"AI Provider error in analysis {analysis.id}: {str(e)}")
+            logger.error(f"AI Provider traceback: {traceback.format_exc()}")
             analysis.status = "failed"
             analysis.error_message = str(e)
             analysis.completed_at = datetime.utcnow()
         except Exception as e:
+            logger.error(f"Unexpected error in analysis {analysis.id}: {str(e)}")
+            logger.error(f"Unexpected error traceback: {traceback.format_exc()}")
             analysis.status = "failed" 
             analysis.error_message = f"Unexpected error: {str(e)}"
             analysis.completed_at = datetime.utcnow()
         
-        self.db.commit()
+        try:
+            self.db.commit()
+            logger.info(f"Analysis {analysis.id} status updated to: {analysis.status}")
+        except Exception as e:
+            logger.error(f"Failed to commit analysis {analysis.id} status: {str(e)}")
+            raise
     
     async def _create_legacy_provider(self, provider_name: str) -> Optional[BaseAIProvider]:
         """Create provider instance for legacy provider names"""

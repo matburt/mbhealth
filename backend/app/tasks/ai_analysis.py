@@ -54,34 +54,65 @@ def process_ai_analysis(self, analysis_id: int, user_id: int):
         
         # Execute the analysis using the existing service method
         import asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        import traceback
+        
         try:
-            loop.run_until_complete(service._execute_analysis(analysis, None))
-        finally:
-            loop.close()
-        
-        # Update progress
-        current_task.update_state(
-            state="PROGRESS",
-            meta={"current": 90, "total": 100, "status": "Finalizing results..."}
-        )
-        
-        # Final update
-        current_task.update_state(
-            state="SUCCESS",
-            meta={"current": 100, "total": 100, "status": "Analysis completed successfully"}
-        )
-        
-        logger.info(f"Analysis {analysis_id} completed successfully")
-        
-        return {
-            "analysis_id": analysis_id,
-            "status": analysis.status,
-            "completed_at": analysis.completed_at.isoformat() if analysis.completed_at else None,
-            "processing_time": analysis.processing_time,
-            "cost": analysis.cost
-        }
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(service._execute_analysis(analysis, None))
+            finally:
+                loop.close()
+            
+            # Refresh analysis from database to get updated status
+            db.refresh(analysis)
+            
+            # Update progress based on actual analysis status
+            if analysis.status == "completed":
+                current_task.update_state(
+                    state="SUCCESS",
+                    meta={"current": 100, "total": 100, "status": "Analysis completed successfully"}
+                )
+                logger.info(f"Analysis {analysis_id} completed successfully")
+            elif analysis.status == "failed":
+                current_task.update_state(
+                    state="FAILURE",
+                    meta={"error": analysis.error_message or "Analysis failed"}
+                )
+                logger.error(f"Analysis {analysis_id} failed: {analysis.error_message}")
+            else:
+                # Analysis is still in progress somehow
+                current_task.update_state(
+                    state="PROGRESS",
+                    meta={"current": 90, "total": 100, "status": f"Analysis status: {analysis.status}"}
+                )
+                logger.warning(f"Analysis {analysis_id} in unexpected status: {analysis.status}")
+            
+            return {
+                "analysis_id": analysis_id,
+                "status": analysis.status,
+                "completed_at": analysis.completed_at.isoformat() if analysis.completed_at else None,
+                "processing_time": analysis.processing_time,
+                "cost": analysis.cost,
+                "error_message": analysis.error_message
+            }
+            
+        except Exception as exec_error:
+            logger.error(f"Error during analysis execution: {str(exec_error)}")
+            logger.error(f"Execution traceback: {traceback.format_exc()}")
+            
+            # Update analysis status in database
+            analysis.status = "failed"
+            analysis.error_message = f"Execution error: {str(exec_error)}"
+            analysis.completed_at = datetime.utcnow()
+            db.commit()
+            
+            current_task.update_state(
+                state="FAILURE",
+                meta={"error": f"Execution error: {str(exec_error)}"}
+            )
+            
+            raise
         
     except AIProviderError as e:
         logger.error(f"AI Provider error in analysis {analysis_id}: {str(e)}")

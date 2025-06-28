@@ -357,31 +357,73 @@ def get_analysis_status_endpoint(
     analysis_id: int
 ) -> Any:
     """Get the status of an analysis including background job progress"""
+    import logging
+    import traceback
+    
+    logger = logging.getLogger(__name__)
+    
     try:
-        # Get basic analysis info
-        result = get_analysis_status.delay(analysis_id, current_user.id)
-        status_info = result.get(timeout=5)  # 5 second timeout
+        # Get basic analysis info directly from database
+        service = AIAnalysisService(db)
+        analysis = service.get_analysis(current_user.id, analysis_id)
         
-        if "error" in status_info:
+        if not analysis:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=status_info["error"]
+                detail="Analysis not found"
             )
         
-        # If there's a Celery task, get its status
-        if status_info.get("task_id"):
-            task_result = celery_app.AsyncResult(status_info["task_id"])
-            status_info["task_status"] = task_result.status
-            
-            if task_result.info:
-                if isinstance(task_result.info, dict):
-                    status_info["progress"] = task_result.info
-                else:
-                    status_info["task_info"] = str(task_result.info)
+        # Build basic status info
+        status_info = {
+            "analysis_id": analysis.id,
+            "status": analysis.status,
+            "created_at": analysis.created_at.isoformat(),
+            "completed_at": analysis.completed_at.isoformat() if analysis.completed_at else None,
+            "error_message": analysis.error_message,
+            "processing_time": analysis.processing_time,
+            "cost": analysis.cost,
+        }
         
+        # Get associated job if exists
+        from app.models.ai_analysis import AnalysisJob
+        job = db.query(AnalysisJob).filter(
+            AnalysisJob.analysis_id == analysis_id
+        ).first()
+        
+        if job:
+            status_info.update({
+                "job_id": str(job.id),
+                "job_status": job.status,
+                "task_id": job.job_id,
+                "retry_count": job.retry_count,
+                "started_at": job.started_at.isoformat() if job.started_at else None,
+                "job_completed_at": job.completed_at.isoformat() if job.completed_at else None,
+                "job_error_message": job.error_message
+            })
+            
+            # If there's a Celery task, get its status
+            if job.job_id:
+                try:
+                    task_result = celery_app.AsyncResult(job.job_id)
+                    status_info["task_status"] = task_result.status
+                    
+                    if task_result.info:
+                        if isinstance(task_result.info, dict):
+                            status_info["progress"] = task_result.info
+                        else:
+                            status_info["task_info"] = str(task_result.info)
+                except Exception as e:
+                    logger.warning(f"Failed to get Celery task status for {job.job_id}: {str(e)}")
+                    status_info["task_error"] = str(e)
+        
+        logger.info(f"Retrieved status for analysis {analysis_id}: {analysis.status}")
         return status_info
         
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Failed to get analysis status for {analysis_id}: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get analysis status: {str(e)}"
@@ -412,11 +454,23 @@ def cancel_analysis(
         
         logger.info(f"Cancelling analysis {analysis_id} with status: {analysis.status}")
         
-        if analysis.status not in ["pending", "processing"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Analysis cannot be cancelled in its current state: {analysis.status}"
-            )
+        # Allow cancellation of analyses that are pending, processing, or failed (in case they're stuck)
+        if analysis.status not in ["pending", "processing", "failed"]:
+            if analysis.status == "completed":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Analysis has already completed and cannot be cancelled"
+                )
+            elif analysis.status == "cancelled":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Analysis has already been cancelled"
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Analysis cannot be cancelled in its current state: {analysis.status}"
+                )
         
         # Get the job to find the task ID
         from app.models.ai_analysis import AnalysisJob
