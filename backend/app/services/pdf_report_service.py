@@ -375,22 +375,22 @@ class PDFReportService:
     def _generate_metric_chart(self, metric_type: str, metric_data: List[HealthData], user_timezone: str = None) -> Optional[Image]:
         """Generate a chart for the metric data."""
         try:
-            from app.utils.timezone import convert_utc_to_user_timezone
+            from app.utils.timezone import utc_to_user_timezone
             
             # Create figure
             fig, ax = plt.subplots(figsize=(10, 6))
             
             # Convert dates to user timezone if provided
             if user_timezone:
-                dates = [convert_utc_to_user_timezone(d.recorded_at, user_timezone) for d in metric_data]
+                dates = [utc_to_user_timezone(d.recorded_at, user_timezone) for d in metric_data]
             else:
                 dates = [d.recorded_at for d in metric_data]
             dates = sorted(dates)
             
             if metric_type == 'blood_pressure':
                 if user_timezone:
-                    systolic_data = [(convert_utc_to_user_timezone(d.recorded_at, user_timezone), d.systolic) for d in metric_data if d.systolic is not None]
-                    diastolic_data = [(convert_utc_to_user_timezone(d.recorded_at, user_timezone), d.diastolic) for d in metric_data if d.diastolic is not None]
+                    systolic_data = [(utc_to_user_timezone(d.recorded_at, user_timezone), d.systolic) for d in metric_data if d.systolic is not None]
+                    diastolic_data = [(utc_to_user_timezone(d.recorded_at, user_timezone), d.diastolic) for d in metric_data if d.diastolic is not None]
                 else:
                     systolic_data = [(d.recorded_at, d.systolic) for d in metric_data if d.systolic is not None]
                     diastolic_data = [(d.recorded_at, d.diastolic) for d in metric_data if d.diastolic is not None]
@@ -411,7 +411,7 @@ class PDFReportService:
                 
             else:
                 if user_timezone:
-                    value_data = [(convert_utc_to_user_timezone(d.recorded_at, user_timezone), d.value) for d in metric_data if d.value is not None]
+                    value_data = [(utc_to_user_timezone(d.recorded_at, user_timezone), d.value) for d in metric_data if d.value is not None]
                 else:
                     value_data = [(d.recorded_at, d.value) for d in metric_data if d.value is not None]
                 if value_data:

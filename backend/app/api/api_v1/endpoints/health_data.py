@@ -136,7 +136,7 @@ def export_health_data_csv(
     """
     Export all health data for the current user as CSV.
     """
-    from app.utils.timezone import convert_utc_to_user_timezone
+    from app.utils.timezone import utc_to_user_timezone
     
     # Get all health data for the user
     health_data = get_health_data_by_user(
@@ -160,9 +160,9 @@ def export_health_data_csv(
     # Write data rows
     for data in health_data:
         # Convert timestamps to user's timezone
-        recorded_at_local = convert_utc_to_user_timezone(data.recorded_at, current_user.timezone) if data.recorded_at else None
-        created_at_local = convert_utc_to_user_timezone(data.created_at, current_user.timezone)
-        updated_at_local = convert_utc_to_user_timezone(data.updated_at, current_user.timezone)
+        recorded_at_local = utc_to_user_timezone(data.recorded_at, current_user.timezone) if data.recorded_at else None
+        created_at_local = utc_to_user_timezone(data.created_at, current_user.timezone)
+        updated_at_local = utc_to_user_timezone(data.updated_at, current_user.timezone)
         
         row = [
             data.id,
