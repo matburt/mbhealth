@@ -22,7 +22,8 @@ def generate_pdf_report(
     metric_types: Optional[List[str]] = None,
     include_charts: bool = True,
     include_summary: bool = True,
-    include_trends: bool = True
+    include_trends: bool = True,
+    user_timezone: str = None
 ):
     """
     Generate a PDF report asynchronously.
@@ -36,6 +37,7 @@ def generate_pdf_report(
         include_charts: Whether to include charts
         include_summary: Whether to include summary
         include_trends: Whether to include trend analysis
+        user_timezone: User's timezone for timestamp conversion
         
     Returns:
         bytes: PDF document as bytes
@@ -85,7 +87,8 @@ def generate_pdf_report(
             )
             
             # Generate PDF report
-            pdf_bytes = await pdf_report_service.generate_health_report(
+            import asyncio
+            pdf_bytes = asyncio.run(pdf_report_service.generate_health_report(
                 user_id=user_id,
                 health_data=health_data,
                 date_range=(start_date, end_date),
@@ -93,8 +96,9 @@ def generate_pdf_report(
                 include_charts=include_charts,
                 include_summary=include_summary,
                 include_trends=include_trends,
+                user_timezone=user_timezone,
                 db_session=db
-            )
+            ))
             
             # Update progress
             current_task.update_state(

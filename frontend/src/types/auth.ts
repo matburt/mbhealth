@@ -23,6 +23,7 @@ export interface User {
   is_active: boolean;
   is_superuser: boolean;
   timezone: string;
+  ai_context_profile?: string;
   created_at: string;
   updated_at: string;
 } 

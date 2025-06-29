@@ -200,10 +200,19 @@ class AIAnalysisService:
                     provider_name = provider.name
                     logger.info(f"Using provider ID {provider_id} with name: {provider_name}")
             
+            # Get user context profile
+            from app.models.user import User
+            user = self.db.query(User).filter(User.id == user_id).first()
+            user_context = user.ai_context_profile if user and user.ai_context_profile else None
+            
             # Generate request prompt based on analysis type
             system_prompt = self._generate_analysis_prompt(analysis_data.analysis_type)
             
-            # Add user context if provided
+            # Add user context profile if available
+            if user_context:
+                system_prompt += f"\n\nUser context: {user_context}"
+            
+            # Add additional context if provided
             if analysis_data.additional_context:
                 system_prompt += f"\n\nAdditional context from user: {analysis_data.additional_context}"
             
@@ -262,6 +271,11 @@ class AIAnalysisService:
         logger.info(f"Starting analysis execution for analysis {analysis.id}")
         
         try:
+            # Get user information including AI context profile
+            from app.models.user import User
+            user = self.db.query(User).filter(User.id == analysis.user_id).first()
+            user_context = user.ai_context_profile if user and user.ai_context_profile else None
+            
             # Get health data
             health_data = self.db.query(HealthData).filter(
                 and_(
@@ -339,8 +353,10 @@ class AIAnalysisService:
                 model = ai_provider.get_default_model()
                 logger.info(f"Using legacy model: {model}")
             
-            # Add additional context to prompt if provided
+            # Add user context and additional context to prompt
             prompt = analysis.request_prompt
+            if user_context:
+                prompt += f"\n\nUser context: {user_context}"
             if additional_context:
                 prompt += f"\n\nAdditional context: {additional_context}"
             

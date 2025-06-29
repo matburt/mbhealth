@@ -5,6 +5,7 @@ export interface UpdateProfileRequest {
   full_name?: string;
   email?: string;
   timezone?: string;
+  ai_context_profile?: string;
 }
 
 class UserService {

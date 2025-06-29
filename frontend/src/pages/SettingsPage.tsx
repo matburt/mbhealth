@@ -9,6 +9,7 @@ interface SettingsFormData {
   full_name: string;
   email: string;
   timezone: string;
+  ai_context_profile: string;
 }
 
 const SettingsPage: React.FC = () => {
@@ -29,6 +30,7 @@ const SettingsPage: React.FC = () => {
       setValue('full_name', user.full_name || '');
       setValue('email', user.email || '');
       setValue('timezone', user.timezone || userTimezone);
+      setValue('ai_context_profile', user.ai_context_profile || '');
     }
   }, [user, userTimezone, setValue]);
 
@@ -42,6 +44,7 @@ const SettingsPage: React.FC = () => {
         full_name: data.full_name,
         email: data.email,
         timezone: data.timezone,
+        ai_context_profile: data.ai_context_profile,
       });
 
       // Update auth context
@@ -147,6 +150,32 @@ const SettingsPage: React.FC = () => {
                 </p>
               </div>
 
+              {/* AI Context Profile */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  AI Analysis Context
+                </label>
+                <textarea
+                  {...register('ai_context_profile')}
+                  className="input-field"
+                  rows={4}
+                  placeholder="Optional: Provide additional context for AI analysis..."
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  This information will be included when analyzing your health data with AI to provide more personalized insights.
+                </p>
+                <div className="mt-2 text-xs text-gray-600">
+                  <p className="font-medium mb-1">Examples you might include:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>Current medications (e.g., "Taking lisinopril 10mg daily for blood pressure")</li>
+                    <li>Age and relevant medical history (e.g., "45 years old, diagnosed with Type 2 diabetes in 2020")</li>
+                    <li>Lifestyle factors (e.g., "Exercises 3x per week, vegetarian diet")</li>
+                    <li>Health goals (e.g., "Working to reduce blood pressure below 140/90")</li>
+                    <li>Known conditions or allergies</li>
+                  </ul>
+                </div>
+              </div>
+
               {/* Submit Button */}
               <div className="flex justify-end pt-4">
                 <button
@@ -214,6 +243,8 @@ const SettingsPage: React.FC = () => {
               <li>• Changes to your timezone will affect all date displays</li>
               <li>• Your data is always stored securely in UTC</li>
               <li>• Email changes may require verification</li>
+              <li>• AI context helps provide more personalized health insights</li>
+              <li>• Your AI context is only used for analysis, never shared</li>
             </ul>
           </div>
         </div>

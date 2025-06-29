@@ -100,6 +100,7 @@ async def export_pdf_report(
             include_charts=request.include_charts,
             include_summary=request.include_summary,
             include_trends=request.include_trends,
+            user_timezone=current_user.timezone,
             db_session=db
         )
         

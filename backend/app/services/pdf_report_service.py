@@ -88,6 +88,7 @@ class PDFReportService:
         include_charts: bool = True,
         include_summary: bool = True,
         include_trends: bool = True,
+        user_timezone: str = None,
         db_session=None
     ) -> bytes:
         """
@@ -146,14 +147,15 @@ class PDFReportService:
                 metric_type, 
                 metric_data, 
                 include_charts, 
-                include_trends
+                include_trends,
+                user_timezone
             ))
         
         # Add conclusions and recommendations
         story.extend(self._build_conclusions(health_data, metric_types))
         
         # Add footer information
-        story.extend(self._build_footer())
+        story.extend(self._build_footer(user_timezone))
         
         # Build PDF
         doc.build(story)
@@ -265,7 +267,7 @@ class PDFReportService:
         
         return elements
 
-    def _build_metric_section(self, metric_type: str, metric_data: List[HealthData], include_charts: bool, include_trends: bool) -> List:
+    def _build_metric_section(self, metric_type: str, metric_data: List[HealthData], include_charts: bool, include_trends: bool, user_timezone: str = None) -> List:
         """Build a section for a specific metric type."""
         elements = []
         
@@ -279,7 +281,7 @@ class PDFReportService:
         
         # Generate and add chart if requested
         if include_charts and len(metric_data) > 1:
-            chart_image = self._generate_metric_chart(metric_type, metric_data)
+            chart_image = self._generate_metric_chart(metric_type, metric_data, user_timezone)
             if chart_image:
                 elements.append(Spacer(1, 10))
                 elements.append(chart_image)
@@ -370,19 +372,28 @@ class PDFReportService:
         elements.append(table)
         return elements
 
-    def _generate_metric_chart(self, metric_type: str, metric_data: List[HealthData]) -> Optional[Image]:
+    def _generate_metric_chart(self, metric_type: str, metric_data: List[HealthData], user_timezone: str = None) -> Optional[Image]:
         """Generate a chart for the metric data."""
         try:
+            from app.utils.timezone import convert_utc_to_user_timezone
+            
             # Create figure
             fig, ax = plt.subplots(figsize=(10, 6))
             
-            # Prepare data
-            dates = [d.recorded_at for d in metric_data]
+            # Convert dates to user timezone if provided
+            if user_timezone:
+                dates = [convert_utc_to_user_timezone(d.recorded_at, user_timezone) for d in metric_data]
+            else:
+                dates = [d.recorded_at for d in metric_data]
             dates = sorted(dates)
             
             if metric_type == 'blood_pressure':
-                systolic_data = [(d.recorded_at, d.systolic) for d in metric_data if d.systolic is not None]
-                diastolic_data = [(d.recorded_at, d.diastolic) for d in metric_data if d.diastolic is not None]
+                if user_timezone:
+                    systolic_data = [(convert_utc_to_user_timezone(d.recorded_at, user_timezone), d.systolic) for d in metric_data if d.systolic is not None]
+                    diastolic_data = [(convert_utc_to_user_timezone(d.recorded_at, user_timezone), d.diastolic) for d in metric_data if d.diastolic is not None]
+                else:
+                    systolic_data = [(d.recorded_at, d.systolic) for d in metric_data if d.systolic is not None]
+                    diastolic_data = [(d.recorded_at, d.diastolic) for d in metric_data if d.diastolic is not None]
                 
                 if systolic_data:
                     sys_dates, sys_values = zip(*sorted(systolic_data))
@@ -399,7 +410,10 @@ class PDFReportService:
                 ax.set_ylabel(f'Blood Pressure ({metric_data[0].unit})')
                 
             else:
-                value_data = [(d.recorded_at, d.value) for d in metric_data if d.value is not None]
+                if user_timezone:
+                    value_data = [(convert_utc_to_user_timezone(d.recorded_at, user_timezone), d.value) for d in metric_data if d.value is not None]
+                else:
+                    value_data = [(d.recorded_at, d.value) for d in metric_data if d.value is not None]
                 if value_data:
                     dates, values = zip(*sorted(value_data))
                     ax.plot(dates, values, 'g-o', linewidth=2, markersize=4)
@@ -540,15 +554,24 @@ class PDFReportService:
         
         return elements
 
-    def _build_footer(self) -> List:
+    def _build_footer(self, user_timezone: str = None) -> List:
         """Build report footer."""
         elements = []
         
         elements.append(Spacer(1, 30))
         
+        # Generate timestamp in user timezone or UTC
+        if user_timezone:
+            from app.utils.timezone import get_current_time_in_timezone
+            report_time = get_current_time_in_timezone(user_timezone).strftime("%Y-%m-%d %H:%M:%S")
+            timezone_label = user_timezone.replace('_', ' ')
+        else:
+            report_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            timezone_label = "UTC"
+        
         footer_text = f"""
         <para alignment="center">
-        Report Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} | 
+        Report Generated: {report_time} ({timezone_label}) | 
         MBHealth Data Tracking System | 
         For Medical Professional Use
         </para>
