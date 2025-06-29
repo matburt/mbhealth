@@ -1,24 +1,46 @@
 # MBHealth - Health Data Tracking Application
 
-A comprehensive health data tracking application with Python FastAPI backend and TypeScript React frontend, featuring advanced data visualization, AI-powered analysis, and collaborative health management.
+A comprehensive health data tracking application with Python FastAPI backend and TypeScript React frontend, featuring configurable data visualization, multi-provider AI analysis workflows, and collaborative health management. Includes smart data selection algorithms, analysis automation, and enterprise-grade chart customization.
 
 ## 🚀 Features
 
 ### Core Functionality
 - **User Authentication**: Secure signup, login, and user management with JWT tokens
 - **Health Data Tracking**: Blood pressure, blood sugar, weight, heart rate, temperature, and extensible metrics
-- **Advanced Data Visualization**: Interactive charts, trend analysis, correlation studies, and health scoring
-- **AI-Powered Analysis**: OpenAI, OpenRouter, and Google Generative AI for intelligent health insights
+- **Advanced Data Visualization**: Unified configurable charts with curved/straight line options, multiple chart types
+- **Enhanced AI Analysis**: Multi-provider AI system with smart data selection, workflows, and analysis scheduling
 - **Family & Care Team Management**: Share data with family members and healthcare providers
 - **Notes System**: Add contextual notes to specific health data points
 - **Real-time Updates**: Live data synchronization and notifications
 
 ### Data Visualization Features
-- **Multiple Chart Types**: Line, bar, area, scatter, and radar charts
-- **Interactive Analytics**: Correlation matrices, distribution analysis, trend detection
+- **Unified Chart System**: Single configurable chart component with consistent styling across all pages
+- **Configurable Line Styles**: Toggle between curved (monotone) and straight (linear) lines for better visual preference
+- **Multiple Chart Types**: Line, bar, area, and scatter charts with smooth transitions
+- **Visual Themes**: Modern, minimal, and clinical styles with appropriate color schemes
+- **Interactive Features**: Data point selection, click-to-analyze, real-time configuration updates
+- **Clinical Intelligence**: Target ranges, health thresholds, and anomaly detection
 - **Time-based Filtering**: 7-day, 30-day, 90-day, 1-year, and all-time views
-- **Health Scoring**: AI-powered health assessment and recommendations
-- **Export Capabilities**: Data export in multiple formats
+- **Chart Configuration**: User-friendly panels for real-time chart customization
+- **Export Capabilities**: Data export in multiple formats with high-contrast print mode
+
+### Enhanced AI Analysis Features
+- **Multi-Provider AI Support**: OpenAI, Anthropic Claude, Google Generative AI, and custom providers
+- **Smart Data Pre-Selection**: Intelligent data filtering by metric type, time range, and relevance
+- **Advanced Data Selection Algorithms**: 
+  - Trending data detection using linear regression analysis
+  - Anomaly detection with statistical z-score analysis and clinical thresholds
+  - Time-of-day filtering (morning, afternoon, evening patterns)
+- **Analysis Workflows**: Comprehensive multi-step analysis chains with templates:
+  - Comprehensive Health Assessment (4-step: Trends → Anomalies → Insights → Recommendations)
+  - Blood Pressure Deep Dive (specialized cardiovascular analysis)
+  - Anomaly Investigation (deep pattern analysis)
+  - Weekly Health Summary (quick overview with comparisons)
+- **Configuration Management**: Save, load, and organize analysis configurations with favorites and collections
+- **Analysis Presets**: Pre-configured templates for common health monitoring scenarios
+- **Comprehensive Help System**: Interactive 7-section guide covering all analysis features
+- **Follow-up Suggestions**: AI-generated recommendations for next analyses and consultations
+- **Enhanced Error Handling**: Improved truncation detection and user-friendly error messages
 
 ### Collaboration Features
 - **Family Groups**: Create family circles and share health data
@@ -56,12 +78,17 @@ mbhealth/
 ├── frontend/               # TypeScript React frontend
 │   ├── src/
 │   │   ├── components/     # Reusable React components
-│   │   │   ├── HealthDataChart.tsx      # Chart components
-│   │   │   ├── DataVisualizationDashboard.tsx # Advanced analytics
-│   │   │   ├── SimpleHealthChart.tsx    # Custom SVG charts
-│   │   │   ├── HealthDataTable.tsx      # Data table
-│   │   │   ├── QuickAddForm.tsx         # Quick data entry
-│   │   │   └── ...                     # Other components
+│   │   │   ├── UnifiedHealthChart.tsx           # Unified configurable chart component
+│   │   │   ├── ChartConfigurationPanel.tsx     # Chart customization interface
+│   │   │   ├── AnalysisHelpGuide.tsx           # Comprehensive help system
+│   │   │   ├── CreateAnalysisModal.tsx         # Enhanced AI analysis creation
+│   │   │   ├── AnalysisPresets.tsx             # Pre-configured analysis templates
+│   │   │   ├── SavedAnalysisConfigs.tsx        # Configuration management
+│   │   │   ├── WorkflowSelectionModal.tsx      # Analysis workflow selection
+│   │   │   ├── WorkflowExecutionModal.tsx      # Workflow execution interface
+│   │   │   ├── HealthDataTable.tsx             # Data table
+│   │   │   ├── QuickAddForm.tsx                # Quick data entry
+│   │   │   └── ...                            # Other components
 │   │   ├── pages/          # Page components
 │   │   │   ├── DashboardPage.tsx        # Main dashboard
 │   │   │   ├── HealthDataPage.tsx       # Health data management
@@ -71,10 +98,20 @@ mbhealth/
 │   │   │   ├── CareTeamsPage.tsx        # Care team management
 │   │   │   └── AIAnalysisPage.tsx       # AI analysis
 │   │   ├── services/       # API service layer
+│   │   │   ├── analysisConfig.ts        # Analysis configuration management
+│   │   │   ├── analysisWorkflow.ts      # Workflow execution engine
+│   │   │   └── ...                     # Other API services
 │   │   ├── types/          # TypeScript type definitions
+│   │   │   ├── analysisConfig.ts        # Configuration type definitions
+│   │   │   ├── analysisWorkflow.ts      # Workflow type definitions
+│   │   │   └── ...                     # Other type definitions
 │   │   ├── hooks/          # Custom React hooks
+│   │   │   ├── useChartConfiguration.ts # Chart configuration management
+│   │   │   └── ...                     # Other custom hooks
 │   │   ├── contexts/       # React contexts (Auth, etc.)
 │   │   └── utils/          # Utility functions
+│   │   │   ├── dataAnalysis.ts          # Statistical analysis algorithms
+│   │   │   └── ...                     # Other utilities
 │   ├── package.json        # Node.js dependencies
 │   ├── vite.config.ts      # Vite configuration
 │   ├── tailwind.config.js  # Tailwind CSS configuration
@@ -662,13 +699,53 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔮 Roadmap
 
-- [ ] Mobile app (React Native)
-- [ ] Wearable device integration
-- [ ] Advanced AI insights
-- [ ] Telemedicine features
-- [ ] HIPAA compliance
-- [ ] Multi-language support
-- [ ] Offline mode
-- [ ] Data export/import
-- [ ] Advanced reporting
-- [ ] Integration with health systems 
+### Recently Completed ✅
+- [x] **Enhanced AI Analysis System** (v2.1.0)
+  - Multi-provider AI support (OpenAI, Anthropic, Google)
+  - Smart data pre-selection with statistical algorithms
+  - Analysis workflows and automation
+  - Configuration management and presets
+- [x] **Unified Chart System** (v2.2.0)
+  - Configurable line styles (curved/straight)
+  - Multiple chart types and visual themes
+  - Real-time chart configuration
+  - Clinical intelligence with target ranges
+
+### In Progress 🚧
+- [ ] **Scheduled AI Analysis & Notification System** (#12)
+  - Automated analysis scheduling
+  - Email and in-app notifications
+  - Health alert thresholds
+  - Analysis result summaries
+
+### Planned Features 📋
+- [ ] **Enhanced AI Analysis Features** (#6)
+  - Custom analysis templates and community sharing
+  - Advanced search and filtering with tagging
+  - AI-powered insights dashboard with health scoring
+  - Analysis comparison and trending over time
+- [ ] **Mobile App** (React Native)
+  - Cross-platform iOS and Android support
+  - Offline data synchronization
+  - Push notifications for health alerts
+- [ ] **Wearable Device Integration**
+  - Apple Health and Google Fit connectivity
+  - Automatic data import from fitness trackers
+  - Real-time health monitoring
+- [ ] **Advanced Analytics & Machine Learning**
+  - Predictive health modeling
+  - Pattern recognition and early warning systems
+  - Personalized health recommendations
+- [ ] **Telemedicine Features**
+  - Video consultation integration
+  - Secure health data sharing with providers
+  - Appointment scheduling and reminders
+- [ ] **Enterprise & Compliance**
+  - HIPAA compliance and security auditing
+  - Enterprise user management
+  - Advanced access controls and audit trails
+- [ ] **Platform Enhancements**
+  - Multi-language support (i18n)
+  - Advanced reporting and data export
+  - Integration with Electronic Health Records (EHR)
+  - API for third-party integrations 
