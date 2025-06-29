@@ -71,7 +71,7 @@ class GoogleProvider(BaseAIProvider):
         
         # Get parameters with defaults
         temperature = kwargs.get("temperature", self.parameters.get("temperature", 0.7))
-        max_tokens = kwargs.get("max_tokens", self.parameters.get("max_tokens", 2000))
+        max_tokens = kwargs.get("max_tokens", self.parameters.get("max_tokens", 8192))  # Increased from 2000
         
         # Combine prompt and data
         full_content = f"{prompt}\n\nPlease analyze this health data:\n\n{health_data_str}"
@@ -112,15 +112,33 @@ class GoogleProvider(BaseAIProvider):
                 
                 # Extract content based on model type
                 if model.startswith("gemini"):
-                    content = result["candidates"][0]["content"]["parts"][0]["text"]
+                    candidate = result["candidates"][0]
+                    content = candidate["content"]["parts"][0]["text"]
+                    
+                    # Check for truncation
+                    finish_reason = candidate.get("finishReason", "")
+                    if finish_reason == "MAX_TOKENS":
+                        # Response was truncated, try to add a note
+                        content += "\n\n[Note: Response was truncated due to length limits. Consider asking for a shorter analysis or breaking this into multiple smaller analyses.]"
+                    elif finish_reason == "SAFETY":
+                        content += "\n\n[Note: Response was filtered for safety reasons.]"
+                    elif finish_reason not in ["STOP", ""]:
+                        content += f"\n\n[Note: Response ended due to: {finish_reason}]"
+                    
                     token_usage = {
                         "prompt_tokens": result.get("usageMetadata", {}).get("promptTokenCount", 0),
                         "completion_tokens": result.get("usageMetadata", {}).get("candidatesTokenCount", 0),
                         "total_tokens": result.get("usageMetadata", {}).get("totalTokenCount", 0)
                     }
+                    
+                    # Add finish reason to metadata
+                    metadata = {"provider": "google", "finish_reason": finish_reason}
                 else:
-                    content = result["candidates"][0]["content"]
+                    # Legacy chat-bison format
+                    candidate = result["candidates"][0]
+                    content = candidate["content"]
                     token_usage = {}  # Legacy model doesn't provide usage stats
+                    metadata = {"provider": "google", "model_type": "legacy"}
                 
                 # Estimate cost
                 cost = self._estimate_cost_from_usage(token_usage, model)
@@ -131,7 +149,7 @@ class GoogleProvider(BaseAIProvider):
                     token_usage=token_usage,
                     processing_time=processing_time,
                     cost=cost,
-                    metadata={"provider": "google"}
+                    metadata=metadata
                 )
                 
         except httpx.HTTPStatusError as e:
