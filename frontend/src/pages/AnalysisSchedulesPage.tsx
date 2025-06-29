@@ -11,6 +11,7 @@ import {
 import CreateScheduleModal from '../components/CreateScheduleModal';
 import EditScheduleModal from '../components/EditScheduleModal';
 import ScheduleExecutionHistoryModal from '../components/ScheduleExecutionHistoryModal';
+import { useTimezone } from '../contexts/TimezoneContext';
 
 const AnalysisSchedulesPage: React.FC = () => {
   const [scheduleData, setScheduleData] = useState<ScheduleListResponse | null>(null);
@@ -21,6 +22,7 @@ const AnalysisSchedulesPage: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showExecutionHistory, setShowExecutionHistory] = useState(false);
   const [executingSchedules, setExecutingSchedules] = useState<Set<string>>(new Set());
+  const { formatDateTime } = useTimezone();
 
   const loadSchedules = async () => {
     try {
@@ -194,7 +196,7 @@ const AnalysisSchedulesPage: React.FC = () => {
                       {formatNextRun(execution.next_run_at)}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {new Date(execution.next_run_at).toLocaleDateString()}
+                      {formatDateTime(execution.next_run_at, 'datetime')}
                     </p>
                   </div>
                 </div>

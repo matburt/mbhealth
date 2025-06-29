@@ -6,6 +6,7 @@ import {
 } from '../services/analysisSchedules';
 import { aiAnalysisService } from '../services/aiAnalysis';
 import { AIAnalysisResponse } from '../types/aiAnalysis';
+import { useTimezone } from '../contexts/TimezoneContext';
 
 interface ScheduleExecutionHistoryModalProps {
   schedule: AnalysisSchedule;
@@ -21,6 +22,7 @@ const ScheduleExecutionHistoryModal: React.FC<ScheduleExecutionHistoryModalProps
   const [error, setError] = useState<string | null>(null);
   const [expandedExecution, setExpandedExecution] = useState<string | null>(null);
   const [executionAnalyses, setExecutionAnalyses] = useState<Record<string, AIAnalysisResponse[]>>({});
+  const { formatDateTime } = useTimezone();
 
   useEffect(() => {
     loadExecutions();
@@ -221,7 +223,7 @@ const ScheduleExecutionHistoryModal: React.FC<ScheduleExecutionHistoryModalProps
                             <React.Fragment key={execution.id}>
                               <tr className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {new Date(execution.started_at).toLocaleString()}
+                                  {formatDateTime(execution.started_at, 'datetime')}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getExecutionTypeColor(execution.execution_type)}`}>
@@ -287,7 +289,7 @@ const ScheduleExecutionHistoryModal: React.FC<ScheduleExecutionHistoryModalProps
                                                     Analysis #{index + 1}: {analysis.analysis_type}
                                                   </h5>
                                                   <p className="text-sm text-gray-600">
-                                                    {analysis.provider} • {new Date(analysis.created_at).toLocaleString()}
+                                                    {analysis.provider} • {formatDateTime(analysis.created_at, 'datetime')}
                                                   </p>
                                                 </div>
                                                 <div className="flex items-center space-x-2">

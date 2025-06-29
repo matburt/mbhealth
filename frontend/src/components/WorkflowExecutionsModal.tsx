@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import workflowsService, { Workflow, WorkflowExecution } from '../services/workflowsService';
+import { useTimezone } from '../contexts/TimezoneContext';
 
 interface WorkflowExecutionsModalProps {
   workflow: Workflow;
@@ -14,6 +15,7 @@ const WorkflowExecutionsModal: React.FC<WorkflowExecutionsModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedExecution, setSelectedExecution] = useState<WorkflowExecution | null>(null);
+  const { formatDateTime } = useTimezone();
 
   useEffect(() => {
     loadExecutions();
@@ -33,15 +35,6 @@ const WorkflowExecutionsModal: React.FC<WorkflowExecutionsModalProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const getDuration = (started: string, completed?: string) => {
     const startTime = new Date(started);
@@ -141,7 +134,7 @@ const WorkflowExecutionsModal: React.FC<WorkflowExecutionsModalProps> = ({
                           </span>
                         </div>
                         <span className="text-sm text-gray-500">
-                          {formatDate(execution.started_at)}
+                          {formatDateTime(execution.started_at, 'datetime')}
                         </span>
                       </div>
 
@@ -203,7 +196,7 @@ const WorkflowExecutionsModal: React.FC<WorkflowExecutionsModalProps> = ({
                       </div>
                       <div>
                         <span className="text-gray-500">Started:</span>
-                        <span className="ml-2 font-medium">{formatDate(selectedExecution.started_at)}</span>
+                        <span className="ml-2 font-medium">{formatDateTime(selectedExecution.started_at, 'datetime')}</span>
                       </div>
                       <div>
                         <span className="text-gray-500">Duration:</span>

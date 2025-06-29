@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import workflowsService, { Workflow } from '../services/workflowsService';
+import { useTimezone } from '../contexts/TimezoneContext';
 
 interface WorkflowCardProps {
   workflow: Workflow;
@@ -18,6 +19,7 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { formatDateTime } = useTimezone();
 
   const handleDelete = async () => {
     if (!confirm(`Are you sure you want to delete the workflow "${workflow.name}"?`)) {
@@ -36,15 +38,6 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const getSuccessRate = () => {
     if (workflow.total_executions === 0) return '—';
@@ -144,7 +137,7 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
           <div>
             {workflow.last_executed_at ? (
               <span className="text-gray-500">
-                Last run: {formatDate(workflow.last_executed_at)}
+                Last run: {formatDateTime(workflow.last_executed_at, 'datetime')}
               </span>
             ) : (
               <span className="text-gray-500">Never executed</span>
