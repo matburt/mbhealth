@@ -23,6 +23,7 @@ A comprehensive health data tracking application with Python FastAPI backend and
 - **Time-based Filtering**: 7-day, 30-day, 90-day, 1-year, and all-time views
 - **Chart Configuration**: User-friendly panels for real-time chart customization
 - **Export Capabilities**: Data export in multiple formats with high-contrast print mode
+- **Professional PDF Reports**: Generate medical-grade PDF reports with charts, statistics, and clinical notes
 
 ### Enhanced AI Analysis Features
 - **Multi-Provider AI Support**: OpenAI, Anthropic Claude, Google Generative AI, and custom providers
@@ -294,6 +295,9 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 OPENAI_API_KEY=your-openai-api-key
 OPENROUTER_API_KEY=your-openrouter-api-key
 GOOGLE_AI_API_KEY=your-google-ai-api-key
+
+# PDF Report Generation (automatic - dependencies installed via pyproject.toml)
+# No additional configuration required - ReportLab, Pillow, and Jinja2 included
 
 # Email Settings (for notifications)
 SMTP_SERVER=smtp.gmail.com
@@ -710,6 +714,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   - Multiple chart types and visual themes
   - Real-time chart configuration
   - Clinical intelligence with target ranges
+- [x] **Professional PDF Report Generation** (v2.3.0)
+  - Medical-grade PDF reports with charts and visualizations
+  - Statistical summaries and trend analysis
+  - Multiple report templates (comprehensive, clinical, summary)
+  - Both synchronous and asynchronous export options
+  - Professional formatting suitable for healthcare providers
 
 ### In Progress 🚧
 - [ ] **Scheduled AI Analysis & Notification System** (#12)
