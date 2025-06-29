@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
 import { healthService } from '../services/health';
 import { HealthData } from '../types/health';
+import { useTimezone } from '../contexts/TimezoneContext';
 
 const RecentHealthData: React.FC = () => {
   const [recentData, setRecentData] = useState<HealthData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { formatDateTime } = useTimezone();
 
   useEffect(() => {
     const fetchRecentData = async () => {
@@ -128,7 +129,7 @@ const RecentHealthData: React.FC = () => {
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-500">
-                {format(new Date(data.recorded_at), 'MMM d, h:mm a')}
+                {formatDateTime(data.recorded_at, 'short')}
               </p>
               {data.notes && (
                 <p className="text-xs text-gray-600 mt-1 max-w-xs truncate">

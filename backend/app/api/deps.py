@@ -1,5 +1,5 @@
 from typing import Generator, Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -62,5 +62,38 @@ async def get_current_user_from_token(token: str) -> Optional[User]:
         finally:
             db.close()
             
+    except Exception:
+        return None
+
+
+def get_current_user_optional(
+    request: Request,
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    """
+    Get current user optionally - returns None if not authenticated instead of raising error.
+    Used for endpoints that can work with or without authentication.
+    """
+    try:
+        # Try to get the Authorization header
+        authorization = request.headers.get("Authorization")
+        if not authorization or not authorization.startswith("Bearer "):
+            return None
+        
+        token = authorization.split(" ")[1]
+        payload = verify_token(token)
+        if payload is None:
+            return None
+        
+        username: str = payload.get("sub")
+        if username is None:
+            return None
+        
+        user = get_user_by_username(db, username=username)
+        if user is None or not user.is_active:
+            return None
+        
+        return user
+        
     except Exception:
         return None 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import { useTimezone } from '../contexts/TimezoneContext';
 import { notesService } from '../services/notes';
 import { Note } from '../types/notes';
 
@@ -12,6 +12,7 @@ interface NotesListProps {
 
 const NotesList: React.FC<NotesListProps> = ({ healthDataId, onNotesChange }) => {
   const { user } = useAuth();
+  const { formatDateTime } = useTimezone();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -133,7 +134,7 @@ const NotesList: React.FC<NotesListProps> = ({ healthDataId, onNotesChange }) =>
                     {note.user_id === user?.id ? 'You' : 'User'}
                   </span>
                   <span className="text-xs text-gray-500">
-                    {format(new Date(note.created_at), 'MMM d, yyyy h:mm a')}
+                    {formatDateTime(note.created_at, 'datetime')}
                   </span>
                   {note.updated_at !== note.created_at && (
                     <span className="text-xs text-gray-400">(edited)</span>

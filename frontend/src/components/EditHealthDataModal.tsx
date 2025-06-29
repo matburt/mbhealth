@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { healthService } from '../services/health';
 import { HealthData, HealthDataUpdate } from '../types/health';
+import { useTimezone } from '../contexts/TimezoneContext';
 
 interface EditHealthDataModalProps {
   healthData: HealthData;
@@ -34,6 +35,7 @@ const EditHealthDataModal: React.FC<EditHealthDataModalProps> = ({
   onDataChange,
 }) => {
   const currentMetric = metricTypes.find(m => m.value === healthData.metric_type);
+  const { convertToDateTimeLocal, convertToUTC } = useTimezone();
   
   const {
     register,
@@ -45,7 +47,7 @@ const EditHealthDataModal: React.FC<EditHealthDataModalProps> = ({
       systolic: healthData.systolic?.toString() || '',
       diastolic: healthData.diastolic?.toString() || '',
       notes: healthData.notes || '',
-      recorded_at: new Date(healthData.recorded_at).toISOString().slice(0, 16),
+      recorded_at: convertToDateTimeLocal(healthData.recorded_at),
     }
   });
 
@@ -54,7 +56,7 @@ const EditHealthDataModal: React.FC<EditHealthDataModalProps> = ({
       const updateData: HealthDataUpdate = {
         value: parseFloat(data.value),
         notes: data.notes,
-        recorded_at: new Date(data.recorded_at).toISOString(),
+        recorded_at: convertToUTC(data.recorded_at),
       };
 
       // Handle blood pressure special case

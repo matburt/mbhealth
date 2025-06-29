@@ -29,7 +29,7 @@ def create_health_data_endpoint(
     """
     Create new health data entry.
     """
-    health_data = create_health_data(db, obj_in=health_data_in, user_id=current_user.id)
+    health_data = create_health_data(db, obj_in=health_data_in, user_id=current_user.id, user_timezone=current_user.timezone)
     return health_data
 
 @router.get("/", response_model=List[HealthData])

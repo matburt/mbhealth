@@ -1,12 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTimezone } from '../contexts/TimezoneContext';
 import DashboardStats from '../components/DashboardStats';
 import RecentHealthData from '../components/RecentHealthData';
 import QuickAddForm from '../components/QuickAddForm';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const { formatDateTime } = useTimezone();
 
   const quickActions = [
     {
@@ -53,12 +55,7 @@ const DashboardPage: React.FC = () => {
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-500">
-            {new Date().toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
+            {formatDateTime(new Date(), 'date')}
           </p>
         </div>
       </div>

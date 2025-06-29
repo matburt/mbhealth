@@ -20,8 +20,9 @@ import {
   PolarRadiusAxis,
   Radar
 } from 'recharts';
-import { format, subDays } from 'date-fns';
+import { subDays } from 'date-fns';
 import { HealthData } from '../types/health';
+import { useTimezone } from '../contexts/TimezoneContext';
 
 interface DataVisualizationDashboardProps {
   data: HealthData[];
@@ -32,6 +33,7 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
   data,
   timeRange = '30d'
 }) => {
+  const { formatDateTime } = useTimezone();
   const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'correlations' | 'analytics'>('overview');
   const [selectedChartType, setSelectedChartType] = useState<'line' | 'bar' | 'area' | 'scatter'>('line');
 
@@ -137,7 +139,7 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
     metrics.forEach(metric => {
       const metricData = dataByMetric[metric];
       metricData.forEach(item => {
-        const date = format(new Date(item.recorded_at), 'yyyy-MM-dd');
+        const date = formatDateTime(item.recorded_at, 'date');
         if (!dailyData[date]) dailyData[date] = {};
         
         if (metric === 'blood_pressure') {
@@ -256,7 +258,7 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
                 dataKey="date" 
                 stroke="#6b7280"
                 fontSize={12}
-                tickFormatter={(value) => format(new Date(value), 'MMM dd')}
+                tickFormatter={(value) => formatDateTime(value, 'date')}
               />
               <YAxis stroke="#6b7280" fontSize={12} />
               <Tooltip content={<CustomTooltip />} />
@@ -336,7 +338,7 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
         const chartData = metricData
           .sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime())
           .map(item => ({
-            date: format(new Date(item.recorded_at), 'MMM dd'),
+            date: formatDateTime(item.recorded_at, 'date'),
             value: item.value,
             systolic: item.systolic,
             diastolic: item.diastolic,

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from app.models.health_data import HealthData
 from app.schemas.health_data import HealthDataCreate, HealthDataUpdate
+from app.utils.timezone import user_timezone_to_utc
 
 def get_health_data(db: Session, id: int) -> Optional[HealthData]:
     return db.query(HealthData).filter(HealthData.id == id).first()
@@ -30,7 +31,7 @@ def get_health_data_by_user(
     
     return query.order_by(HealthData.recorded_at.desc()).offset(skip).limit(limit).all()
 
-def create_health_data(db: Session, *, obj_in: HealthDataCreate, user_id: int) -> HealthData:
+def create_health_data(db: Session, *, obj_in: HealthDataCreate, user_id: int, user_timezone: Optional[str] = None) -> HealthData:
     db_obj = HealthData(
         user_id=user_id,
         metric_type=obj_in.metric_type,
@@ -40,7 +41,7 @@ def create_health_data(db: Session, *, obj_in: HealthDataCreate, user_id: int) -
         diastolic=obj_in.diastolic,
         additional_data=obj_in.additional_data,
         notes=obj_in.notes,
-        recorded_at=obj_in.recorded_at or datetime.utcnow(),
+        recorded_at=user_timezone_to_utc(obj_in.recorded_at, user_timezone) if obj_in.recorded_at else datetime.utcnow(),
     )
     db.add(db_obj)
     db.commit()

@@ -15,8 +15,9 @@ import {
   ScatterChart,
   Scatter
 } from 'recharts';
-import { format, subDays } from 'date-fns';
+import { subDays } from 'date-fns';
 import { HealthData } from '../types/health';
+import { useTimezone } from '../contexts/TimezoneContext';
 
 interface HealthDataChartProps {
   data: HealthData[];
@@ -37,6 +38,7 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
   showAverages = true,
   showTargets = false
 }) => {
+  const { formatDateTime } = useTimezone();
   // Filter data by metric type and time range
   const filteredData = useMemo(() => {
     let filtered = data;
@@ -64,7 +66,7 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
         : item.value;
       
       return {
-        date: format(new Date(item.recorded_at), 'MMM dd'),
+        date: formatDateTime(item.recorded_at, 'date'),
         fullDate: item.recorded_at,
         value: value,
         systolic: item.systolic,

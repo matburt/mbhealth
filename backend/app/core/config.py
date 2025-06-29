@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     # CORS
     BACKEND_CORS_ORIGINS: list = ["*"]
     
+    # Timezone Configuration
+    DEFAULT_TIMEZONE: str = "America/New_York"  # Eastern US timezone
+    
     class Config:
         env_file = ".env"
         case_sensitive = True

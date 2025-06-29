@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { healthService } from '../services/health';
 import { HealthDataCreate } from '../types/health';
+import { useTimezone } from '../contexts/TimezoneContext';
 
 interface QuickAddFormData {
   metric_type: string;
@@ -24,6 +25,7 @@ const metricTypes = [
 const QuickAddForm: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { getCurrentDateTimeLocal, convertToUTC } = useTimezone();
   
   const {
     register,
@@ -33,7 +35,7 @@ const QuickAddForm: React.FC = () => {
     formState: { errors },
   } = useForm<QuickAddFormData>({
     defaultValues: {
-      recorded_at: new Date().toISOString().slice(0, 16), // Current date/time in local format
+      recorded_at: getCurrentDateTimeLocal(), // Current date/time in user's timezone
     }
   });
 
@@ -48,7 +50,7 @@ const QuickAddForm: React.FC = () => {
         value: parseFloat(data.value),
         unit: currentMetric?.unit || '',
         notes: data.notes,
-        recorded_at: new Date(data.recorded_at).toISOString(),
+        recorded_at: convertToUTC(data.recorded_at),
       };
 
       // Handle blood pressure special case
@@ -63,7 +65,7 @@ const QuickAddForm: React.FC = () => {
       await healthService.createHealthData(healthData);
       toast.success('Health data added successfully!');
       reset({
-        recorded_at: new Date().toISOString().slice(0, 16), // Reset to current time
+        recorded_at: getCurrentDateTimeLocal(), // Reset to current time in user's timezone
       });
       setIsOpen(false);
     } catch (error: any) {

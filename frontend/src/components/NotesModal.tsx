@@ -1,6 +1,6 @@
 import React from 'react';
-import { format } from 'date-fns';
 import { HealthData } from '../types/health';
+import { useTimezone } from '../contexts/TimezoneContext';
 import NotesList from './NotesList';
 import AddNoteForm from './AddNoteForm';
 
@@ -11,6 +11,7 @@ interface NotesModalProps {
 }
 
 const NotesModal: React.FC<NotesModalProps> = ({ healthData, isOpen, onClose }) => {
+  const { formatDateTime } = useTimezone();
   const handleNoteChange = () => {};
 
   const getMetricDisplay = (data: HealthData) => {
@@ -54,7 +55,7 @@ const NotesModal: React.FC<NotesModalProps> = ({ healthData, isOpen, onClose }) 
               <span className="mx-2">\u2022</span>
               <span className="font-medium">{getMetricDisplay(healthData)}</span>
               <span className="mx-2">\u2022</span>
-              <span>{format(new Date(healthData.recorded_at), 'MMM d, yyyy h:mm a')}</span>
+              <span>{formatDateTime(healthData.recorded_at, 'datetime')}</span>
             </div>
           </div>
           <button

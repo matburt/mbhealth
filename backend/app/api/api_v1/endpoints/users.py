@@ -79,4 +79,33 @@ def read_user_by_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
+    return user
+
+
+@router.put("/{user_id}", response_model=User)
+def update_user_by_id(
+    *,
+    db: Session = Depends(get_db),
+    user_id: int,
+    user_in: UserUpdate,
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    """
+    Update a user by ID. Users can only update their own profile.
+    """
+    # Only allow users to update their own profile
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions"
+        )
+    
+    user = get_user(db, id=user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    
+    user = update_user(db, db_obj=user, obj_in=user_in)
     return user 

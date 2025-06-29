@@ -15,8 +15,9 @@ import {
   ScatterChart,
   Scatter
 } from 'recharts';
-import { format, subDays } from 'date-fns';
+import { subDays } from 'date-fns';
 import { HealthData } from '../types/health';
+import { useTimezone } from '../contexts/TimezoneContext';
 
 export type LineType = 'monotone' | 'linear' | 'step' | 'stepBefore' | 'stepAfter';
 export type ChartType = 'line' | 'bar' | 'area' | 'scatter';
@@ -130,6 +131,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
   onDataPointClick,
   onCreateAnalysis
 }) => {
+  const { formatDateTime } = useTimezone();
   // Merge configuration with defaults and style presets
   const config: ChartConfiguration = useMemo(() => {
     const styleConfig = configuration.style ? stylePresets[configuration.style] : {};
@@ -176,7 +178,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
       return {
         index,
         id: item.id,
-        date: format(new Date(item.recorded_at), 'MMM dd'),
+        date: formatDateTime(item.recorded_at, 'date'),
         fullDate: item.recorded_at,
         value: value,
         systolic: item.systolic,
@@ -581,7 +583,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
               <tbody>
                 {chartData.slice(-10).reverse().map((item) => (
                   <tr key={item.id} className="border-b border-gray-100">
-                    <td className="py-2 px-3">{format(new Date(item.fullDate), 'MMM dd, yyyy')}</td>
+                    <td className="py-2 px-3">{formatDateTime(item.fullDate, 'date')}</td>
                     <td className="py-2 px-3 font-medium">
                       {item.value?.toFixed(1)} {item.unit}
                     </td>

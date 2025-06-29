@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { healthService } from '../services/health';
 import { HealthData } from '../types/health';
+import { useTimezone } from '../contexts/TimezoneContext';
 import NotesModal from './NotesModal';
 import EditHealthDataModal from './EditHealthDataModal';
 
@@ -17,6 +17,7 @@ const HealthDataTable: React.FC<HealthDataTableProps> = ({ data, onDataChange })
   const [selectedHealthData, setSelectedHealthData] = useState<HealthData | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingHealthData, setEditingHealthData] = useState<HealthData | null>(null);
+  const { formatDateTime } = useTimezone();
 
   const getMetricDisplay = (data: HealthData) => {
     switch (data.metric_type) {
@@ -141,7 +142,7 @@ const HealthDataTable: React.FC<HealthDataTableProps> = ({ data, onDataChange })
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {format(new Date(entry.recorded_at), 'MMM d, yyyy h:mm a')}
+                  {formatDateTime(entry.recorded_at, 'datetime')}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-500">
                   {entry.notes ? (

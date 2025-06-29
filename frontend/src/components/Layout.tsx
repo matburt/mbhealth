@@ -11,6 +11,7 @@ const navItems = [
   { to: '/care-teams', label: 'Care Teams' },
   { to: '/ai-analysis', label: 'AI Analysis' },
   { to: '/ai-providers', label: 'AI Providers' },
+  { to: '/settings', label: 'Settings' },
 ];
 
 const Layout: React.FC = () => {
