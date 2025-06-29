@@ -76,11 +76,150 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   const selectedAnalysisType = watch('analysis_type');
   const selectedProvider = watch('provider');
 
+  // Generate dynamic context suggestions based on analysis type and selected data
+  const generateContextSuggestions = (analysisType: string, selectedData: HealthData[]): string => {
+    if (!selectedData || selectedData.length === 0) {
+      return getDefaultContextForAnalysisType(analysisType);
+    }
+
+    const metricTypes = [...new Set(selectedData.map(d => d.metric_type))];
+    const dateRange = selectedData.length > 0 ? {
+      start: new Date(Math.min(...selectedData.map(d => new Date(d.recorded_at).getTime()))),
+      end: new Date(Math.max(...selectedData.map(d => new Date(d.recorded_at).getTime())))
+    } : null;
+
+    switch (analysisType) {
+      case 'trends':
+        return generateTrendContextSuggestions(metricTypes, selectedData, dateRange);
+      case 'insights':
+        return generateInsightContextSuggestions(metricTypes, selectedData, dateRange);
+      case 'recommendations':
+        return generateRecommendationContextSuggestions(metricTypes, selectedData, dateRange);
+      case 'anomalies':
+        return generateAnomalyContextSuggestions(metricTypes, selectedData, dateRange);
+      default:
+        return getDefaultContextForAnalysisType(analysisType);
+    }
+  };
+
+  const getDefaultContextForAnalysisType = (analysisType: string): string => {
+    switch (analysisType) {
+      case 'trends':
+        return 'Analyze trends and patterns in my health data. Focus on identifying improvements, deteriorations, or significant changes over time.';
+      case 'insights':
+        return 'Provide insights about my health status. Look for correlations between different metrics and assess my overall health patterns.';
+      case 'recommendations':
+        return 'Give me personalized recommendations based on my health data. Focus on actionable advice for improving my health outcomes.';
+      case 'anomalies':
+        return 'Identify any unusual readings or patterns that might need attention. Help me understand if any values are concerning.';
+      default:
+        return 'Analyze my health data and provide relevant insights based on the selected information.';
+    }
+  };
+
+  const generateTrendContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], dateRange: any): string => {
+    const suggestions = [];
+    
+    if (metricTypes.includes('blood_pressure')) {
+      suggestions.push('Are my blood pressure readings improving or getting worse over time?');
+    }
+    if (metricTypes.includes('weight')) {
+      suggestions.push('What is my weight loss/gain trend and is it at a healthy rate?');
+    }
+    if (metricTypes.includes('blood_sugar')) {
+      suggestions.push('How have my blood sugar levels changed and are they becoming more stable?');
+    }
+    if (metricTypes.includes('heart_rate')) {
+      suggestions.push('Is my resting heart rate improving with exercise or medication?');
+    }
+    
+    if (suggestions.length === 0) {
+      suggestions.push('What trends can you identify in my health metrics over this time period?');
+    }
+    
+    if (dateRange) {
+      const days = Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
+      suggestions.push(`Focus on the ${days}-day period from ${dateRange.start.toLocaleDateString()} to ${dateRange.end.toLocaleDateString()}.`);
+    }
+    
+    return suggestions.join(' ');
+  };
+
+  const generateInsightContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: any): string => {
+    const suggestions = [];
+    
+    if (metricTypes.length > 1) {
+      suggestions.push('Are there any correlations between my different health metrics?');
+    }
+    
+    if (metricTypes.includes('blood_pressure')) {
+      suggestions.push('What factors might be influencing my blood pressure readings?');
+    }
+    if (metricTypes.includes('weight')) {
+      suggestions.push('How does my weight relate to my other health metrics?');
+    }
+    if (metricTypes.includes('blood_sugar')) {
+      suggestions.push('What patterns do you see in my blood sugar management?');
+    }
+    
+    suggestions.push('What is my overall health status based on this data?');
+    
+    return suggestions.join(' ');
+  };
+
+  const generateRecommendationContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: any): string => {
+    const suggestions = [];
+    
+    if (metricTypes.includes('blood_pressure')) {
+      suggestions.push('What lifestyle changes could help improve my blood pressure?');
+    }
+    if (metricTypes.includes('weight')) {
+      suggestions.push('What strategies would you recommend for healthy weight management?');
+    }
+    if (metricTypes.includes('blood_sugar')) {
+      suggestions.push('How can I better manage my blood sugar levels?');
+    }
+    
+    suggestions.push('When should I consider consulting with my healthcare provider?');
+    suggestions.push('What preventive measures should I focus on?');
+    
+    return suggestions.join(' ');
+  };
+
+  const generateAnomalyContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: any): string => {
+    const suggestions = [];
+    
+    suggestions.push('Are there any readings that appear unusual or concerning?');
+    
+    if (metricTypes.includes('blood_pressure')) {
+      suggestions.push('Have I had any blood pressure spikes or drops that need attention?');
+    }
+    if (metricTypes.includes('weight')) {
+      suggestions.push('Are there any sudden weight changes that might be significant?');
+    }
+    if (metricTypes.includes('blood_sugar')) {
+      suggestions.push('Do any of my blood sugar readings indicate potential issues?');
+    }
+    
+    suggestions.push('Help me understand which values are within normal ranges and which might need medical attention.');
+    
+    return suggestions.join(' ');
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchData();
     }
   }, [isOpen]);
+
+  // Update additional context when analysis type or selected data changes
+  useEffect(() => {
+    if (selectedAnalysisType && !analysisContext) { // Don't override pre-filled context
+      const selectedData = healthData.filter(d => selectedDataIds.includes(d.id));
+      const suggestions = generateContextSuggestions(selectedAnalysisType, selectedData);
+      setValue('additional_context', suggestions);
+    }
+  }, [selectedAnalysisType, selectedDataIds, healthData, analysisContext, setValue]);
 
   // Handle pre-selected data
   useEffect(() => {
@@ -611,10 +750,10 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
                   {...register('additional_context')}
                   className="input-field w-full"
                   rows={3}
-                  placeholder="Add any specific questions or context for the analysis..."
+                  placeholder={`Context suggestions are auto-populated based on your analysis type and selected data. Feel free to modify or add specific questions...`}
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Optional: Provide additional context or specific questions for more targeted analysis
+                  Smart suggestions are automatically generated based on your analysis type and selected health data. You can modify them or add your own questions.
                 </p>
               </div>
             </div>
