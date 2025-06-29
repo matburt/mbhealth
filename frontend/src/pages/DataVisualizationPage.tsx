@@ -5,8 +5,10 @@ import UnifiedHealthChart from '../components/UnifiedHealthChart';
 import ChartConfigurationPanel from '../components/ChartConfigurationPanel';
 import { useChartConfiguration } from '../hooks/useChartConfiguration';
 import CreateAnalysisModal from '../components/CreateAnalysisModal';
+import PDFExportModal from '../components/PDFExportModal';
 import { healthService } from '../services/health';
 import { aiAnalysisService } from '../services/aiAnalysis';
+import { reportsService } from '../services/reports';
 import { HealthData } from '../types/health';
 import { AIAnalysisCreate } from '../types/aiAnalysis';
 
@@ -23,6 +25,7 @@ const DataVisualizationPage: React.FC = () => {
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [generatingQuickAnalysis, setGeneratingQuickAnalysis] = useState(false);
   const [showChartConfig, setShowChartConfig] = useState(false);
+  const [showPDFExportModal, setShowPDFExportModal] = useState(false);
   
   // Chart configuration
   const {
@@ -163,6 +166,16 @@ const DataVisualizationPage: React.FC = () => {
               </p>
             </div>
             <div className="flex space-x-3">
+              <button
+                onClick={() => setShowPDFExportModal(true)}
+                disabled={filteredData.length === 0}
+                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                </svg>
+                Export PDF
+              </button>
               <button
                 onClick={() => setShowAnalysisModal(true)}
                 disabled={filteredData.length === 0}
@@ -406,6 +419,25 @@ const DataVisualizationPage: React.FC = () => {
         onAnalysisCreated={handleAnalysisCreated}
         preSelectedData={filteredData}
         analysisContext={`Analysis of ${selectedMetric.replace('_', ' ')} data from ${selectedTimeRange}${filteredData.length > 0 ? ` (${filteredData.length} readings)` : ''}`}
+      />
+
+      {/* PDF Export Modal */}
+      <PDFExportModal
+        isOpen={showPDFExportModal}
+        onClose={() => setShowPDFExportModal(false)}
+        preSelectedMetrics={[selectedMetric]}
+        preSelectedDateRange={{
+          start: (() => {
+            const days = selectedTimeRange === '7d' ? 7 : 
+                         selectedTimeRange === '30d' ? 30 : 
+                         selectedTimeRange === '90d' ? 90 : 
+                         selectedTimeRange === '1y' ? 365 : 30;
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - days);
+            return startDate;
+          })(),
+          end: new Date()
+        }}
       />
     </div>
   );
