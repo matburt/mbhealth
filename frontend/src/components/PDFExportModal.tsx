@@ -46,7 +46,6 @@ const PDFExportModal: React.FC<PDFExportModalProps> = ({
   const {
     register,
     handleSubmit,
-    reset,
     watch,
     setValue,
     formState: { errors }

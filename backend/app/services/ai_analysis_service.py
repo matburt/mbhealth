@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc
 from app.models.ai_analysis import AIProvider, AIAnalysis, AnalysisSettings
 from app.models.health_data import HealthData
+from app.models.user import User
+from app.utils.timezone import utc_to_user_timezone, format_datetime_for_user
 from app.schemas.ai_analysis import (
     AIProviderCreate, AIProviderUpdate, 
     AIAnalysisCreate, AIAnalysisUpdate,
@@ -15,6 +17,8 @@ import uuid
 import base64
 import hashlib
 import os
+import logging
+import traceback
 from datetime import datetime
 
 class AIAnalysisService:
@@ -170,7 +174,7 @@ class AIAnalysisService:
             provider_id = analysis_data.provider_id
             provider_name = analysis_data.provider
             
-            # If no provider_id is set, try to resolve from provider name
+            # If no provider_id is set, try to resolve from provider name or auto-select
             if not provider_id:
                 # Check if provider is a UUID (indicating it's actually a provider ID)
                 try:
@@ -179,20 +183,32 @@ class AIAnalysisService:
                     provider_id = analysis_data.provider
                     logger.info(f"Using provider ID from provider field: {provider_id}")
                 except ValueError:
-                    # It's a provider name, try to find the provider
-                    provider = self.db.query(AIProvider).filter(
-                        AIProvider.user_id == user_id,
-                        AIProvider.name == analysis_data.provider,
-                        AIProvider.enabled == True
-                    ).first()
-                    
-                    if provider:
-                        provider_id = provider.id
-                        provider_name = provider.name
-                        logger.info(f"Resolved provider name '{analysis_data.provider}' to ID: {provider_id}")
+                    # Handle auto-selection or find provider by name
+                    if analysis_data.provider == "auto-selected" or analysis_data.provider == "auto":
+                        # Auto-select the best available provider
+                        provider = self._auto_select_best_provider(user_id)
+                        if provider:
+                            provider_id = provider.id
+                            provider_name = provider.name
+                            logger.info(f"Auto-selected provider: {provider_name} (ID: {provider_id})")
+                        else:
+                            logger.warning("No enabled providers found for auto-selection")
+                            provider_name = "auto-selected"
                     else:
-                        logger.warning(f"Provider '{analysis_data.provider}' not found, using as name")
-                        provider_name = analysis_data.provider
+                        # It's a provider name, try to find the provider
+                        provider = self.db.query(AIProvider).filter(
+                            AIProvider.user_id == user_id,
+                            AIProvider.name == analysis_data.provider,
+                            AIProvider.enabled == True
+                        ).first()
+                        
+                        if provider:
+                            provider_id = provider.id
+                            provider_name = provider.name
+                            logger.info(f"Resolved provider name '{analysis_data.provider}' to ID: {provider_id}")
+                        else:
+                            logger.warning(f"Provider '{analysis_data.provider}' not found, using as name")
+                            provider_name = analysis_data.provider
             else:
                 # We have a provider_id, get the name for compatibility
                 provider = self.get_provider(user_id, provider_id)
@@ -292,20 +308,35 @@ class AIAnalysisService:
                 self.db.commit()
                 return
             
-            # Prepare health data for analysis
-            health_data_list = [
-                {
+            # Get user timezone for timestamp conversion
+            user = self.db.query(User).filter(User.id == analysis.user_id).first()
+            user_timezone = user.timezone if user else "UTC"
+            
+            # Prepare health data for analysis with timezone-converted timestamps
+            health_data_list = []
+            for d in health_data:
+                # Convert UTC timestamp to user's timezone
+                user_time = None
+                if d.recorded_at:
+                    user_time = utc_to_user_timezone(d.recorded_at, user_timezone)
+                    # Format as readable string in user's timezone
+                    user_time_str = format_datetime_for_user(d.recorded_at, user_timezone, 'datetime')
+                else:
+                    user_time_str = None
+                
+                health_data_list.append({
                     "metric_type": d.metric_type,
                     "value": d.value,
                     "unit": d.unit,
                     "systolic": d.systolic,
                     "diastolic": d.diastolic,
-                    "recorded_at": d.recorded_at.isoformat() if d.recorded_at else None,
+                    "recorded_at": user_time_str,  # Now in user's timezone with readable format
                     "notes": d.notes,
                     "additional_data": d.additional_data
-                }
-                for d in health_data
-            ]
+                })
+            
+            # Add timezone context for the AI
+            timezone_context = f"\nIMPORTANT: All timestamps in the health data are in the user's local timezone: {user_timezone}. Please consider this when analyzing patterns and making time-based observations."
             
             # Get provider and create AI provider instance
             if analysis.provider_id:
@@ -353,12 +384,14 @@ class AIAnalysisService:
                 model = ai_provider.get_default_model()
                 logger.info(f"Using legacy model: {model}")
             
-            # Add user context and additional context to prompt
+            # Add user context, timezone context, and additional context to prompt
             prompt = analysis.request_prompt
             if user_context:
                 prompt += f"\n\nUser context: {user_context}"
             if additional_context:
                 prompt += f"\n\nAdditional context: {additional_context}"
+            # Always add timezone context so AI understands the timestamps
+            prompt += timezone_context
             
             # Execute analysis
             logger.info(f"Executing AI analysis for analysis {analysis.id}")
@@ -377,6 +410,9 @@ class AIAnalysisService:
             analysis.token_usage = result.token_usage
             analysis.cost = result.cost
             analysis.completed_at = datetime.utcnow()
+            
+            # Trigger any follow-up workflows for this completed analysis
+            await self._trigger_follow_up_workflows(analysis)
             
         except AIProviderError as e:
             logger.error(f"AI Provider error in analysis {analysis.id}: {str(e)}")
@@ -398,6 +434,66 @@ class AIAnalysisService:
             logger.error(f"Failed to commit analysis {analysis.id} status: {str(e)}")
             raise
     
+    def _auto_select_best_provider(self, user_id: int) -> Optional[AIProvider]:
+        """Auto-select the best available AI provider for the user"""
+        # Get all enabled providers for the user, ordered by preference
+        providers = self.db.query(AIProvider).filter(
+            AIProvider.user_id == user_id,
+            AIProvider.enabled == True
+        ).order_by(
+            # Prefer providers with valid API keys
+            AIProvider.api_key_encrypted.isnot(None),
+            AIProvider.priority.desc(),  # Higher priority first
+            AIProvider.created_at.desc()  # Most recently created first
+        ).all()
+        
+        if not providers:
+            # If no user providers, try to create one from environment variables
+            from app.core.config import settings
+            if settings.OPENAI_API_KEY:
+                return self._create_provider_from_env(user_id, "openai", settings.OPENAI_API_KEY)
+            elif settings.GOOGLE_AI_API_KEY:
+                return self._create_provider_from_env(user_id, "google", settings.GOOGLE_AI_API_KEY)
+            elif settings.OPENROUTER_API_KEY:
+                return self._create_provider_from_env(user_id, "openrouter", settings.OPENROUTER_API_KEY)
+        
+        # Return the first (best) available provider
+        return providers[0] if providers else None
+    
+    def _create_provider_from_env(self, user_id: int, provider_type: str, api_key: str) -> Optional[AIProvider]:
+        """Create a provider from environment variables as fallback"""
+        try:
+            # Encrypt the API key
+            encrypted_key = self._encrypt_api_key(api_key)
+            
+            provider_data = {
+                "name": f"Auto-created {provider_type.title()} Provider",
+                "type": provider_type,
+                "api_key_encrypted": encrypted_key,
+                "enabled": True,
+                "user_id": user_id,
+                "priority": 10  # Give auto-created providers high priority
+            }
+            
+            if provider_type == "openrouter":
+                provider_data["endpoint"] = "https://openrouter.ai/api/v1"
+                provider_data["type"] = "openai"  # OpenRouter uses OpenAI-compatible API
+            
+            provider = AIProvider(**provider_data)
+            self.db.add(provider)
+            self.db.commit()
+            self.db.refresh(provider)
+            
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Auto-created provider {provider.name} for user {user_id}")
+            return provider
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to create provider from environment: {e}")
+            return None
+
     async def _create_legacy_provider(self, provider_name: str) -> Optional[BaseAIProvider]:
         """Create provider instance for legacy provider names"""
         if provider_name == "openai" and settings.OPENAI_API_KEY:
@@ -451,3 +547,27 @@ class AIAnalysisService:
         self.db.delete(analysis)
         self.db.commit()
         return True
+    
+    async def _trigger_follow_up_workflows(self, analysis: AIAnalysis):
+        """Check for and trigger any follow-up workflows for this analysis"""
+        try:
+            # Import here to avoid circular dependencies
+            from app.services.analysis_workflow_service import get_analysis_workflow_service
+            
+            workflow_service = get_analysis_workflow_service(self.db)
+            
+            # Check which workflows should be triggered
+            triggered_workflows = await workflow_service.check_trigger_conditions(analysis)
+            
+            # Execute triggered workflows
+            for workflow in triggered_workflows:
+                if workflow.auto_execute:
+                    logger.info(f"Auto-executing workflow {workflow.id} for analysis {analysis.id}")
+                    await workflow_service.execute_workflow(workflow, analysis, "automatic")
+                else:
+                    logger.info(f"Workflow {workflow.id} triggered but requires manual approval for analysis {analysis.id}")
+                    # In a real implementation, you might send a notification here
+                    
+        except Exception as e:
+            logger.error(f"Error triggering follow-up workflows for analysis {analysis.id}: {str(e)}")
+            # Don't let workflow errors break the main analysis process

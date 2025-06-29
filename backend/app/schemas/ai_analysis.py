@@ -186,3 +186,139 @@ class ProviderTestResponse(BaseModel):
     message: str
     available_models: Optional[List[str]] = None
     response_time: Optional[float] = None
+
+
+# Analysis Schedule Schemas
+class AnalysisScheduleBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    schedule_type: str  # recurring, one_time, data_threshold
+    frequency: Optional[str] = None  # daily, weekly, monthly, custom
+    interval_value: Optional[int] = None
+    interval_unit: Optional[str] = None  # days, weeks, months
+    time_of_day: Optional[str] = None  # HH:MM format
+    days_of_week: Optional[List[str]] = None
+    day_of_month: Optional[int] = None
+    data_threshold_count: Optional[int] = None
+    data_threshold_metric: Optional[str] = None
+    analysis_types: List[str]
+    data_selection_config: Dict[str, Any]
+    provider_id: Optional[str] = None
+    additional_context: Optional[str] = None
+    enabled: bool = True
+
+class AnalysisScheduleCreate(AnalysisScheduleBase):
+    pass
+
+class AnalysisScheduleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    schedule_type: Optional[str] = None
+    frequency: Optional[str] = None
+    interval_value: Optional[int] = None
+    interval_unit: Optional[str] = None
+    time_of_day: Optional[str] = None
+    days_of_week: Optional[List[str]] = None
+    day_of_month: Optional[int] = None
+    data_threshold_count: Optional[int] = None
+    data_threshold_metric: Optional[str] = None
+    analysis_types: Optional[List[str]] = None
+    data_selection_config: Optional[Dict[str, Any]] = None
+    provider_id: Optional[str] = None
+    additional_context: Optional[str] = None
+    enabled: Optional[bool] = None
+
+class AnalysisScheduleInDBBase(AnalysisScheduleBase):
+    id: str
+    user_id: int
+    next_run_at: Optional[datetime] = None
+    last_run_at: Optional[datetime] = None
+    run_count: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+        protected_namespaces = ()
+
+class AnalysisSchedule(AnalysisScheduleInDBBase):
+    pass
+
+
+# Analysis Schedule Execution Schemas
+class AnalysisScheduleExecutionBase(BaseModel):
+    execution_type: str  # scheduled, manual, data_triggered
+    trigger_data: Optional[Dict[str, Any]] = None
+
+class AnalysisScheduleExecutionCreate(AnalysisScheduleExecutionBase):
+    schedule_id: str
+
+class AnalysisScheduleExecutionUpdate(BaseModel):
+    status: Optional[str] = None
+    completed_at: Optional[datetime] = None
+    analyses_created: Optional[List[int]] = None
+    analyses_count: Optional[int] = None
+    success_count: Optional[int] = None
+    failure_count: Optional[int] = None
+    error_message: Optional[str] = None
+    retry_count: Optional[int] = None
+
+class AnalysisScheduleExecutionInDBBase(AnalysisScheduleExecutionBase):
+    id: str
+    schedule_id: str
+    user_id: int
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    status: str
+    analyses_created: Optional[List[int]] = None
+    analyses_count: int
+    success_count: int
+    failure_count: int
+    error_message: Optional[str] = None
+    retry_count: int
+
+    class Config:
+        from_attributes = True
+        protected_namespaces = ()
+
+class AnalysisScheduleExecution(AnalysisScheduleExecutionInDBBase):
+    pass
+
+
+# Analysis History Schemas
+class AnalysisHistoryBase(BaseModel):
+    action: str  # created, updated, deleted, viewed, shared
+    action_details: Optional[Dict[str, Any]] = None
+    user_agent: Optional[str] = None
+    ip_address: Optional[str] = None
+    session_id: Optional[str] = None
+    analysis_snapshot: Optional[Dict[str, Any]] = None
+
+class AnalysisHistoryCreate(AnalysisHistoryBase):
+    analysis_id: int
+
+class AnalysisHistoryInDBBase(AnalysisHistoryBase):
+    id: str
+    analysis_id: int
+    user_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+        protected_namespaces = ()
+
+class AnalysisHistory(AnalysisHistoryInDBBase):
+    pass
+
+
+# Schedule Management Request/Response Schemas
+class ScheduleExecutionRequest(BaseModel):
+    schedule_id: str
+    execution_type: str = "manual"
+    trigger_data: Optional[Dict[str, Any]] = None
+
+class ScheduleListResponse(BaseModel):
+    schedules: List[AnalysisSchedule]
+    total_count: int
+    active_count: int
+    next_executions: List[Dict[str, Any]]  # Upcoming executions

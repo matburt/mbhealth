@@ -26,22 +26,38 @@ A comprehensive health data tracking application with Python FastAPI backend and
 - **Professional PDF Reports**: Generate medical-grade PDF reports with charts, statistics, and clinical notes
 
 ### Enhanced AI Analysis Features
-- **Multi-Provider AI Support**: OpenAI, Anthropic Claude, Google Generative AI, and custom providers
+- **Multi-Provider AI Support**: OpenAI, Anthropic Claude, Google Generative AI, and custom providers with intelligent auto-selection
+- **AI Analysis Hub**: Unified tabbed interface combining analysis creation, provider management, schedules, and workflows
 - **Smart Data Pre-Selection**: Intelligent data filtering by metric type, time range, and relevance
 - **Advanced Data Selection Algorithms**: 
   - Trending data detection using linear regression analysis
   - Anomaly detection with statistical z-score analysis and clinical thresholds
   - Time-of-day filtering (morning, afternoon, evening patterns)
+- **Analysis Automation**: 
+  - **Scheduled Analysis**: Automated health analysis with 6 pre-built templates (daily insights, weekly summaries, blood pressure monitoring, etc.)
+  - **Follow-up Workflows**: Intelligent multi-step analysis chains that automatically trigger based on results
+  - **Data Threshold Triggers**: Analyses that trigger after specific numbers of new readings
+  - **Automatic Provider Selection**: Smart AI provider selection with fallback mechanisms for reliable analysis execution
 - **Analysis Workflows**: Comprehensive multi-step analysis chains with templates:
-  - Comprehensive Health Assessment (4-step: Trends → Anomalies → Insights → Recommendations)
-  - Blood Pressure Deep Dive (specialized cardiovascular analysis)
-  - Anomaly Investigation (deep pattern analysis)
-  - Weekly Health Summary (quick overview with comparisons)
+  - Anomaly Detection Follow-up (automated detailed analysis when anomalies found)
+  - Comprehensive Health Assessment (trends → insights → recommendations chain)
+  - Weekly Health Review (multi-step weekly assessment)
+  - Blood Pressure Alert Follow-up (specialized cardiovascular monitoring)
+  - New User Onboarding (baseline assessment workflow)
+- **Schedule Management**: 
+  - Recurring schedules (daily, weekly, monthly) with customizable timing
+  - Data threshold schedules (trigger after N new readings)
+  - Template-based schedule creation with parameterization
+  - **Smart Provider Selection**: Choose specific AI providers per schedule or use intelligent auto-selection
+  - **Auto-Selection Logic**: Automatically selects best available provider based on user's configured providers, priority, and availability
+  - **Provider Fallback**: Creates providers from environment variables when no user providers are configured
+  - Execution history and performance monitoring
 - **Configuration Management**: Save, load, and organize analysis configurations with favorites and collections
 - **Analysis Presets**: Pre-configured templates for common health monitoring scenarios
 - **Comprehensive Help System**: Interactive 7-section guide covering all analysis features
 - **Follow-up Suggestions**: AI-generated recommendations for next analyses and consultations
 - **Enhanced Error Handling**: Improved truncation detection and user-friendly error messages
+- **Timezone Intelligence**: Automatic timezone conversion for accurate time-based analysis
 
 ### Collaboration Features
 - **Family Groups**: Create family circles and share health data

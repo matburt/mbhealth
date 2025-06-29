@@ -30,6 +30,21 @@ def create_health_data_endpoint(
     Create new health data entry.
     """
     health_data = create_health_data(db, obj_in=health_data_in, user_id=current_user.id, user_timezone=current_user.timezone)
+    
+    # Trigger data threshold schedules in background
+    try:
+        from app.tasks.analysis_scheduler_task import check_data_threshold_schedules_task
+        check_data_threshold_schedules_task.delay(
+            user_id=current_user.id,
+            metric_type=health_data.metric_type,
+            new_data_count=1
+        )
+    except Exception as e:
+        # Don't fail the health data creation if scheduling fails
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to trigger data threshold check: {str(e)}")
+    
     return health_data
 
 @router.get("/", response_model=List[HealthData])

@@ -92,7 +92,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **SQLite** for development (file: `backend/health_data.db`)
 - **PostgreSQL** for production
 - **Redis** for caching, sessions, and background job queue
-- **Alembic** for database migrations
+- **Alembic** for database migrations (we aren't actually using alembic right now, call create_db.py for the moment)
 - Core entities: User, HealthData, Family, CareTeam, Note, AIAnalysis, AIProvider, AnalysisJob, AnalysisSettings
 
 ### AI Integration

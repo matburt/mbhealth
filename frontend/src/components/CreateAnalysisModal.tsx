@@ -8,8 +8,6 @@ import { HealthData } from '../types/health';
 import AnalysisPresets from './AnalysisPresets';
 import SaveAnalysisConfigModal from './SaveAnalysisConfigModal';
 import SavedAnalysisConfigs from './SavedAnalysisConfigs';
-import WorkflowSelectionModal from './WorkflowSelectionModal';
-import WorkflowExecutionModal from './WorkflowExecutionModal';
 import AnalysisHelpGuide from './AnalysisHelpGuide';
 import { 
   findTrendingData, 
@@ -18,7 +16,6 @@ import {
   getDataStatistics 
 } from '../utils/dataAnalysis';
 import { AnalysisConfig } from '../types/analysisConfig';
-import { WorkflowExecution } from '../types/analysisWorkflow';
 
 interface CreateAnalysisModalProps {
   isOpen: boolean;
@@ -50,9 +47,6 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   const [showAdvancedSelection, setShowAdvancedSelection] = useState(true);
   const [showSavedConfigs, setShowSavedConfigs] = useState(true);
   const [showSaveConfigModal, setShowSaveConfigModal] = useState(false);
-  const [showWorkflowModal, setShowWorkflowModal] = useState(false);
-  const [showWorkflowExecution, setShowWorkflowExecution] = useState(false);
-  const [currentWorkflowExecution, setCurrentWorkflowExecution] = useState<WorkflowExecution | null>(null);
   const [showHelpGuide, setShowHelpGuide] = useState(false);
   const [lastAnalysisDate, setLastAnalysisDate] = useState<Date | null>(null);
   const [dataStats, setDataStats] = useState<any>(null);
@@ -457,26 +451,6 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     setShowPresets(false);
     setShowSmartSelection(false);
     setShowAdvancedSelection(false);
-  };
-
-  // Workflow handlers
-  const handleStartWorkflow = () => {
-    if (selectedDataIds.length === 0) {
-      toast.error('Please select some data before starting a workflow');
-      return;
-    }
-    setShowWorkflowModal(true);
-  };
-
-  const handleWorkflowStart = (execution: WorkflowExecution) => {
-    setCurrentWorkflowExecution(execution);
-    setShowWorkflowModal(false);
-    setShowWorkflowExecution(true);
-  };
-
-  const handleViewAnalysis = (analysisId: number) => {
-    // Navigate to analysis view - this would be implemented based on your routing
-    toast.success(`Viewing analysis ${analysisId}`);
   };
 
   // Get available metric types
@@ -1235,15 +1209,6 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
               <div className="flex space-x-3">
                 <button
                   type="button"
-                  onClick={handleStartWorkflow}
-                  disabled={selectedDataIds.length === 0}
-                  className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  title="Run multi-step analysis workflow"
-                >
-                  🔄 Start Workflow
-                </button>
-                <button
-                  type="button"
                   onClick={handleSaveConfiguration}
                   disabled={selectedDataIds.length === 0}
                   className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
@@ -1287,23 +1252,6 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
           selectionMethod: currentSelectionMethod,
           selectionConfig: currentSelectionConfig
         }}
-      />
-
-      {/* Workflow Selection Modal */}
-      <WorkflowSelectionModal
-        isOpen={showWorkflowModal}
-        onClose={() => setShowWorkflowModal(false)}
-        onWorkflowStart={handleWorkflowStart}
-        selectedDataIds={selectedDataIds}
-        healthData={healthData}
-      />
-
-      {/* Workflow Execution Modal */}
-      <WorkflowExecutionModal
-        execution={currentWorkflowExecution}
-        isOpen={showWorkflowExecution}
-        onClose={() => setShowWorkflowExecution(false)}
-        onViewAnalysis={handleViewAnalysis}
       />
 
       {/* Help Guide Modal */}
