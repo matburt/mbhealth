@@ -1,8 +1,11 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, JSON, Boolean, Float
-from sqlalchemy.orm import relationship
-from datetime import datetime
-from app.core.database import Base
 import uuid
+from datetime import datetime
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
+
+from app.core.database import Base
+
 
 class AIProvider(Base):
     __tablename__ = "ai_providers"
@@ -41,7 +44,7 @@ class AIAnalysis(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
     error_message = Column(Text, nullable=True)
-    
+
     # Analysis metadata
     processing_time = Column(Float, nullable=True)  # Time taken in seconds
     token_usage = Column(JSON, nullable=True)  # Token usage statistics
@@ -97,7 +100,7 @@ class AnalysisSchedule(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String, nullable=False)  # User-friendly name for the schedule
     description = Column(Text, nullable=True)  # Optional description
-    
+
     # Schedule configuration
     schedule_type = Column(String, nullable=False)  # recurring, one_time, data_threshold
     frequency = Column(String, nullable=True)  # daily, weekly, monthly, custom
@@ -106,23 +109,23 @@ class AnalysisSchedule(Base):
     time_of_day = Column(String, nullable=True)  # HH:MM format for when to run
     days_of_week = Column(JSON, nullable=True)  # Array of day names for weekly schedules
     day_of_month = Column(Integer, nullable=True)  # Day of month for monthly schedules
-    
+
     # Trigger configuration
     data_threshold_count = Column(Integer, nullable=True)  # Number of new data points to trigger
     data_threshold_metric = Column(String, nullable=True)  # Specific metric type to watch
-    
+
     # Analysis configuration
     analysis_types = Column(JSON, nullable=False)  # Array of analysis types to run
     data_selection_config = Column(JSON, nullable=False)  # How to select data for analysis
     provider_id = Column(String, ForeignKey("ai_providers.id"), nullable=True)
     additional_context = Column(Text, nullable=True)
-    
+
     # Schedule management
     enabled = Column(Boolean, default=True)
     next_run_at = Column(DateTime, nullable=True)  # When the next execution is scheduled
     last_run_at = Column(DateTime, nullable=True)  # When it was last executed
     run_count = Column(Integer, default=0)  # Number of times it has been executed
-    
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -139,22 +142,22 @@ class AnalysisScheduleExecution(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     schedule_id = Column(String, ForeignKey("analysis_schedules.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    
+
     # Execution details
     started_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
     status = Column(String, default='pending')  # pending, running, completed, failed
-    
+
     # Analysis results
     analyses_created = Column(JSON, nullable=True)  # Array of analysis IDs created
     analyses_count = Column(Integer, default=0)
     success_count = Column(Integer, default=0)
     failure_count = Column(Integer, default=0)
-    
+
     # Error handling
     error_message = Column(Text, nullable=True)
     retry_count = Column(Integer, default=0)
-    
+
     # Execution metadata
     execution_type = Column(String, nullable=False)  # scheduled, manual, data_triggered
     trigger_data = Column(JSON, nullable=True)  # Data that triggered this execution
@@ -170,19 +173,19 @@ class AnalysisHistory(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     analysis_id = Column(Integer, ForeignKey("ai_analyses.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    
+
     # History metadata
     action = Column(String, nullable=False)  # created, updated, deleted, viewed, shared
     action_details = Column(JSON, nullable=True)  # Additional details about the action
-    
+
     # User context
     user_agent = Column(String, nullable=True)
     ip_address = Column(String, nullable=True)
     session_id = Column(String, nullable=True)
-    
+
     # Analysis context at time of action
     analysis_snapshot = Column(JSON, nullable=True)  # Snapshot of analysis state
-    
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
 

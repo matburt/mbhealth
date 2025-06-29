@@ -670,8 +670,9 @@ def debug_analysis(
                 }
 
         # Get health data info
-        from app.models.health_data import HealthData
         from sqlalchemy import and_
+
+        from app.models.health_data import HealthData
         health_data_count = db.query(HealthData).filter(
             and_(
                 HealthData.id.in_(analysis.health_data_ids),

@@ -2,16 +2,16 @@
 Analysis Workflow API endpoints
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.core.database import get_db
 from app.models.user import User
 from app.services.analysis_workflow_service import get_analysis_workflow_service
-from app.models.analysis_workflow import AnalysisWorkflow, AnalysisWorkflowExecution, WorkflowTemplate
 
 router = APIRouter()
 
@@ -19,49 +19,49 @@ router = APIRouter()
 # Request/Response Models
 class WorkflowCreateRequest(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     trigger_analysis_type: str
-    trigger_conditions: List[Dict[str, Any]] = []
-    workflow_steps: List[Dict[str, Any]]
+    trigger_conditions: list[dict[str, Any]] = []
+    workflow_steps: list[dict[str, Any]]
     auto_execute: bool = True
     max_concurrent_executions: int = 1
     enabled: bool = True
 
 
 class WorkflowUpdateRequest(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    trigger_conditions: Optional[List[Dict[str, Any]]] = None
-    workflow_steps: Optional[List[Dict[str, Any]]] = None
-    auto_execute: Optional[bool] = None
-    max_concurrent_executions: Optional[int] = None
-    enabled: Optional[bool] = None
+    name: str | None = None
+    description: str | None = None
+    trigger_conditions: list[dict[str, Any]] | None = None
+    workflow_steps: list[dict[str, Any]] | None = None
+    auto_execute: bool | None = None
+    max_concurrent_executions: int | None = None
+    enabled: bool | None = None
 
 
 class WorkflowFromTemplateRequest(BaseModel):
     template_id: str
-    name: Optional[str] = None
-    description: Optional[str] = None
-    trigger_conditions: Optional[List[Dict[str, Any]]] = None
-    workflow_steps: Optional[List[Dict[str, Any]]] = None
-    auto_execute: Optional[bool] = None
-    enabled: Optional[bool] = None
+    name: str | None = None
+    description: str | None = None
+    trigger_conditions: list[dict[str, Any]] | None = None
+    workflow_steps: list[dict[str, Any]] | None = None
+    auto_execute: bool | None = None
+    enabled: bool | None = None
 
 
 class WorkflowResponse(BaseModel):
     id: str
     name: str
-    description: Optional[str]
+    description: str | None
     trigger_analysis_type: str
-    trigger_conditions: List[Dict[str, Any]]
-    workflow_steps: List[Dict[str, Any]]
+    trigger_conditions: list[dict[str, Any]]
+    workflow_steps: list[dict[str, Any]]
     auto_execute: bool
     max_concurrent_executions: int
     enabled: bool
     total_executions: int
     successful_executions: int
     failed_executions: int
-    last_executed_at: Optional[str]
+    last_executed_at: str | None
     created_at: str
     updated_at: str
 
@@ -76,11 +76,11 @@ class WorkflowExecutionResponse(BaseModel):
     execution_type: str
     current_step: int
     total_steps: int
-    step_results: List[Dict[str, Any]]
-    created_analyses: List[int]
-    error_message: Optional[str]
+    step_results: list[dict[str, Any]]
+    created_analyses: list[int]
+    error_message: str | None
     started_at: str
-    completed_at: Optional[str]
+    completed_at: str | None
 
     class Config:
         from_attributes = True
@@ -90,10 +90,10 @@ class WorkflowTemplateResponse(BaseModel):
     id: str
     name: str
     description: str
-    category: Optional[str]
+    category: str | None
     trigger_analysis_type: str
-    trigger_conditions: List[Dict[str, Any]]
-    workflow_steps: List[Dict[str, Any]]
+    trigger_conditions: list[dict[str, Any]]
+    workflow_steps: list[dict[str, Any]]
     usage_count: int
     created_at: str
 
@@ -110,16 +110,16 @@ async def create_workflow(
 ):
     """Create a new analysis workflow"""
     workflow_service = get_analysis_workflow_service(db)
-    
+
     workflow = await workflow_service.create_workflow(
         current_user.id,
         workflow_data.dict()
     )
-    
+
     return WorkflowResponse.from_orm(workflow)
 
 
-@router.get("/", response_model=List[WorkflowResponse])
+@router.get("/", response_model=list[WorkflowResponse])
 async def get_workflows(
     enabled_only: bool = False,
     current_user: User = Depends(deps.get_current_user),
@@ -127,7 +127,7 @@ async def get_workflows(
 ):
     """Get all workflows for the current user"""
     workflow_service = get_analysis_workflow_service(db)
-    
+
     workflows = workflow_service.get_workflows(current_user.id, enabled_only)
     return [WorkflowResponse.from_orm(w) for w in workflows]
 
@@ -140,14 +140,14 @@ async def get_workflow(
 ):
     """Get a specific workflow"""
     workflow_service = get_analysis_workflow_service(db)
-    
+
     workflow = workflow_service.get_workflow(current_user.id, workflow_id)
     if not workflow:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Workflow not found"
         )
-    
+
     return WorkflowResponse.from_orm(workflow)
 
 
@@ -160,19 +160,19 @@ async def update_workflow(
 ):
     """Update a workflow"""
     workflow_service = get_analysis_workflow_service(db)
-    
+
     workflow = await workflow_service.update_workflow(
         current_user.id,
         workflow_id,
         workflow_data.dict(exclude_unset=True)
     )
-    
+
     if not workflow:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Workflow not found"
         )
-    
+
     return WorkflowResponse.from_orm(workflow)
 
 
@@ -184,25 +184,25 @@ async def delete_workflow(
 ):
     """Delete a workflow"""
     workflow_service = get_analysis_workflow_service(db)
-    
+
     deleted = workflow_service.delete_workflow(current_user.id, workflow_id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Workflow not found"
         )
-    
+
     return {"message": "Workflow deleted successfully"}
 
 
 # Workflow Templates
-@router.get("/templates/", response_model=List[WorkflowTemplateResponse])
+@router.get("/templates/", response_model=list[WorkflowTemplateResponse])
 async def get_workflow_templates(
     db: Session = Depends(get_db)
 ):
     """Get all available workflow templates"""
     workflow_service = get_analysis_workflow_service(db)
-    
+
     templates = workflow_service.get_workflow_templates()
     return [WorkflowTemplateResponse.from_orm(t) for t in templates]
 
@@ -215,7 +215,7 @@ async def create_workflow_from_template(
 ):
     """Create a workflow from a template"""
     workflow_service = get_analysis_workflow_service(db)
-    
+
     try:
         customizations = template_data.dict(exclude={"template_id"}, exclude_unset=True)
         workflow = await workflow_service.create_workflow_from_template(
@@ -232,7 +232,7 @@ async def create_workflow_from_template(
 
 
 # Workflow Executions
-@router.get("/{workflow_id}/executions", response_model=List[WorkflowExecutionResponse])
+@router.get("/{workflow_id}/executions", response_model=list[WorkflowExecutionResponse])
 async def get_workflow_executions(
     workflow_id: str,
     limit: int = 50,
@@ -241,7 +241,7 @@ async def get_workflow_executions(
 ):
     """Get execution history for a workflow"""
     workflow_service = get_analysis_workflow_service(db)
-    
+
     # Verify user owns the workflow
     workflow = workflow_service.get_workflow(current_user.id, workflow_id)
     if not workflow:
@@ -249,14 +249,14 @@ async def get_workflow_executions(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Workflow not found"
         )
-    
+
     executions = workflow_service.get_workflow_executions(
         current_user.id, workflow_id, limit
     )
     return [WorkflowExecutionResponse.from_orm(e) for e in executions]
 
 
-@router.get("/executions/", response_model=List[WorkflowExecutionResponse])
+@router.get("/executions/", response_model=list[WorkflowExecutionResponse])
 async def get_all_workflow_executions(
     limit: int = 50,
     current_user: User = Depends(deps.get_current_user),
@@ -264,14 +264,14 @@ async def get_all_workflow_executions(
 ):
     """Get all workflow executions for the current user"""
     workflow_service = get_analysis_workflow_service(db)
-    
+
     executions = workflow_service.get_workflow_executions(
         current_user.id, None, limit
     )
     return [WorkflowExecutionResponse.from_orm(e) for e in executions]
 
 
-@router.get("/statistics/", response_model=Dict[str, Any])
+@router.get("/statistics/", response_model=dict[str, Any])
 async def get_workflow_statistics(
     days: int = 30,
     current_user: User = Depends(deps.get_current_user),
@@ -279,6 +279,6 @@ async def get_workflow_statistics(
 ):
     """Get workflow statistics for the current user"""
     workflow_service = get_analysis_workflow_service(db)
-    
+
     stats = workflow_service.get_workflow_statistics(current_user.id, days)
     return stats

@@ -1,7 +1,10 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
-from sqlalchemy.orm import relationship
 from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
+
 
 class Family(Base):
     __tablename__ = "families"
@@ -30,4 +33,4 @@ class FamilyMember(Base):
 
     # Relationships
     family = relationship("Family", back_populates="members")
-    user = relationship("User", back_populates="families") 
+    user = relationship("User", back_populates="families")

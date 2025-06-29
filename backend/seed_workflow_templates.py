@@ -5,14 +5,15 @@ Seed Workflow Templates
 Creates predefined workflow templates for common analysis patterns.
 """
 
+
 from app.core.database import SessionLocal
 from app.models.analysis_workflow import WorkflowTemplate
-from datetime import datetime
+
 
 def create_workflow_templates():
     """Create predefined workflow templates"""
     print("Creating workflow templates...")
-    
+
     db = SessionLocal()
     try:
         templates = [
@@ -37,7 +38,7 @@ def create_workflow_templates():
                 "workflow_steps": [
                     {
                         "name": "Detailed Analysis",
-                        "analysis_type": "insights", 
+                        "analysis_type": "insights",
                         "delay_minutes": 0,
                         "additional_context": "Provide detailed analysis of the anomalies detected in the previous analysis. Focus on potential causes and severity.",
                         "conditions": []
@@ -74,7 +75,7 @@ def create_workflow_templates():
                         "conditions": []
                     },
                     {
-                        "name": "Personalized Recommendations", 
+                        "name": "Personalized Recommendations",
                         "analysis_type": "recommendations",
                         "delay_minutes": 3,
                         "additional_context": "Based on the trends and insights, provide personalized recommendations for health improvement.",
@@ -132,7 +133,7 @@ def create_workflow_templates():
                 "trigger_conditions": [
                     {
                         "type": "content_contains",
-                        "field": "response_content", 
+                        "field": "response_content",
                         "value": "blood pressure",
                         "operator": "contains"
                     },
@@ -199,14 +200,14 @@ def create_workflow_templates():
                 ]
             }
         ]
-        
+
         created_count = 0
         for template_data in templates:
             # Check if template already exists
             existing = db.query(WorkflowTemplate).filter(
                 WorkflowTemplate.name == template_data["name"]
             ).first()
-            
+
             if not existing:
                 template = WorkflowTemplate(
                     name=template_data["name"],
@@ -217,16 +218,16 @@ def create_workflow_templates():
                     workflow_steps=template_data["workflow_steps"],
                     is_public=True
                 )
-                
+
                 db.add(template)
                 created_count += 1
                 print(f"✅ Created template: {template_data['name']}")
             else:
                 print(f"⏭️  Template already exists: {template_data['name']}")
-        
+
         db.commit()
         print(f"\n🎉 Successfully created {created_count} workflow templates!")
-        
+
     except Exception as e:
         print(f"❌ Error creating templates: {e}")
         db.rollback()

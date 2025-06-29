@@ -2,19 +2,19 @@
 Reports API endpoints for generating and exporting health data reports.
 """
 
-from datetime import datetime, timedelta
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+import io
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_active_user, get_db
-from app.models.user import User
-from app.models.health_data import HealthData
-from app.services.pdf_report_service import pdf_report_service
 from app.core.celery_app import celery_app
-import io
+from app.models.health_data import HealthData
+from app.models.user import User
+from app.services.pdf_report_service import pdf_report_service
 
 router = APIRouter()
 
@@ -23,11 +23,11 @@ class PDFReportRequest(BaseModel):
     """Request model for PDF report generation."""
     start_date: datetime
     end_date: datetime
-    metric_types: Optional[List[str]] = None
+    metric_types: list[str] | None = None
     include_charts: bool = True
     include_summary: bool = True
     include_trends: bool = True
-    title: Optional[str] = None
+    title: str | None = None
 
 
 class ReportJobResponse(BaseModel):
@@ -58,10 +58,10 @@ async def export_pdf_report(
         # Validate date range
         if request.start_date >= request.end_date:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="Start date must be before end date"
             )
-        
+
         # Check if date range is reasonable (not too large)
         date_diff = request.end_date - request.start_date
         if date_diff.days > 365:
@@ -69,28 +69,28 @@ async def export_pdf_report(
                 status_code=400,
                 detail="Date range cannot exceed 365 days"
             )
-        
+
         # Query health data for the user and date range
         health_data_query = db.query(HealthData).filter(
             HealthData.user_id == current_user.id,
             HealthData.recorded_at >= request.start_date,
             HealthData.recorded_at <= request.end_date
         )
-        
+
         # Filter by metric types if specified
         if request.metric_types:
             health_data_query = health_data_query.filter(
                 HealthData.metric_type.in_(request.metric_types)
             )
-        
+
         health_data = health_data_query.order_by(HealthData.recorded_at).all()
-        
+
         if not health_data:
             raise HTTPException(
                 status_code=404,
                 detail="No health data found for the specified criteria"
             )
-        
+
         # Generate PDF report
         pdf_bytes = await pdf_report_service.generate_health_report(
             user_id=current_user.id,
@@ -103,15 +103,15 @@ async def export_pdf_report(
             user_timezone=current_user.timezone,
             db_session=db
         )
-        
+
         # Create filename
         date_str = request.start_date.strftime("%Y%m%d")
         end_date_str = request.end_date.strftime("%Y%m%d")
         filename = f"health_report_{date_str}_to_{end_date_str}.pdf"
-        
+
         # Return PDF as streaming response
         pdf_stream = io.BytesIO(pdf_bytes)
-        
+
         return StreamingResponse(
             io.BytesIO(pdf_bytes),
             media_type="application/pdf",
@@ -120,7 +120,7 @@ async def export_pdf_report(
                 "Content-Length": str(len(pdf_bytes))
             }
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -151,10 +151,10 @@ async def export_pdf_report_async(
         # Validate date range
         if request.start_date >= request.end_date:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="Start date must be before end date"
             )
-        
+
         # Queue the PDF generation task
         task = celery_app.send_task(
             "app.tasks.generate_pdf_report",
@@ -168,13 +168,13 @@ async def export_pdf_report_async(
                 request.include_trends
             ]
         )
-        
+
         return ReportJobResponse(
             job_id=task.id,
             status="queued",
             message="PDF report generation has been queued. Check status using the job ID."
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -202,7 +202,7 @@ async def get_pdf_report_status(
     try:
         # Get task result
         result = celery_app.AsyncResult(job_id)
-        
+
         if result.state == "PENDING":
             return {
                 "job_id": job_id,
@@ -235,7 +235,7 @@ async def get_pdf_report_status(
                 "status": result.state.lower(),
                 "message": f"Task status: {result.state}"
             }
-            
+
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -261,13 +261,13 @@ async def download_pdf_report(
     try:
         # Get task result
         result = celery_app.AsyncResult(job_id)
-        
+
         if result.state != "SUCCESS":
             raise HTTPException(
                 status_code=404,
                 detail="PDF report is not ready or does not exist"
             )
-        
+
         # Get PDF bytes from task result
         pdf_data = result.get()
         if not pdf_data:
@@ -275,11 +275,11 @@ async def download_pdf_report(
                 status_code=404,
                 detail="PDF data not found"
             )
-        
+
         # Create filename with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"health_report_{timestamp}.pdf"
-        
+
         return StreamingResponse(
             io.BytesIO(pdf_data),
             media_type="application/pdf",
@@ -288,7 +288,7 @@ async def download_pdf_report(
                 "Content-Length": str(len(pdf_data))
             }
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -341,7 +341,7 @@ async def get_report_templates(
             "recommended_for": ["healthcare_providers", "medical_records"]
         }
     ]
-    
+
     return {"templates": templates}
 
 
@@ -365,9 +365,9 @@ async def get_available_metrics(
         metrics = db.query(HealthData.metric_type).filter(
             HealthData.user_id == current_user.id
         ).distinct().all()
-        
+
         metric_types = [metric[0] for metric in metrics]
-        
+
         # Add display names and descriptions
         metric_info = []
         metric_descriptions = {
@@ -397,21 +397,21 @@ async def get_available_metrics(
                 "unit": "°F/°C"
             }
         }
-        
+
         for metric_type in metric_types:
             info = metric_descriptions.get(metric_type, {
                 "display_name": metric_type.replace("_", " ").title(),
                 "description": f"{metric_type.replace('_', ' ').title()} measurements",
                 "unit": "units"
             })
-            
+
             metric_info.append({
                 "type": metric_type,
                 **info
             })
-        
+
         return {"metrics": metric_info}
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=500,

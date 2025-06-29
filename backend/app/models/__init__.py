@@ -1,29 +1,52 @@
 # Import models in the correct order to avoid circular dependencies
-from .user import User
+from .ai_analysis import (
+    AIAnalysis,
+    AIProvider,
+    AnalysisHistory,
+    AnalysisJob,
+    AnalysisSchedule,
+    AnalysisScheduleExecution,
+    AnalysisSettings,
+)
+from .analysis_comparison import (
+    AnalysisComparison,
+    AnalysisImprovementSuggestion,
+    AnalysisTrend,
+    ProviderPerformanceMetrics,
+)
+from .analysis_workflow import (
+    AnalysisWorkflow,
+    AnalysisWorkflowExecution,
+    WorkflowStepResult,
+    WorkflowTemplate,
+)
+from .care_team import CareTeam, CareTeamMember
+from .family import Family, FamilyMember
 from .health_data import HealthData
 from .note import Note
-from .family import Family, FamilyMember
-from .care_team import CareTeam, CareTeamMember
-from .ai_analysis import AIProvider, AIAnalysis, AnalysisJob, AnalysisSettings, AnalysisSchedule, AnalysisScheduleExecution, AnalysisHistory
-from .analysis_workflow import AnalysisWorkflow, AnalysisWorkflowExecution, WorkflowTemplate, WorkflowStepResult
+from .user import User
 
 __all__ = [
     "User",
-    "HealthData", 
+    "HealthData",
     "Note",
     "Family",
     "FamilyMember",
     "CareTeam",
     "CareTeamMember",
     "AIProvider",
-    "AIAnalysis", 
+    "AIAnalysis",
     "AnalysisJob",
     "AnalysisSettings",
     "AnalysisSchedule",
-    "AnalysisScheduleExecution", 
+    "AnalysisScheduleExecution",
     "AnalysisHistory",
     "AnalysisWorkflow",
     "AnalysisWorkflowExecution",
     "WorkflowTemplate",
-    "WorkflowStepResult"
-] 
+    "WorkflowStepResult",
+    "AnalysisComparison",
+    "ProviderPerformanceMetrics",
+    "AnalysisTrend",
+    "AnalysisImprovementSuggestion"
+]

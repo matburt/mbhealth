@@ -1,11 +1,13 @@
-from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.schemas.user import User
+
 from app.api.deps import get_current_active_user
+from app.core.database import get_db
 from app.models.note import Note
-from app.schemas.note import NoteCreate, NoteUpdate, NoteOut
+from app.schemas.note import NoteCreate, NoteOut, NoteUpdate
+from app.schemas.user import User
 
 router = APIRouter()
 
@@ -26,7 +28,7 @@ def create_note(
     db.refresh(note)
     return note
 
-@router.get("/", response_model=List[NoteOut])
+@router.get("/", response_model=list[NoteOut])
 def list_notes(
     health_data_id: int,
     db: Session = Depends(get_db),
@@ -63,4 +65,4 @@ def delete_note(
         raise HTTPException(status_code=404, detail="Note not found or not owned by user")
     db.delete(note)
     db.commit()
-    return {"message": "Note deleted"} 
+    return {"message": "Note deleted"}

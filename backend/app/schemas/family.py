@@ -1,17 +1,18 @@
-from pydantic import BaseModel
-from typing import Optional, List
 from datetime import datetime
+
+from pydantic import BaseModel
+
 
 class FamilyBase(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
 class FamilyCreate(FamilyBase):
     pass
 
 class FamilyUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
 
 class FamilyOut(FamilyBase):
     id: int
@@ -35,4 +36,4 @@ class FamilyMemberOut(FamilyMemberBase):
     id: int
     family_id: int
     class Config:
-        from_attributes = True 
+        from_attributes = True

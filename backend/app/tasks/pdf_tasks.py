@@ -3,7 +3,7 @@ Celery tasks for PDF report generation.
 """
 
 from datetime import datetime
-from typing import List, Optional
+
 from celery import current_task
 from sqlalchemy.orm import Session
 
@@ -19,7 +19,7 @@ def generate_pdf_report(
     user_id: int,
     start_date_str: str,
     end_date_str: str,
-    metric_types: Optional[List[str]] = None,
+    metric_types: list[str] | None = None,
     include_charts: bool = True,
     include_summary: bool = True,
     include_trends: bool = True,
@@ -48,44 +48,44 @@ def generate_pdf_report(
             state='PROGRESS',
             meta={'progress': 10, 'message': 'Starting PDF generation...'}
         )
-        
+
         # Parse dates
         start_date = datetime.fromisoformat(start_date_str)
         end_date = datetime.fromisoformat(end_date_str)
-        
+
         # Get database session
         db: Session = next(get_db())
-        
+
         try:
             # Update progress
             current_task.update_state(
                 state='PROGRESS',
                 meta={'progress': 30, 'message': 'Querying health data...'}
             )
-            
+
             # Query health data
             health_data_query = db.query(HealthData).filter(
                 HealthData.user_id == user_id,
                 HealthData.recorded_at >= start_date,
                 HealthData.recorded_at <= end_date
             )
-            
+
             if metric_types:
                 health_data_query = health_data_query.filter(
                     HealthData.metric_type.in_(metric_types)
                 )
-            
+
             health_data = health_data_query.order_by(HealthData.recorded_at).all()
-            
+
             if not health_data:
                 raise ValueError("No health data found for the specified criteria")
-            
+
             # Update progress
             current_task.update_state(
                 state='PROGRESS',
                 meta={'progress': 50, 'message': 'Generating charts and analysis...'}
             )
-            
+
             # Generate PDF report
             import asyncio
             pdf_bytes = asyncio.run(pdf_report_service.generate_health_report(
@@ -99,18 +99,18 @@ def generate_pdf_report(
                 user_timezone=user_timezone,
                 db_session=db
             ))
-            
+
             # Update progress
             current_task.update_state(
                 state='PROGRESS',
                 meta={'progress': 90, 'message': 'Finalizing PDF document...'}
             )
-            
+
             return pdf_bytes
-            
+
         finally:
             db.close()
-            
+
     except Exception as e:
         # Update task state to failure
         current_task.update_state(

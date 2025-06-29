@@ -2,14 +2,17 @@
 Timezone API endpoints.
 """
 
-from typing import List, Optional
-from fastapi import APIRouter, Depends, Query
-from app.schemas.user import User
-from app.api.deps import get_current_user_optional
-from app.utils.timezone import get_available_timezones, validate_timezone, get_current_time_in_timezone
-from pydantic import BaseModel
-from datetime import datetime
 
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+
+from app.api.deps import get_current_user_optional
+from app.schemas.user import User
+from app.utils.timezone import (
+    get_available_timezones,
+    get_current_time_in_timezone,
+    validate_timezone,
+)
 
 router = APIRouter()
 
@@ -24,12 +27,12 @@ class TimezoneInfo(BaseModel):
 class UserTimezoneResponse(BaseModel):
     """User timezone response."""
     current_timezone: str
-    available_timezones: List[str]
+    available_timezones: list[str]
     current_time: str
 
 
-@router.get("/available", response_model=List[str])
-def get_available_timezones_endpoint() -> List[str]:
+@router.get("/available", response_model=list[str])
+def get_available_timezones_endpoint() -> list[str]:
     """
     Get list of available timezones.
     """
@@ -38,7 +41,7 @@ def get_available_timezones_endpoint() -> List[str]:
 
 @router.get("/current", response_model=UserTimezoneResponse)
 def get_user_timezone(
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    current_user: User | None = Depends(get_current_user_optional),
 ) -> UserTimezoneResponse:
     """
     Get current user's timezone information.
@@ -47,7 +50,7 @@ def get_user_timezone(
     # Use user's timezone if authenticated, otherwise use default
     user_timezone = current_user.timezone if current_user else "America/New_York"
     current_time = get_current_time_in_timezone(user_timezone)
-    
+
     return UserTimezoneResponse(
         current_timezone=user_timezone,
         available_timezones=get_available_timezones(),

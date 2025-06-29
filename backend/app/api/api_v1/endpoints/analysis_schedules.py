@@ -4,7 +4,7 @@ Analysis Schedule API endpoints
 Provides REST API for managing analysis schedules, executions, and history.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -499,7 +499,7 @@ def get_schedule_templates() -> Any:
                     "options": ["daily", "weekly", "monthly"]
                 },
                 "analysis_depth": {
-                    "type": "select", 
+                    "type": "select",
                     "description": "Analysis detail level",
                     "default": "standard",
                     "options": ["basic", "standard", "comprehensive"]
@@ -668,7 +668,7 @@ def get_recent_analysis_activity(
     return history
 
 
-@router.get("/history/stats", response_model=Dict[str, Any])
+@router.get("/history/stats", response_model=dict[str, Any])
 def get_user_activity_stats(
     *,
     db: Session = Depends(get_db),
@@ -686,7 +686,7 @@ def get_user_activity_stats(
     return stats
 
 
-@router.get("/history/analysis/{analysis_id}/summary", response_model=Dict[str, Any])
+@router.get("/history/analysis/{analysis_id}/summary", response_model=dict[str, Any])
 def get_analysis_interaction_summary(
     *,
     db: Session = Depends(get_db),

@@ -2,9 +2,10 @@
 Health data response schemas with timezone-aware datetime fields.
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
 from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel, Field
 
 
 class HealthDataResponse(BaseModel):
@@ -14,14 +15,14 @@ class HealthDataResponse(BaseModel):
     metric_type: str
     value: float
     unit: str
-    systolic: Optional[float] = None
-    diastolic: Optional[float] = None
-    additional_data: Optional[Dict[str, Any]] = None
-    notes: Optional[str] = None
+    systolic: float | None = None
+    diastolic: float | None = None
+    additional_data: dict[str, Any] | None = None
+    notes: str | None = None
     recorded_at: datetime
     created_at: datetime
     updated_at: datetime
-    
+
     # Display fields with timezone conversion
     recorded_at_local: str = Field(..., description="Recorded time in user's timezone")
     created_at_local: str = Field(..., description="Created time in user's timezone")
@@ -31,7 +32,7 @@ class HealthDataResponse(BaseModel):
         from_attributes = True
 
 
-def convert_health_data_to_response(health_data, user_timezone: Optional[str] = None) -> HealthDataResponse:
+def convert_health_data_to_response(health_data, user_timezone: str | None = None) -> HealthDataResponse:
     """
     Convert HealthData model to HealthDataResponse with timezone conversion.
     
@@ -43,7 +44,7 @@ def convert_health_data_to_response(health_data, user_timezone: Optional[str] = 
         HealthDataResponse with timezone-converted fields
     """
     from app.utils.timezone import format_datetime_for_user
-    
+
     return HealthDataResponse(
         id=health_data.id,
         user_id=health_data.user_id,

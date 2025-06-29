@@ -1,7 +1,10 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
-from sqlalchemy.orm import relationship
 from datetime import datetime
+
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
+
 
 class Note(Base):
     __tablename__ = "notes"
@@ -15,4 +18,4 @@ class Note(Base):
 
     # Relationships
     health_data = relationship("HealthData", back_populates="health_notes")
-    user = relationship("User", back_populates="notes") 
+    user = relationship("User", back_populates="notes")
