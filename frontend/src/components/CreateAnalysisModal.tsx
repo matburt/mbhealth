@@ -6,6 +6,15 @@ import { aiAnalysisService } from '../services/aiAnalysis';
 import { AIAnalysisCreate, AIProvider, AnalysisType } from '../types/aiAnalysis';
 import { HealthData } from '../types/health';
 import AnalysisPresets from './AnalysisPresets';
+import SaveAnalysisConfigModal from './SaveAnalysisConfigModal';
+import SavedAnalysisConfigs from './SavedAnalysisConfigs';
+import { 
+  findTrendingData, 
+  findAnomalousData, 
+  filterByTimeOfDay, 
+  getDataStatistics 
+} from '../utils/dataAnalysis';
+import { AnalysisConfig } from '../types/analysisConfig';
 
 interface CreateAnalysisModalProps {
   isOpen: boolean;
@@ -34,7 +43,13 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [showSmartSelection, setShowSmartSelection] = useState(true);
   const [showPresets, setShowPresets] = useState(true);
+  const [showAdvancedSelection, setShowAdvancedSelection] = useState(true);
+  const [showSavedConfigs, setShowSavedConfigs] = useState(true);
+  const [showSaveConfigModal, setShowSaveConfigModal] = useState(false);
   const [lastAnalysisDate, setLastAnalysisDate] = useState<Date | null>(null);
+  const [dataStats, setDataStats] = useState<any>(null);
+  const [currentSelectionMethod, setCurrentSelectionMethod] = useState<'preset' | 'smart' | 'advanced' | 'manual' | 'visualization'>('manual');
+  const [currentSelectionConfig, setCurrentSelectionConfig] = useState<any>({});
 
   const {
     register,
@@ -66,6 +81,10 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
       setSelectedDataIds(preSelectedData.map(data => data.id));
       setShowSmartSelection(false); // Hide smart selection since data is pre-selected
       setShowPresets(false); // Hide presets since data is pre-selected
+      setShowAdvancedSelection(false); // Hide advanced selection since data is pre-selected
+      setShowSavedConfigs(false); // Hide saved configs since data is pre-selected
+      setCurrentSelectionMethod('visualization');
+      setCurrentSelectionConfig({ filters: { metric_type: 'mixed', time_range: 'filtered' } });
     }
     if (analysisContext) {
       setValue('additional_context', analysisContext);
@@ -83,6 +102,10 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
       
       if (!preSelectedData) {
         setHealthData(healthDataResult);
+        // Calculate data statistics for advanced selection
+        setDataStats(getDataStatistics(healthDataResult));
+      } else {
+        setDataStats(getDataStatistics(preSelectedData));
       }
       setProviders(providersResult);
       
@@ -106,6 +129,8 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     const filteredData = healthData.filter(data => data.metric_type === metricType);
     const ids = filteredData.map(data => data.id);
     setSelectedDataIds(ids);
+    setCurrentSelectionMethod('smart');
+    setCurrentSelectionConfig({ metric_types: [metricType] });
     toast.success(`Selected ${ids.length} ${metricType.replace('_', ' ')} readings`);
   };
 
@@ -116,6 +141,8 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     );
     const ids = filteredData.map(data => data.id);
     setSelectedDataIds(ids);
+    setCurrentSelectionMethod('smart');
+    setCurrentSelectionConfig({ time_range: `${days}d` });
     toast.success(`Selected ${ids.length} readings from the last ${days} days`);
   };
 
@@ -177,6 +204,112 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     toast.success(`Selected ${preset.name} preset with ${selectedData.length} readings`);
     setShowPresets(false);
     setShowSmartSelection(false);
+    setShowAdvancedSelection(false);
+  };
+
+  // Advanced selection functions
+  const selectTrendingData = (minStrength: 'weak' | 'moderate' | 'strong' = 'moderate') => {
+    const trendingData = findTrendingData(healthData, 0.6, minStrength);
+    const ids = trendingData.map(data => data.id);
+    setSelectedDataIds(ids);
+    setCurrentSelectionMethod('advanced');
+    setCurrentSelectionConfig({ trending_data: { enabled: true, min_strength: minStrength } });
+    toast.success(`Selected ${ids.length} data points with ${minStrength}+ trends`);
+  };
+
+  const selectAnomalousData = (minSeverity: 'low' | 'medium' | 'high' = 'medium') => {
+    const anomalousData = findAnomalousData(healthData, minSeverity);
+    const ids = anomalousData.map(data => data.id);
+    setSelectedDataIds(ids);
+    setCurrentSelectionMethod('advanced');
+    setCurrentSelectionConfig({ anomalous_data: { enabled: true, min_severity: minSeverity } });
+    toast.success(`Selected ${ids.length} anomalous readings (${minSeverity}+ severity)`);
+  };
+
+  const selectByTimeOfDay = (timeOfDay: 'morning' | 'afternoon' | 'evening') => {
+    const filteredData = filterByTimeOfDay(healthData, timeOfDay);
+    const ids = filteredData.map(data => data.id);
+    setSelectedDataIds(ids);
+    setCurrentSelectionMethod('advanced');
+    setCurrentSelectionConfig({ time_of_day: timeOfDay });
+    toast.success(`Selected ${ids.length} ${timeOfDay} readings`);
+  };
+
+  // Saved configuration handlers
+  const handleSaveConfiguration = () => {
+    if (selectedDataIds.length === 0) {
+      toast.error('Please select some data before saving configuration');
+      return;
+    }
+    setShowSaveConfigModal(true);
+  };
+
+  const handleConfigSaved = (config: AnalysisConfig) => {
+    toast.success(`Configuration "${config.name}" saved successfully`);
+  };
+
+  const handleLoadConfiguration = (config: AnalysisConfig) => {
+    // Apply the saved configuration
+    setValue('analysis_type', config.analysis_type);
+    setValue('additional_context', config.additional_context || '');
+    if (config.provider_id) {
+      setValue('provider', config.provider_id);
+    }
+
+    // Apply data selection based on config
+    const { type, config: selectionConfig } = config.data_selection;
+    setCurrentSelectionMethod(type);
+    setCurrentSelectionConfig(selectionConfig);
+
+    // Apply data selection
+    let filteredData: HealthData[] = [];
+    switch (type) {
+      case 'smart':
+        if (selectionConfig.metric_types?.length) {
+          filteredData = healthData.filter(d => selectionConfig.metric_types!.includes(d.metric_type));
+        }
+        if (selectionConfig.time_range) {
+          const days = parseInt(selectionConfig.time_range.replace('d', ''));
+          if (!isNaN(days)) {
+            const cutoffDate = subDays(new Date(), days);
+            filteredData = filteredData.length > 0 
+              ? filteredData.filter(d => new Date(d.recorded_at) >= cutoffDate)
+              : healthData.filter(d => new Date(d.recorded_at) >= cutoffDate);
+          }
+        }
+        break;
+      case 'advanced':
+        if (selectionConfig.trending_data?.enabled) {
+          filteredData = findTrendingData(healthData, 0.6, selectionConfig.trending_data.min_strength);
+        }
+        if (selectionConfig.anomalous_data?.enabled) {
+          const anomalousData = findAnomalousData(healthData, selectionConfig.anomalous_data.min_severity);
+          filteredData = filteredData.length > 0 
+            ? filteredData.filter(d => anomalousData.some(a => a.id === d.id))
+            : anomalousData;
+        }
+        if (selectionConfig.time_of_day) {
+          const timeFilteredData = filterByTimeOfDay(healthData, selectionConfig.time_of_day);
+          filteredData = filteredData.length > 0 
+            ? filteredData.filter(d => timeFilteredData.some(t => t.id === d.id))
+            : timeFilteredData;
+        }
+        break;
+      case 'manual':
+        if (selectionConfig.health_data_ids?.length) {
+          filteredData = healthData.filter(d => selectionConfig.health_data_ids!.includes(d.id));
+        }
+        break;
+      default:
+        filteredData = healthData;
+    }
+
+    setSelectedDataIds(filteredData.map(d => d.id));
+    
+    // Hide other selection methods since we're using a saved config
+    setShowPresets(false);
+    setShowSmartSelection(false);
+    setShowAdvancedSelection(false);
   };
 
   // Get available metric types
@@ -265,6 +398,10 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     setSelectedDataIds([]);
     setShowSmartSelection(true);
     setShowPresets(true);
+    setShowAdvancedSelection(true);
+    setShowSavedConfigs(true);
+    setCurrentSelectionMethod('manual');
+    setCurrentSelectionConfig({});
     onClose();
   };
 
@@ -459,11 +596,13 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
                         setSelectedDataIds([]);
                         setShowSmartSelection(true);
                         setShowPresets(true);
+                        setShowAdvancedSelection(true);
                         // Fetch all data instead of pre-selected
                         setLoading(true);
                         try {
                           const healthDataResult = await aiAnalysisService.getHealthDataForAnalysis();
                           setHealthData(healthDataResult);
+                          setDataStats(getDataStatistics(healthDataResult));
                         } catch (error) {
                           console.error('Failed to fetch data:', error);
                           toast.error('Failed to load data');
@@ -476,6 +615,48 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
                       Choose Different Data
                     </button>
                   </div>
+                </div>
+              )}
+              
+              {/* Saved Configurations */}
+              {showSavedConfigs && !preSelectedData && (
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-sm font-medium text-gray-900">Saved Configurations</h4>
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveConfiguration}
+                        className="text-xs text-gray-600 hover:text-gray-800 font-medium"
+                      >
+                        Save Current
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowSavedConfigs(false)}
+                        className="text-xs text-gray-600 hover:text-gray-800"
+                      >
+                        Hide
+                      </button>
+                    </div>
+                  </div>
+                  <SavedAnalysisConfigs 
+                    onConfigSelect={handleLoadConfiguration}
+                    showCollections={false}
+                  />
+                </div>
+              )}
+              
+              {/* Show Saved Configs button when hidden */}
+              {!showSavedConfigs && !preSelectedData && (
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowSavedConfigs(true)}
+                    className="text-sm text-gray-600 hover:text-gray-800 font-medium"
+                  >
+                    + Show Saved Configurations
+                  </button>
                 </div>
               )}
               
@@ -507,6 +688,129 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
                     className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                   >
                     + Show Analysis Presets
+                  </button>
+                </div>
+              )}
+
+              {/* Advanced Selection Options */}
+              {showAdvancedSelection && healthData.length > 0 && !preSelectedData && dataStats && (
+                <div className="mb-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <h4 className="text-sm font-medium text-purple-900 mb-3">Advanced Selection</h4>
+                  
+                  {/* Trending Data */}
+                  <div className="mb-3">
+                    <p className="text-xs text-purple-700 mb-2">Trending Data:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectTrendingData('weak')}
+                        disabled={dataStats.trending === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        📈 All Trends ({dataStats.trending})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectTrendingData('moderate')}
+                        disabled={dataStats.trending === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        📊 Strong Trends
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Anomalous Data */}
+                  <div className="mb-3">
+                    <p className="text-xs text-purple-700 mb-2">Anomalous Data:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectAnomalousData('low')}
+                        disabled={dataStats.anomalous === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ⚠️ All Anomalies ({dataStats.anomalous})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectAnomalousData('medium')}
+                        disabled={dataStats.anomalous === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        🚨 Significant Anomalies
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectAnomalousData('high')}
+                        disabled={dataStats.anomalous === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        🔴 Critical Anomalies
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Time of Day */}
+                  <div className="mb-3">
+                    <p className="text-xs text-purple-700 mb-2">By Time of Day:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectByTimeOfDay('morning')}
+                        disabled={dataStats.morning === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        🌅 Morning ({dataStats.morning})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectByTimeOfDay('afternoon')}
+                        disabled={dataStats.afternoon === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ☀️ Afternoon ({dataStats.afternoon})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectByTimeOfDay('evening')}
+                        disabled={dataStats.evening === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        🌙 Evening ({dataStats.evening})
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Control buttons */}
+                  <div className="flex justify-between items-center pt-2 border-t border-purple-200">
+                    <button
+                      type="button"
+                      onClick={clearSelection}
+                      className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+                    >
+                      Clear Selection
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvancedSelection(false)}
+                      className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+                    >
+                      Hide Advanced
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Show Advanced Selection button when hidden */}
+              {!showAdvancedSelection && !preSelectedData && (
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedSelection(true)}
+                    className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+                  >
+                    + Show Advanced Selection
                   </button>
                 </div>
               )}
@@ -700,6 +1004,21 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Save Configuration Modal */}
+      <SaveAnalysisConfigModal
+        isOpen={showSaveConfigModal}
+        onClose={() => setShowSaveConfigModal(false)}
+        onSaved={handleConfigSaved}
+        analysisData={{
+          analysis_type: watch('analysis_type'),
+          provider_id: watch('provider'),
+          additional_context: watch('additional_context'),
+          selectedDataIds,
+          selectionMethod: currentSelectionMethod,
+          selectionConfig: currentSelectionConfig
+        }}
+      />
     </div>
   );
 };
