@@ -8,6 +8,9 @@ import { HealthData } from '../types/health';
 import AnalysisPresets from './AnalysisPresets';
 import SaveAnalysisConfigModal from './SaveAnalysisConfigModal';
 import SavedAnalysisConfigs from './SavedAnalysisConfigs';
+import WorkflowSelectionModal from './WorkflowSelectionModal';
+import WorkflowExecutionModal from './WorkflowExecutionModal';
+import AnalysisHelpGuide from './AnalysisHelpGuide';
 import { 
   findTrendingData, 
   findAnomalousData, 
@@ -15,6 +18,7 @@ import {
   getDataStatistics 
 } from '../utils/dataAnalysis';
 import { AnalysisConfig } from '../types/analysisConfig';
+import { WorkflowExecution } from '../types/analysisWorkflow';
 
 interface CreateAnalysisModalProps {
   isOpen: boolean;
@@ -46,6 +50,10 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   const [showAdvancedSelection, setShowAdvancedSelection] = useState(true);
   const [showSavedConfigs, setShowSavedConfigs] = useState(true);
   const [showSaveConfigModal, setShowSaveConfigModal] = useState(false);
+  const [showWorkflowModal, setShowWorkflowModal] = useState(false);
+  const [showWorkflowExecution, setShowWorkflowExecution] = useState(false);
+  const [currentWorkflowExecution, setCurrentWorkflowExecution] = useState<WorkflowExecution | null>(null);
+  const [showHelpGuide, setShowHelpGuide] = useState(false);
   const [lastAnalysisDate, setLastAnalysisDate] = useState<Date | null>(null);
   const [dataStats, setDataStats] = useState<any>(null);
   const [currentSelectionMethod, setCurrentSelectionMethod] = useState<'preset' | 'smart' | 'advanced' | 'manual' | 'visualization'>('manual');
@@ -312,6 +320,26 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     setShowAdvancedSelection(false);
   };
 
+  // Workflow handlers
+  const handleStartWorkflow = () => {
+    if (selectedDataIds.length === 0) {
+      toast.error('Please select some data before starting a workflow');
+      return;
+    }
+    setShowWorkflowModal(true);
+  };
+
+  const handleWorkflowStart = (execution: WorkflowExecution) => {
+    setCurrentWorkflowExecution(execution);
+    setShowWorkflowModal(false);
+    setShowWorkflowExecution(true);
+  };
+
+  const handleViewAnalysis = (analysisId: number) => {
+    // Navigate to analysis view - this would be implemented based on your routing
+    toast.success(`Viewing analysis ${analysisId}`);
+  };
+
   // Get available metric types
   const availableMetrics = Array.from(new Set(healthData.map(data => data.metric_type)));
   
@@ -446,13 +474,26 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Create AI Analysis</h2>
-          <button
-            onClick={handleCancel}
-            className="text-gray-400 hover:text-gray-600 text-2xl font-light"
-          >
-            ×
-          </button>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Create AI Analysis</h2>
+            <p className="text-sm text-gray-600 mt-1">Analyze your health data with artificial intelligence</p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setShowHelpGuide(true)}
+              className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+              title="Help & Guide"
+            >
+              <span className="text-lg">❓</span>
+              <span className="text-sm font-medium">Help</span>
+            </button>
+            <button
+              onClick={handleCancel}
+              className="text-gray-400 hover:text-gray-600 text-2xl font-light"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         {/* Form */}
@@ -462,9 +503,14 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
             <div className="space-y-6">
               {/* Analysis Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Analysis Type *
-                </label>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Analysis Type *
+                  </label>
+                  <span className="text-xs text-blue-600 cursor-pointer" onClick={() => setShowHelpGuide(true)}>
+                    What's the difference? →
+                  </span>
+                </div>
                 <div className="grid grid-cols-1 gap-3">
                   {analysisTypes.map((type) => (
                     <label
@@ -575,9 +621,43 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
 
             {/* Right Column - Health Data Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Select Health Data to Analyze * ({selectedDataIds.length} selected)
-              </label>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Select Health Data to Analyze * ({selectedDataIds.length} selected)
+                </label>
+                <span className="text-xs text-blue-600 cursor-pointer" onClick={() => setShowHelpGuide(true)}>
+                  How to select data? →
+                </span>
+              </div>
+              
+              {/* Quick Tips */}
+              {!preSelectedData && selectedDataIds.length === 0 && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-700 mb-2">💡 <strong>Quick Start:</strong></p>
+                  <ul className="text-xs text-blue-600 space-y-1">
+                    <li>• Try an <span className="font-medium">Analysis Preset</span> for common scenarios</li>
+                    <li>• Use <span className="font-medium">Smart Selection</span> for quick data filtering</li>
+                    <li>• Start a <span className="font-medium">Workflow</span> for comprehensive analysis</li>
+                  </ul>
+                </div>
+              )}
+              
+              {/* Data Selected Success Message */}
+              {!preSelectedData && selectedDataIds.length > 0 && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center space-x-2 text-green-700">
+                    <span className="text-lg">✅</span>
+                    <div>
+                      <p className="text-sm font-medium">Great! You've selected {selectedDataIds.length} data points</p>
+                      <p className="text-xs text-green-600">
+                        {selectedDataIds.length >= 10 ? 'Perfect amount for comprehensive analysis' : 
+                         selectedDataIds.length >= 5 ? 'Good amount for basic analysis' : 
+                         'Consider adding more data for better insights'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {/* Pre-selected Data Info */}
               {preSelectedData && preSelectedData.length > 0 && (
@@ -986,21 +1066,71 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={selectedDataIds.length === 0}
-              className="btn-primary"
-            >
-              Create Analysis
-            </button>
+          <div className="pt-6 border-t border-gray-200 mt-6">
+            {/* Action Descriptions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-xs text-gray-600">
+              <div className="bg-purple-50 p-3 rounded-lg">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="text-purple-600">🔄</span>
+                  <span className="font-medium text-purple-900">Workflows</span>
+                </div>
+                <p>Run multiple related analyses automatically for comprehensive insights</p>
+              </div>
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="text-blue-600">🤖</span>
+                  <span className="font-medium text-blue-900">Single Analysis</span>
+                </div>
+                <p>Create one focused analysis with your selected data and settings</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="text-gray-600">💾</span>
+                  <span className="font-medium text-gray-900">Save Config</span>
+                </div>
+                <p>Save your current setup to reuse for future analyses</p>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={handleStartWorkflow}
+                  disabled={selectedDataIds.length === 0}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  title="Run multi-step analysis workflow"
+                >
+                  🔄 Start Workflow
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveConfiguration}
+                  disabled={selectedDataIds.length === 0}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  title="Save current configuration for reuse"
+                >
+                  💾 Save Config
+                </button>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={selectedDataIds.length === 0}
+                  className="btn-primary"
+                  title="Create a single AI analysis"
+                >
+                  🤖 Create Analysis
+                </button>
+              </div>
+            </div>
           </div>
         </form>
       </div>
@@ -1018,6 +1148,29 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
           selectionMethod: currentSelectionMethod,
           selectionConfig: currentSelectionConfig
         }}
+      />
+
+      {/* Workflow Selection Modal */}
+      <WorkflowSelectionModal
+        isOpen={showWorkflowModal}
+        onClose={() => setShowWorkflowModal(false)}
+        onWorkflowStart={handleWorkflowStart}
+        selectedDataIds={selectedDataIds}
+        healthData={healthData}
+      />
+
+      {/* Workflow Execution Modal */}
+      <WorkflowExecutionModal
+        execution={currentWorkflowExecution}
+        isOpen={showWorkflowExecution}
+        onClose={() => setShowWorkflowExecution(false)}
+        onViewAnalysis={handleViewAnalysis}
+      />
+
+      {/* Help Guide Modal */}
+      <AnalysisHelpGuide
+        isOpen={showHelpGuide}
+        onClose={() => setShowHelpGuide(false)}
       />
     </div>
   );
