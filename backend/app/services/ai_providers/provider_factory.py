@@ -63,9 +63,10 @@ class ProviderFactory:
                 "name": "Custom Provider",
                 "description": "OpenAI-compatible custom endpoint (Ollama, LocalAI, etc.)",
                 "default_endpoint": None,
-                "requires_api_key": False,
+                "requires_api_key": True,
                 "supports_models": ["configurable"],
-                "cost_estimation": False
+                "cost_estimation": False,
+                "api_key_optional": True
             }
         }
     
@@ -82,8 +83,8 @@ class ProviderFactory:
         
         provider_info = supported_providers[provider_type]
         
-        # Check API key requirement
-        if provider_info["requires_api_key"] and not config.get("api_key"):
+        # Check API key requirement (unless it's optional)
+        if provider_info["requires_api_key"] and not config.get("api_key") and not provider_info.get("api_key_optional", False):
             errors["api_key"] = "API key is required for this provider"
         
         # Check endpoint for custom providers

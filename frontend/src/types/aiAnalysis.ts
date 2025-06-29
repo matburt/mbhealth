@@ -87,6 +87,7 @@ export interface SupportedProviderType {
   requires_api_key: boolean;
   supports_models: string[];
   cost_estimation: boolean;
+  api_key_optional?: boolean;
 }
 
 export interface AnalysisType {

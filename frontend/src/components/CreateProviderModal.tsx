@@ -67,7 +67,7 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({
   };
 
   const handleTestConnection = async () => {
-    if (!formData.type || (!formData.api_key && supportedTypes[formData.type]?.requires_api_key)) {
+    if (!formData.type || (!formData.api_key && supportedTypes[formData.type]?.requires_api_key && !supportedTypes[formData.type]?.api_key_optional)) {
       toast.error('Please fill in all required fields before testing');
       return;
     }
@@ -117,7 +117,7 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({
       return;
     }
 
-    if (supportedTypes[formData.type]?.requires_api_key && !formData.api_key) {
+    if (supportedTypes[formData.type]?.requires_api_key && !formData.api_key && !supportedTypes[formData.type]?.api_key_optional) {
       toast.error('API key is required for this provider type');
       return;
     }
@@ -196,17 +196,25 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({
             {selectedType?.requires_api_key && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  API Key *
+                  API Key {!selectedType?.api_key_optional && '*'}
+                  {selectedType?.api_key_optional && (
+                    <span className="text-gray-500 text-sm font-normal"> (Optional)</span>
+                  )}
                 </label>
                 <input
                   type="password"
                   name="api_key"
                   value={formData.api_key}
                   onChange={handleInputChange}
-                  placeholder="Enter your API key"
-                  required
+                  placeholder={selectedType?.api_key_optional ? "Enter API key if required" : "Enter your API key"}
+                  required={!selectedType?.api_key_optional}
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {selectedType?.api_key_optional && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Leave empty for providers that don't require authentication (e.g., local Ollama)
+                  </p>
+                )}
               </div>
             )}
 

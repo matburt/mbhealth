@@ -174,7 +174,9 @@ const EditProviderModal: React.FC<EditProviderModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    API Key
+                    API Key {selectedType?.api_key_optional && (
+                      <span className="text-gray-500 text-sm font-normal"> (Optional)</span>
+                    )}
                   </label>
                   <button
                     type="button"
@@ -186,14 +188,21 @@ const EditProviderModal: React.FC<EditProviderModalProps> = ({
                 </div>
                 
                 {showApiKeyField ? (
-                  <input
-                    type="password"
-                    name="api_key"
-                    value={formData.api_key}
-                    onChange={handleInputChange}
-                    placeholder="Enter new API key"
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  <>
+                    <input
+                      type="password"
+                      name="api_key"
+                      value={formData.api_key}
+                      onChange={handleInputChange}
+                      placeholder={selectedType?.api_key_optional ? "Enter API key if required" : "Enter new API key"}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {selectedType?.api_key_optional && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Leave empty for providers that don't require authentication (e.g., local Ollama)
+                      </p>
+                    )}
+                  </>
                 ) : (
                   <div className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-600">
                     ••••••••••••••••••••••••
