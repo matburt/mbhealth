@@ -1,15 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { format } from 'date-fns';
+import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { aiAnalysisService } from '../services/aiAnalysis';
 import { AIAnalysisCreate, AIProvider, AnalysisType } from '../types/aiAnalysis';
 import { HealthData } from '../types/health';
+import AnalysisPresets from './AnalysisPresets';
+import SaveAnalysisConfigModal from './SaveAnalysisConfigModal';
+import SavedAnalysisConfigs from './SavedAnalysisConfigs';
+import WorkflowSelectionModal from './WorkflowSelectionModal';
+import WorkflowExecutionModal from './WorkflowExecutionModal';
+import AnalysisHelpGuide from './AnalysisHelpGuide';
+import { 
+  findTrendingData, 
+  findAnomalousData, 
+  filterByTimeOfDay, 
+  getDataStatistics 
+} from '../utils/dataAnalysis';
+import { AnalysisConfig } from '../types/analysisConfig';
+import { WorkflowExecution } from '../types/analysisWorkflow';
 
 interface CreateAnalysisModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAnalysisCreated: () => void;
+  preSelectedData?: HealthData[];
+  analysisContext?: string;
 }
 
 interface CreateAnalysisFormData {
@@ -21,23 +37,39 @@ interface CreateAnalysisFormData {
 const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({ 
   isOpen, 
   onClose, 
-  onAnalysisCreated 
+  onAnalysisCreated,
+  preSelectedData,
+  analysisContext 
 }) => {
   const [healthData, setHealthData] = useState<HealthData[]>([]);
   const [selectedDataIds, setSelectedDataIds] = useState<number[]>([]);
   const [providers, setProviders] = useState<AIProvider[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showSmartSelection, setShowSmartSelection] = useState(true);
+  const [showPresets, setShowPresets] = useState(true);
+  const [showAdvancedSelection, setShowAdvancedSelection] = useState(true);
+  const [showSavedConfigs, setShowSavedConfigs] = useState(true);
+  const [showSaveConfigModal, setShowSaveConfigModal] = useState(false);
+  const [showWorkflowModal, setShowWorkflowModal] = useState(false);
+  const [showWorkflowExecution, setShowWorkflowExecution] = useState(false);
+  const [currentWorkflowExecution, setCurrentWorkflowExecution] = useState<WorkflowExecution | null>(null);
+  const [showHelpGuide, setShowHelpGuide] = useState(false);
+  const [lastAnalysisDate, setLastAnalysisDate] = useState<Date | null>(null);
+  const [dataStats, setDataStats] = useState<any>(null);
+  const [currentSelectionMethod, setCurrentSelectionMethod] = useState<'preset' | 'smart' | 'advanced' | 'manual' | 'visualization'>('manual');
+  const [currentSelectionConfig, setCurrentSelectionConfig] = useState<any>({});
 
   const {
     register,
     handleSubmit,
     reset,
     watch,
+    setValue,
   } = useForm<CreateAnalysisFormData>({
     defaultValues: {
       analysis_type: 'insights',
       provider: '',
-      additional_context: ''
+      additional_context: analysisContext || ''
     }
   });
 
@@ -50,21 +82,270 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     }
   }, [isOpen]);
 
+  // Handle pre-selected data
+  useEffect(() => {
+    if (preSelectedData && preSelectedData.length > 0) {
+      setHealthData(preSelectedData);
+      setSelectedDataIds(preSelectedData.map(data => data.id));
+      setShowSmartSelection(false); // Hide smart selection since data is pre-selected
+      setShowPresets(false); // Hide presets since data is pre-selected
+      setShowAdvancedSelection(false); // Hide advanced selection since data is pre-selected
+      setShowSavedConfigs(false); // Hide saved configs since data is pre-selected
+      setCurrentSelectionMethod('visualization');
+      setCurrentSelectionConfig({ filters: { metric_type: 'mixed', time_range: 'filtered' } });
+    }
+    if (analysisContext) {
+      setValue('additional_context', analysisContext);
+    }
+  }, [preSelectedData, analysisContext, setValue]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [healthDataResult, providersResult] = await Promise.all([
-        aiAnalysisService.getHealthDataForAnalysis(),
-        aiAnalysisService.getProviders(true) // Only enabled providers
+      const [healthDataResult, providersResult, analysesResult] = await Promise.all([
+        preSelectedData ? Promise.resolve(preSelectedData) : aiAnalysisService.getHealthDataForAnalysis(),
+        aiAnalysisService.getProviders(true), // Only enabled providers
+        aiAnalysisService.getAnalysisHistory() // Get last analysis date
       ]);
-      setHealthData(healthDataResult);
+      
+      if (!preSelectedData) {
+        setHealthData(healthDataResult);
+        // Calculate data statistics for advanced selection
+        setDataStats(getDataStatistics(healthDataResult));
+      } else {
+        setDataStats(getDataStatistics(preSelectedData));
+      }
       setProviders(providersResult);
+      
+      // Find the most recent analysis date
+      if (analysesResult.length > 0) {
+        const sortedAnalyses = analysesResult.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setLastAnalysisDate(new Date(sortedAnalyses[0].created_at));
+      }
     } catch (error) {
       console.error('Failed to fetch data:', error);
       toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Smart selection functions
+  const selectDataByMetric = (metricType: string) => {
+    const filteredData = healthData.filter(data => data.metric_type === metricType);
+    const ids = filteredData.map(data => data.id);
+    setSelectedDataIds(ids);
+    setCurrentSelectionMethod('smart');
+    setCurrentSelectionConfig({ metric_types: [metricType] });
+    toast.success(`Selected ${ids.length} ${metricType.replace('_', ' ')} readings`);
+  };
+
+  const selectDataByTimeRange = (days: number) => {
+    const cutoffDate = subDays(new Date(), days);
+    const filteredData = healthData.filter(data => 
+      new Date(data.recorded_at) >= cutoffDate
+    );
+    const ids = filteredData.map(data => data.id);
+    setSelectedDataIds(ids);
+    setCurrentSelectionMethod('smart');
+    setCurrentSelectionConfig({ time_range: `${days}d` });
+    toast.success(`Selected ${ids.length} readings from the last ${days} days`);
+  };
+
+  const selectDataByPeriod = (period: 'week' | 'month') => {
+    let startDate: Date;
+    let endDate: Date;
+    
+    if (period === 'week') {
+      startDate = startOfWeek(new Date());
+      endDate = endOfWeek(new Date());
+    } else {
+      startDate = startOfMonth(new Date());
+      endDate = endOfMonth(new Date());
+    }
+    
+    const filteredData = healthData.filter(data => {
+      const dataDate = new Date(data.recorded_at);
+      return dataDate >= startDate && dataDate <= endDate;
+    });
+    
+    const ids = filteredData.map(data => data.id);
+    setSelectedDataIds(ids);
+    toast.success(`Selected ${ids.length} readings from this ${period}`);
+  };
+
+  const selectDataSinceLastAnalysis = () => {
+    if (!lastAnalysisDate) {
+      toast.error('No previous analysis found');
+      return;
+    }
+    
+    const filteredData = healthData.filter(data => 
+      new Date(data.recorded_at) > lastAnalysisDate
+    );
+    const ids = filteredData.map(data => data.id);
+    setSelectedDataIds(ids);
+    toast.success(`Selected ${ids.length} readings since last analysis`);
+  };
+
+  const selectMostRecentReadings = (count: number) => {
+    const sortedData = [...healthData].sort((a, b) => 
+      new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
+    );
+    const recentData = sortedData.slice(0, count);
+    const ids = recentData.map(data => data.id);
+    setSelectedDataIds(ids);
+    toast.success(`Selected ${ids.length} most recent readings`);
+  };
+
+  const clearSelection = () => {
+    setSelectedDataIds([]);
+    toast.success('Selection cleared');
+  };
+
+  const handlePresetSelect = (preset: any, selectedData: HealthData[]) => {
+    setSelectedDataIds(selectedData.map(d => d.id));
+    setValue('analysis_type', preset.analysisType);
+    setValue('additional_context', preset.context);
+    toast.success(`Selected ${preset.name} preset with ${selectedData.length} readings`);
+    setShowPresets(false);
+    setShowSmartSelection(false);
+    setShowAdvancedSelection(false);
+  };
+
+  // Advanced selection functions
+  const selectTrendingData = (minStrength: 'weak' | 'moderate' | 'strong' = 'moderate') => {
+    const trendingData = findTrendingData(healthData, 0.6, minStrength);
+    const ids = trendingData.map(data => data.id);
+    setSelectedDataIds(ids);
+    setCurrentSelectionMethod('advanced');
+    setCurrentSelectionConfig({ trending_data: { enabled: true, min_strength: minStrength } });
+    toast.success(`Selected ${ids.length} data points with ${minStrength}+ trends`);
+  };
+
+  const selectAnomalousData = (minSeverity: 'low' | 'medium' | 'high' = 'medium') => {
+    const anomalousData = findAnomalousData(healthData, minSeverity);
+    const ids = anomalousData.map(data => data.id);
+    setSelectedDataIds(ids);
+    setCurrentSelectionMethod('advanced');
+    setCurrentSelectionConfig({ anomalous_data: { enabled: true, min_severity: minSeverity } });
+    toast.success(`Selected ${ids.length} anomalous readings (${minSeverity}+ severity)`);
+  };
+
+  const selectByTimeOfDay = (timeOfDay: 'morning' | 'afternoon' | 'evening') => {
+    const filteredData = filterByTimeOfDay(healthData, timeOfDay);
+    const ids = filteredData.map(data => data.id);
+    setSelectedDataIds(ids);
+    setCurrentSelectionMethod('advanced');
+    setCurrentSelectionConfig({ time_of_day: timeOfDay });
+    toast.success(`Selected ${ids.length} ${timeOfDay} readings`);
+  };
+
+  // Saved configuration handlers
+  const handleSaveConfiguration = () => {
+    if (selectedDataIds.length === 0) {
+      toast.error('Please select some data before saving configuration');
+      return;
+    }
+    setShowSaveConfigModal(true);
+  };
+
+  const handleConfigSaved = (config: AnalysisConfig) => {
+    toast.success(`Configuration "${config.name}" saved successfully`);
+  };
+
+  const handleLoadConfiguration = (config: AnalysisConfig) => {
+    // Apply the saved configuration
+    setValue('analysis_type', config.analysis_type);
+    setValue('additional_context', config.additional_context || '');
+    if (config.provider_id) {
+      setValue('provider', config.provider_id);
+    }
+
+    // Apply data selection based on config
+    const { type, config: selectionConfig } = config.data_selection;
+    setCurrentSelectionMethod(type);
+    setCurrentSelectionConfig(selectionConfig);
+
+    // Apply data selection
+    let filteredData: HealthData[] = [];
+    switch (type) {
+      case 'smart':
+        if (selectionConfig.metric_types?.length) {
+          filteredData = healthData.filter(d => selectionConfig.metric_types!.includes(d.metric_type));
+        }
+        if (selectionConfig.time_range) {
+          const days = parseInt(selectionConfig.time_range.replace('d', ''));
+          if (!isNaN(days)) {
+            const cutoffDate = subDays(new Date(), days);
+            filteredData = filteredData.length > 0 
+              ? filteredData.filter(d => new Date(d.recorded_at) >= cutoffDate)
+              : healthData.filter(d => new Date(d.recorded_at) >= cutoffDate);
+          }
+        }
+        break;
+      case 'advanced':
+        if (selectionConfig.trending_data?.enabled) {
+          filteredData = findTrendingData(healthData, 0.6, selectionConfig.trending_data.min_strength);
+        }
+        if (selectionConfig.anomalous_data?.enabled) {
+          const anomalousData = findAnomalousData(healthData, selectionConfig.anomalous_data.min_severity);
+          filteredData = filteredData.length > 0 
+            ? filteredData.filter(d => anomalousData.some(a => a.id === d.id))
+            : anomalousData;
+        }
+        if (selectionConfig.time_of_day) {
+          const timeFilteredData = filterByTimeOfDay(healthData, selectionConfig.time_of_day);
+          filteredData = filteredData.length > 0 
+            ? filteredData.filter(d => timeFilteredData.some(t => t.id === d.id))
+            : timeFilteredData;
+        }
+        break;
+      case 'manual':
+        if (selectionConfig.health_data_ids?.length) {
+          filteredData = healthData.filter(d => selectionConfig.health_data_ids!.includes(d.id));
+        }
+        break;
+      default:
+        filteredData = healthData;
+    }
+
+    setSelectedDataIds(filteredData.map(d => d.id));
+    
+    // Hide other selection methods since we're using a saved config
+    setShowPresets(false);
+    setShowSmartSelection(false);
+    setShowAdvancedSelection(false);
+  };
+
+  // Workflow handlers
+  const handleStartWorkflow = () => {
+    if (selectedDataIds.length === 0) {
+      toast.error('Please select some data before starting a workflow');
+      return;
+    }
+    setShowWorkflowModal(true);
+  };
+
+  const handleWorkflowStart = (execution: WorkflowExecution) => {
+    setCurrentWorkflowExecution(execution);
+    setShowWorkflowModal(false);
+    setShowWorkflowExecution(true);
+  };
+
+  const handleViewAnalysis = (analysisId: number) => {
+    // Navigate to analysis view - this would be implemented based on your routing
+    toast.success(`Viewing analysis ${analysisId}`);
+  };
+
+  // Get available metric types
+  const availableMetrics = Array.from(new Set(healthData.map(data => data.metric_type)));
+  
+  // Get metric counts
+  const getMetricCount = (metricType: string) => {
+    return healthData.filter(data => data.metric_type === metricType).length;
   };
 
   const analysisTypes: AnalysisType[] = [
@@ -143,6 +424,12 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   const handleCancel = () => {
     reset();
     setSelectedDataIds([]);
+    setShowSmartSelection(true);
+    setShowPresets(true);
+    setShowAdvancedSelection(true);
+    setShowSavedConfigs(true);
+    setCurrentSelectionMethod('manual');
+    setCurrentSelectionConfig({});
     onClose();
   };
 
@@ -187,13 +474,26 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Create AI Analysis</h2>
-          <button
-            onClick={handleCancel}
-            className="text-gray-400 hover:text-gray-600 text-2xl font-light"
-          >
-            ×
-          </button>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Create AI Analysis</h2>
+            <p className="text-sm text-gray-600 mt-1">Analyze your health data with artificial intelligence</p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setShowHelpGuide(true)}
+              className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+              title="Help & Guide"
+            >
+              <span className="text-lg">❓</span>
+              <span className="text-sm font-medium">Help</span>
+            </button>
+            <button
+              onClick={handleCancel}
+              className="text-gray-400 hover:text-gray-600 text-2xl font-light"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         {/* Form */}
@@ -203,9 +503,14 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
             <div className="space-y-6">
               {/* Analysis Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Analysis Type *
-                </label>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Analysis Type *
+                  </label>
+                  <span className="text-xs text-blue-600 cursor-pointer" onClick={() => setShowHelpGuide(true)}>
+                    What's the difference? →
+                  </span>
+                </div>
                 <div className="grid grid-cols-1 gap-3">
                   {analysisTypes.map((type) => (
                     <label
@@ -316,9 +621,406 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
 
             {/* Right Column - Health Data Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Select Health Data to Analyze * ({selectedDataIds.length} selected)
-              </label>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Select Health Data to Analyze * ({selectedDataIds.length} selected)
+                </label>
+                <span className="text-xs text-blue-600 cursor-pointer" onClick={() => setShowHelpGuide(true)}>
+                  How to select data? →
+                </span>
+              </div>
+              
+              {/* Quick Tips */}
+              {!preSelectedData && selectedDataIds.length === 0 && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-700 mb-2">💡 <strong>Quick Start:</strong></p>
+                  <ul className="text-xs text-blue-600 space-y-1">
+                    <li>• Try an <span className="font-medium">Analysis Preset</span> for common scenarios</li>
+                    <li>• Use <span className="font-medium">Smart Selection</span> for quick data filtering</li>
+                    <li>• Start a <span className="font-medium">Workflow</span> for comprehensive analysis</li>
+                  </ul>
+                </div>
+              )}
+              
+              {/* Data Selected Success Message */}
+              {!preSelectedData && selectedDataIds.length > 0 && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center space-x-2 text-green-700">
+                    <span className="text-lg">✅</span>
+                    <div>
+                      <p className="text-sm font-medium">Great! You've selected {selectedDataIds.length} data points</p>
+                      <p className="text-xs text-green-600">
+                        {selectedDataIds.length >= 10 ? 'Perfect amount for comprehensive analysis' : 
+                         selectedDataIds.length >= 5 ? 'Good amount for basic analysis' : 
+                         'Consider adding more data for better insights'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Pre-selected Data Info */}
+              {preSelectedData && preSelectedData.length > 0 && (
+                <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-green-900">Data Pre-selected from Visualization</h4>
+                      <p className="text-xs text-green-700 mt-1">
+                        {preSelectedData.length} readings selected from your current visualization filters
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setHealthData([]);
+                        setSelectedDataIds([]);
+                        setShowSmartSelection(true);
+                        setShowPresets(true);
+                        setShowAdvancedSelection(true);
+                        // Fetch all data instead of pre-selected
+                        setLoading(true);
+                        try {
+                          const healthDataResult = await aiAnalysisService.getHealthDataForAnalysis();
+                          setHealthData(healthDataResult);
+                          setDataStats(getDataStatistics(healthDataResult));
+                        } catch (error) {
+                          console.error('Failed to fetch data:', error);
+                          toast.error('Failed to load data');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      className="text-xs text-green-600 hover:text-green-800 font-medium"
+                    >
+                      Choose Different Data
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Saved Configurations */}
+              {showSavedConfigs && !preSelectedData && (
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-sm font-medium text-gray-900">Saved Configurations</h4>
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveConfiguration}
+                        className="text-xs text-gray-600 hover:text-gray-800 font-medium"
+                      >
+                        Save Current
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowSavedConfigs(false)}
+                        className="text-xs text-gray-600 hover:text-gray-800"
+                      >
+                        Hide
+                      </button>
+                    </div>
+                  </div>
+                  <SavedAnalysisConfigs 
+                    onConfigSelect={handleLoadConfiguration}
+                    showCollections={false}
+                  />
+                </div>
+              )}
+              
+              {/* Show Saved Configs button when hidden */}
+              {!showSavedConfigs && !preSelectedData && (
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowSavedConfigs(true)}
+                    className="text-sm text-gray-600 hover:text-gray-800 font-medium"
+                  >
+                    + Show Saved Configurations
+                  </button>
+                </div>
+              )}
+              
+              {/* Analysis Presets */}
+              {showPresets && !preSelectedData && healthData.length > 0 && (
+                <div className="mb-4">
+                  <AnalysisPresets 
+                    healthData={healthData} 
+                    onPresetSelect={handlePresetSelect}
+                  />
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={() => setShowPresets(false)}
+                      className="text-xs text-gray-600 hover:text-gray-800"
+                    >
+                      Hide Presets
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Show Presets button when hidden */}
+              {!showPresets && !preSelectedData && (
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowPresets(true)}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    + Show Analysis Presets
+                  </button>
+                </div>
+              )}
+
+              {/* Advanced Selection Options */}
+              {showAdvancedSelection && healthData.length > 0 && !preSelectedData && dataStats && (
+                <div className="mb-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <h4 className="text-sm font-medium text-purple-900 mb-3">Advanced Selection</h4>
+                  
+                  {/* Trending Data */}
+                  <div className="mb-3">
+                    <p className="text-xs text-purple-700 mb-2">Trending Data:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectTrendingData('weak')}
+                        disabled={dataStats.trending === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        📈 All Trends ({dataStats.trending})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectTrendingData('moderate')}
+                        disabled={dataStats.trending === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        📊 Strong Trends
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Anomalous Data */}
+                  <div className="mb-3">
+                    <p className="text-xs text-purple-700 mb-2">Anomalous Data:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectAnomalousData('low')}
+                        disabled={dataStats.anomalous === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ⚠️ All Anomalies ({dataStats.anomalous})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectAnomalousData('medium')}
+                        disabled={dataStats.anomalous === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        🚨 Significant Anomalies
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectAnomalousData('high')}
+                        disabled={dataStats.anomalous === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        🔴 Critical Anomalies
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Time of Day */}
+                  <div className="mb-3">
+                    <p className="text-xs text-purple-700 mb-2">By Time of Day:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectByTimeOfDay('morning')}
+                        disabled={dataStats.morning === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        🌅 Morning ({dataStats.morning})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectByTimeOfDay('afternoon')}
+                        disabled={dataStats.afternoon === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ☀️ Afternoon ({dataStats.afternoon})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectByTimeOfDay('evening')}
+                        disabled={dataStats.evening === 0}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        🌙 Evening ({dataStats.evening})
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Control buttons */}
+                  <div className="flex justify-between items-center pt-2 border-t border-purple-200">
+                    <button
+                      type="button"
+                      onClick={clearSelection}
+                      className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+                    >
+                      Clear Selection
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvancedSelection(false)}
+                      className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+                    >
+                      Hide Advanced
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Show Advanced Selection button when hidden */}
+              {!showAdvancedSelection && !preSelectedData && (
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedSelection(true)}
+                    className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+                  >
+                    + Show Advanced Selection
+                  </button>
+                </div>
+              )}
+              
+              {/* Smart Selection Options */}
+              {showSmartSelection && healthData.length > 0 && !preSelectedData && (
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="text-sm font-medium text-blue-900 mb-3">Quick Selection</h4>
+                  
+                  {/* Metric-based selection */}
+                  <div className="mb-3">
+                    <p className="text-xs text-blue-700 mb-2">By Metric Type:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {availableMetrics.map((metric) => (
+                        <button
+                          key={metric}
+                          type="button"
+                          onClick={() => selectDataByMetric(metric)}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                        >
+                          {getMetricIcon(metric)} {metric.replace('_', ' ')} ({getMetricCount(metric)})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Time-based selection */}
+                  <div className="mb-3">
+                    <p className="text-xs text-blue-700 mb-2">By Time Period:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectDataByPeriod('week')}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        This Week
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectDataByPeriod('month')}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        This Month
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectDataByTimeRange(7)}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        Last 7 Days
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectDataByTimeRange(30)}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        Last 30 Days
+                      </button>
+                      {lastAnalysisDate && (
+                        <button
+                          type="button"
+                          onClick={selectDataSinceLastAnalysis}
+                          className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                        >
+                          Since Last Analysis
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Recent readings */}
+                  <div className="mb-3">
+                    <p className="text-xs text-blue-700 mb-2">Recent Readings:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectMostRecentReadings(10)}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        Last 10
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectMostRecentReadings(25)}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        Last 25
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectMostRecentReadings(50)}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        Last 50
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Control buttons */}
+                  <div className="flex justify-between items-center pt-2 border-t border-blue-200">
+                    <button
+                      type="button"
+                      onClick={clearSelection}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Clear Selection
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowSmartSelection(false)}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Manual Selection Only
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Toggle to show smart selection if hidden */}
+              {!showSmartSelection && (
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowSmartSelection(true)}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    + Show Quick Selection Options
+                  </button>
+                </div>
+              )}
               {loading ? (
                 <div className="space-y-3">
                   {[...Array(5)].map((_, i) => (
@@ -364,24 +1066,112 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={selectedDataIds.length === 0}
-              className="btn-primary"
-            >
-              Create Analysis
-            </button>
+          <div className="pt-6 border-t border-gray-200 mt-6">
+            {/* Action Descriptions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-xs text-gray-600">
+              <div className="bg-purple-50 p-3 rounded-lg">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="text-purple-600">🔄</span>
+                  <span className="font-medium text-purple-900">Workflows</span>
+                </div>
+                <p>Run multiple related analyses automatically for comprehensive insights</p>
+              </div>
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="text-blue-600">🤖</span>
+                  <span className="font-medium text-blue-900">Single Analysis</span>
+                </div>
+                <p>Create one focused analysis with your selected data and settings</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="text-gray-600">💾</span>
+                  <span className="font-medium text-gray-900">Save Config</span>
+                </div>
+                <p>Save your current setup to reuse for future analyses</p>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={handleStartWorkflow}
+                  disabled={selectedDataIds.length === 0}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  title="Run multi-step analysis workflow"
+                >
+                  🔄 Start Workflow
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveConfiguration}
+                  disabled={selectedDataIds.length === 0}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  title="Save current configuration for reuse"
+                >
+                  💾 Save Config
+                </button>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={selectedDataIds.length === 0}
+                  className="btn-primary"
+                  title="Create a single AI analysis"
+                >
+                  🤖 Create Analysis
+                </button>
+              </div>
+            </div>
           </div>
         </form>
       </div>
+
+      {/* Save Configuration Modal */}
+      <SaveAnalysisConfigModal
+        isOpen={showSaveConfigModal}
+        onClose={() => setShowSaveConfigModal(false)}
+        onSaved={handleConfigSaved}
+        analysisData={{
+          analysis_type: watch('analysis_type'),
+          provider_id: watch('provider'),
+          additional_context: watch('additional_context'),
+          selectedDataIds,
+          selectionMethod: currentSelectionMethod,
+          selectionConfig: currentSelectionConfig
+        }}
+      />
+
+      {/* Workflow Selection Modal */}
+      <WorkflowSelectionModal
+        isOpen={showWorkflowModal}
+        onClose={() => setShowWorkflowModal(false)}
+        onWorkflowStart={handleWorkflowStart}
+        selectedDataIds={selectedDataIds}
+        healthData={healthData}
+      />
+
+      {/* Workflow Execution Modal */}
+      <WorkflowExecutionModal
+        execution={currentWorkflowExecution}
+        isOpen={showWorkflowExecution}
+        onClose={() => setShowWorkflowExecution(false)}
+        onViewAnalysis={handleViewAnalysis}
+      />
+
+      {/* Help Guide Modal */}
+      <AnalysisHelpGuide
+        isOpen={showHelpGuide}
+        onClose={() => setShowHelpGuide(false)}
+      />
     </div>
   );
 };

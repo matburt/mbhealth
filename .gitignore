@@ -300,4 +300,4 @@ logs/
 Thumbs.db
 
 # uv
-.uv/ 
+.uv/ dump.rdb
