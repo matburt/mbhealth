@@ -178,7 +178,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
       return {
         index,
         id: item.id,
-        date: formatDateTime(item.recorded_at, 'date'),
+        date: formatDateTime(item.recorded_at, 'datetime'),
         fullDate: item.recorded_at,
         value: value,
         systolic: item.systolic,

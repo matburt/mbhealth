@@ -66,7 +66,7 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
         : item.value;
       
       return {
-        date: formatDateTime(item.recorded_at, 'date'),
+        date: formatDateTime(item.recorded_at, 'datetime'),
         fullDate: item.recorded_at,
         value: value,
         systolic: item.systolic,

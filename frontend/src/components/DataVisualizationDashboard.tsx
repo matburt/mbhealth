@@ -338,7 +338,7 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
         const chartData = metricData
           .sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime())
           .map(item => ({
-            date: formatDateTime(item.recorded_at, 'date'),
+            date: formatDateTime(item.recorded_at, 'datetime'),
             value: item.value,
             systolic: item.systolic,
             diastolic: item.diastolic,
