@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { format } from 'date-fns';
+import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { aiAnalysisService } from '../services/aiAnalysis';
 import { AIAnalysisCreate, AIProvider, AnalysisType } from '../types/aiAnalysis';
 import { HealthData } from '../types/health';
+import AnalysisPresets from './AnalysisPresets';
 
 interface CreateAnalysisModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAnalysisCreated: () => void;
+  preSelectedData?: HealthData[];
+  analysisContext?: string;
 }
 
 interface CreateAnalysisFormData {
@@ -21,23 +24,29 @@ interface CreateAnalysisFormData {
 const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({ 
   isOpen, 
   onClose, 
-  onAnalysisCreated 
+  onAnalysisCreated,
+  preSelectedData,
+  analysisContext 
 }) => {
   const [healthData, setHealthData] = useState<HealthData[]>([]);
   const [selectedDataIds, setSelectedDataIds] = useState<number[]>([]);
   const [providers, setProviders] = useState<AIProvider[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showSmartSelection, setShowSmartSelection] = useState(true);
+  const [showPresets, setShowPresets] = useState(true);
+  const [lastAnalysisDate, setLastAnalysisDate] = useState<Date | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
     watch,
+    setValue,
   } = useForm<CreateAnalysisFormData>({
     defaultValues: {
       analysis_type: 'insights',
       provider: '',
-      additional_context: ''
+      additional_context: analysisContext || ''
     }
   });
 
@@ -50,21 +59,132 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     }
   }, [isOpen]);
 
+  // Handle pre-selected data
+  useEffect(() => {
+    if (preSelectedData && preSelectedData.length > 0) {
+      setHealthData(preSelectedData);
+      setSelectedDataIds(preSelectedData.map(data => data.id));
+      setShowSmartSelection(false); // Hide smart selection since data is pre-selected
+      setShowPresets(false); // Hide presets since data is pre-selected
+    }
+    if (analysisContext) {
+      setValue('additional_context', analysisContext);
+    }
+  }, [preSelectedData, analysisContext, setValue]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [healthDataResult, providersResult] = await Promise.all([
-        aiAnalysisService.getHealthDataForAnalysis(),
-        aiAnalysisService.getProviders(true) // Only enabled providers
+      const [healthDataResult, providersResult, analysesResult] = await Promise.all([
+        preSelectedData ? Promise.resolve(preSelectedData) : aiAnalysisService.getHealthDataForAnalysis(),
+        aiAnalysisService.getProviders(true), // Only enabled providers
+        aiAnalysisService.getAnalysisHistory() // Get last analysis date
       ]);
-      setHealthData(healthDataResult);
+      
+      if (!preSelectedData) {
+        setHealthData(healthDataResult);
+      }
       setProviders(providersResult);
+      
+      // Find the most recent analysis date
+      if (analysesResult.length > 0) {
+        const sortedAnalyses = analysesResult.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setLastAnalysisDate(new Date(sortedAnalyses[0].created_at));
+      }
     } catch (error) {
       console.error('Failed to fetch data:', error);
       toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Smart selection functions
+  const selectDataByMetric = (metricType: string) => {
+    const filteredData = healthData.filter(data => data.metric_type === metricType);
+    const ids = filteredData.map(data => data.id);
+    setSelectedDataIds(ids);
+    toast.success(`Selected ${ids.length} ${metricType.replace('_', ' ')} readings`);
+  };
+
+  const selectDataByTimeRange = (days: number) => {
+    const cutoffDate = subDays(new Date(), days);
+    const filteredData = healthData.filter(data => 
+      new Date(data.recorded_at) >= cutoffDate
+    );
+    const ids = filteredData.map(data => data.id);
+    setSelectedDataIds(ids);
+    toast.success(`Selected ${ids.length} readings from the last ${days} days`);
+  };
+
+  const selectDataByPeriod = (period: 'week' | 'month') => {
+    let startDate: Date;
+    let endDate: Date;
+    
+    if (period === 'week') {
+      startDate = startOfWeek(new Date());
+      endDate = endOfWeek(new Date());
+    } else {
+      startDate = startOfMonth(new Date());
+      endDate = endOfMonth(new Date());
+    }
+    
+    const filteredData = healthData.filter(data => {
+      const dataDate = new Date(data.recorded_at);
+      return dataDate >= startDate && dataDate <= endDate;
+    });
+    
+    const ids = filteredData.map(data => data.id);
+    setSelectedDataIds(ids);
+    toast.success(`Selected ${ids.length} readings from this ${period}`);
+  };
+
+  const selectDataSinceLastAnalysis = () => {
+    if (!lastAnalysisDate) {
+      toast.error('No previous analysis found');
+      return;
+    }
+    
+    const filteredData = healthData.filter(data => 
+      new Date(data.recorded_at) > lastAnalysisDate
+    );
+    const ids = filteredData.map(data => data.id);
+    setSelectedDataIds(ids);
+    toast.success(`Selected ${ids.length} readings since last analysis`);
+  };
+
+  const selectMostRecentReadings = (count: number) => {
+    const sortedData = [...healthData].sort((a, b) => 
+      new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
+    );
+    const recentData = sortedData.slice(0, count);
+    const ids = recentData.map(data => data.id);
+    setSelectedDataIds(ids);
+    toast.success(`Selected ${ids.length} most recent readings`);
+  };
+
+  const clearSelection = () => {
+    setSelectedDataIds([]);
+    toast.success('Selection cleared');
+  };
+
+  const handlePresetSelect = (preset: any, selectedData: HealthData[]) => {
+    setSelectedDataIds(selectedData.map(d => d.id));
+    setValue('analysis_type', preset.analysisType);
+    setValue('additional_context', preset.context);
+    toast.success(`Selected ${preset.name} preset with ${selectedData.length} readings`);
+    setShowPresets(false);
+    setShowSmartSelection(false);
+  };
+
+  // Get available metric types
+  const availableMetrics = Array.from(new Set(healthData.map(data => data.metric_type)));
+  
+  // Get metric counts
+  const getMetricCount = (metricType: string) => {
+    return healthData.filter(data => data.metric_type === metricType).length;
   };
 
   const analysisTypes: AnalysisType[] = [
@@ -143,6 +263,8 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   const handleCancel = () => {
     reset();
     setSelectedDataIds([]);
+    setShowSmartSelection(true);
+    setShowPresets(true);
     onClose();
   };
 
@@ -319,6 +441,202 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Select Health Data to Analyze * ({selectedDataIds.length} selected)
               </label>
+              
+              {/* Pre-selected Data Info */}
+              {preSelectedData && preSelectedData.length > 0 && (
+                <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-green-900">Data Pre-selected from Visualization</h4>
+                      <p className="text-xs text-green-700 mt-1">
+                        {preSelectedData.length} readings selected from your current visualization filters
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setHealthData([]);
+                        setSelectedDataIds([]);
+                        setShowSmartSelection(true);
+                        setShowPresets(true);
+                        // Fetch all data instead of pre-selected
+                        setLoading(true);
+                        try {
+                          const healthDataResult = await aiAnalysisService.getHealthDataForAnalysis();
+                          setHealthData(healthDataResult);
+                        } catch (error) {
+                          console.error('Failed to fetch data:', error);
+                          toast.error('Failed to load data');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      className="text-xs text-green-600 hover:text-green-800 font-medium"
+                    >
+                      Choose Different Data
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Analysis Presets */}
+              {showPresets && !preSelectedData && healthData.length > 0 && (
+                <div className="mb-4">
+                  <AnalysisPresets 
+                    healthData={healthData} 
+                    onPresetSelect={handlePresetSelect}
+                  />
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={() => setShowPresets(false)}
+                      className="text-xs text-gray-600 hover:text-gray-800"
+                    >
+                      Hide Presets
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Show Presets button when hidden */}
+              {!showPresets && !preSelectedData && (
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowPresets(true)}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    + Show Analysis Presets
+                  </button>
+                </div>
+              )}
+              
+              {/* Smart Selection Options */}
+              {showSmartSelection && healthData.length > 0 && !preSelectedData && (
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="text-sm font-medium text-blue-900 mb-3">Quick Selection</h4>
+                  
+                  {/* Metric-based selection */}
+                  <div className="mb-3">
+                    <p className="text-xs text-blue-700 mb-2">By Metric Type:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {availableMetrics.map((metric) => (
+                        <button
+                          key={metric}
+                          type="button"
+                          onClick={() => selectDataByMetric(metric)}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                        >
+                          {getMetricIcon(metric)} {metric.replace('_', ' ')} ({getMetricCount(metric)})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Time-based selection */}
+                  <div className="mb-3">
+                    <p className="text-xs text-blue-700 mb-2">By Time Period:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectDataByPeriod('week')}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        This Week
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectDataByPeriod('month')}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        This Month
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectDataByTimeRange(7)}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        Last 7 Days
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectDataByTimeRange(30)}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        Last 30 Days
+                      </button>
+                      {lastAnalysisDate && (
+                        <button
+                          type="button"
+                          onClick={selectDataSinceLastAnalysis}
+                          className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                        >
+                          Since Last Analysis
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Recent readings */}
+                  <div className="mb-3">
+                    <p className="text-xs text-blue-700 mb-2">Recent Readings:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectMostRecentReadings(10)}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        Last 10
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectMostRecentReadings(25)}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        Last 25
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectMostRecentReadings(50)}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        Last 50
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Control buttons */}
+                  <div className="flex justify-between items-center pt-2 border-t border-blue-200">
+                    <button
+                      type="button"
+                      onClick={clearSelection}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Clear Selection
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowSmartSelection(false)}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Manual Selection Only
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Toggle to show smart selection if hidden */}
+              {!showSmartSelection && (
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowSmartSelection(true)}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    + Show Quick Selection Options
+                  </button>
+                </div>
+              )}
               {loading ? (
                 <div className="space-y-3">
                   {[...Array(5)].map((_, i) => (

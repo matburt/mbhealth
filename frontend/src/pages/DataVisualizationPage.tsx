@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import SimpleHealthChart from '../components/SimpleHealthChart';
+import CreateAnalysisModal from '../components/CreateAnalysisModal';
 import { healthService } from '../services/health';
+import { aiAnalysisService } from '../services/aiAnalysis';
 import { HealthData } from '../types/health';
+import { AIAnalysisCreate } from '../types/aiAnalysis';
 
 const metricTypes = ['blood_pressure', 'blood_sugar', 'weight', 'heart_rate', 'temperature'];
 
@@ -15,6 +18,8 @@ const DataVisualizationPage: React.FC = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState<'7d' | '30d' | '90d' | '1y' | 'all'>('30d');
   const [showAverages, setShowAverages] = useState(true);
   const [showTrends, setShowTrends] = useState(true);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+  const [generatingQuickAnalysis, setGeneratingQuickAnalysis] = useState(false);
 
   // Fetch health data
   const fetchHealthData = async () => {
@@ -84,6 +89,46 @@ const DataVisualizationPage: React.FC = () => {
     return metrics.length > 0 ? metrics : metricTypes;
   }, [healthData]);
 
+  // Generate quick analysis with current filters
+  const generateQuickAnalysis = async () => {
+    if (filteredData.length === 0) {
+      toast.error('No data available for analysis with current filters');
+      return;
+    }
+
+    setGeneratingQuickAnalysis(true);
+    try {
+      // Get providers to use the first available one
+      const providers = await aiAnalysisService.getProviders(true);
+      if (providers.length === 0) {
+        toast.error('No AI providers configured. Please configure an AI provider first.');
+        navigate('/ai-providers');
+        return;
+      }
+
+      // Create analysis request
+      const analysisData: AIAnalysisCreate = {
+        health_data_ids: filteredData.map(d => d.id),
+        analysis_type: 'insights',
+        provider: providers[0].id,
+        additional_context: `Quick analysis of ${selectedMetric.replace('_', ' ')} data from ${selectedTimeRange}. Focus on trends, patterns, and actionable insights.`
+      };
+
+      await aiAnalysisService.createAnalysis(analysisData);
+      toast.success(`Analysis created for ${filteredData.length} ${selectedMetric.replace('_', ' ')} readings`);
+      navigate('/ai-analysis');
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to create analysis');
+    } finally {
+      setGeneratingQuickAnalysis(false);
+    }
+  };
+
+  const handleAnalysisCreated = () => {
+    toast.success('Analysis created successfully');
+    navigate('/ai-analysis');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -107,12 +152,28 @@ const DataVisualizationPage: React.FC = () => {
                 Advanced analytics and insights from your health data
               </p>
             </div>
-            <button
-              onClick={() => navigate('/health-data')}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Back to Health Data
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowAnalysisModal(true)}
+                disabled={filteredData.length === 0}
+                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                Custom Analysis
+              </button>
+              <button
+                onClick={generateQuickAnalysis}
+                disabled={filteredData.length === 0 || generatingQuickAnalysis}
+                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {generatingQuickAnalysis ? 'Creating...' : 'Quick Analysis'}
+              </button>
+              <button
+                onClick={() => navigate('/health-data')}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Back to Health Data
+              </button>
+            </div>
           </div>
         </div>
 
@@ -183,10 +244,18 @@ const DataVisualizationPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Data Summary
               </label>
-              <div className="text-sm text-gray-600">
-                <p>Total readings: {stats?.totalReadings || 0}</p>
-                <p>Metric types: {availableMetrics.length}</p>
-                <p>Date range: {selectedTimeRange}</p>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>Filtered readings: {filteredData.length}</p>
+                <p>Current metric: {selectedMetric.replace('_', ' ')}</p>
+                <p>Time range: {selectedTimeRange}</p>
+                {filteredData.length > 0 && (
+                  <button
+                    onClick={() => setShowAnalysisModal(true)}
+                    className="text-green-600 hover:text-green-700 text-xs font-medium"
+                  >
+                    → Analyze this data
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -289,6 +358,15 @@ const DataVisualizationPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Analysis Modal */}
+      <CreateAnalysisModal
+        isOpen={showAnalysisModal}
+        onClose={() => setShowAnalysisModal(false)}
+        onAnalysisCreated={handleAnalysisCreated}
+        preSelectedData={filteredData}
+        analysisContext={`Analysis of ${selectedMetric.replace('_', ' ')} data from ${selectedTimeRange}${filteredData.length > 0 ? ` (${filteredData.length} readings)` : ''}`}
+      />
     </div>
   );
 };
