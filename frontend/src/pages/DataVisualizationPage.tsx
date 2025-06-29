@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import SimpleHealthChart from '../components/SimpleHealthChart';
+import UnifiedHealthChart from '../components/UnifiedHealthChart';
+import ChartConfigurationPanel from '../components/ChartConfigurationPanel';
+import { useChartConfiguration } from '../hooks/useChartConfiguration';
 import CreateAnalysisModal from '../components/CreateAnalysisModal';
 import { healthService } from '../services/health';
 import { aiAnalysisService } from '../services/aiAnalysis';
@@ -20,6 +22,14 @@ const DataVisualizationPage: React.FC = () => {
   const [showTrends, setShowTrends] = useState(true);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [generatingQuickAnalysis, setGeneratingQuickAnalysis] = useState(false);
+  const [showChartConfig, setShowChartConfig] = useState(false);
+  
+  // Chart configuration
+  const {
+    configuration: chartConfig,
+    updateConfiguration: updateChartConfig,
+    loadPreset: loadChartPreset
+  } = useChartConfiguration('data-visualization');
 
   // Fetch health data
   const fetchHealthData = async () => {
@@ -261,13 +271,43 @@ const DataVisualizationPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Chart Configuration */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Chart Configuration</h3>
+            <button
+              onClick={() => setShowChartConfig(!showChartConfig)}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              {showChartConfig ? 'Hide' : 'Show'} Chart Options
+            </button>
+          </div>
+          
+          {showChartConfig && (
+            <ChartConfigurationPanel
+              configuration={chartConfig}
+              onConfigurationChange={updateChartConfig}
+              onLoadPreset={loadChartPreset}
+              compact={true}
+            />
+          )}
+        </div>
+
         {/* Chart */}
-        <SimpleHealthChart
+        <UnifiedHealthChart
           data={filteredData}
           metricType={selectedMetric}
           timeRange={selectedTimeRange}
-          showTrends={showTrends}
-          showAverages={showAverages}
+          configuration={{
+            ...chartConfig,
+            showAverages,
+            showTrends
+          }}
+          title={`${selectedMetric.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Visualization`}
+          subtitle={`Advanced analytics and insights • ${filteredData.length} data points`}
+          onCreateAnalysis={(_selectedData) => {
+            setShowAnalysisModal(true);
+          }}
         />
 
         {/* Insights Panel */}

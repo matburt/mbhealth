@@ -5,7 +5,9 @@ import { healthService } from '../services/health';
 import { HealthData, HealthDataFilters } from '../types/health';
 import HealthDataTable from '../components/HealthDataTable';
 import HealthDataFiltersComponent from '../components/HealthDataFilters';
-import HealthDataChart from '../components/HealthDataChart';
+import UnifiedHealthChart from '../components/UnifiedHealthChart';
+import ChartConfigurationPanel from '../components/ChartConfigurationPanel';
+import { useChartConfiguration } from '../hooks/useChartConfiguration';
 import QuickAddForm from '../components/QuickAddForm';
 
 const HealthDataPage: React.FC = () => {
@@ -16,6 +18,14 @@ const HealthDataPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [showChartConfig, setShowChartConfig] = useState(false);
+  
+  // Chart configuration
+  const {
+    configuration: chartConfig,
+    updateConfiguration: updateChartConfig,
+    loadPreset: loadChartPreset
+  } = useChartConfiguration('health-data');
 
   // Initialize filters from URL params
   useEffect(() => {
@@ -209,10 +219,36 @@ const HealthDataPage: React.FC = () => {
 
           {/* Chart View */}
           {viewMode === 'chart' && data.length > 0 && (
-            <HealthDataChart
-              data={data}
-              metricType={getCurrentMetricType()}
-            />
+            <div className="space-y-4">
+              {/* Chart Configuration Panel */}
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-gray-900">Chart View</h2>
+                <button
+                  onClick={() => setShowChartConfig(!showChartConfig)}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  {showChartConfig ? 'Hide' : 'Show'} Chart Options
+                </button>
+              </div>
+              
+              {showChartConfig && (
+                <ChartConfigurationPanel
+                  configuration={chartConfig}
+                  onConfigurationChange={updateChartConfig}
+                  onLoadPreset={loadChartPreset}
+                  compact={true}
+                />
+              )}
+              
+              {/* Unified Chart */}
+              <UnifiedHealthChart
+                data={data}
+                metricType={getCurrentMetricType()}
+                configuration={chartConfig}
+                title={`${getCurrentMetricType() ? getCurrentMetricType().replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) + ' ' : ''}Health Data Chart`}
+                subtitle={`Clinical view with target ranges and trend analysis`}
+              />
+            </div>
           )}
 
           {/* Table View */}
