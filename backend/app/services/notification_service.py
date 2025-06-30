@@ -72,7 +72,7 @@ class NotificationService:
 
         return channel
 
-    def test_channel(self, channel_id: str, user_id: int) -> dict[str, Any]:
+    async def test_channel(self, channel_id: str, user_id: int) -> dict[str, Any]:
         """Test a notification channel"""
         channel = self.db.query(NotificationChannel).filter(
             and_(
@@ -84,7 +84,7 @@ class NotificationService:
         if not channel:
             raise ValueError("Channel not found")
 
-        return asyncio.run(self._test_channel(channel))
+        return await self._test_channel(channel)
 
     async def _test_channel(self, channel: NotificationChannel) -> dict[str, Any]:
         """Internal method to test a notification channel"""
@@ -100,8 +100,7 @@ class NotificationService:
             title = f"🔔 Test Notification - {channel.name}"
             body = f"This is a test notification from MB Health to verify your {channel.channel_type} channel is working correctly."
 
-            success = await asyncio.to_thread(
-                apobj.notify,
+            success = apobj.notify(
                 body=body,
                 title=title
             )

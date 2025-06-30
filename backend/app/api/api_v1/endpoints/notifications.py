@@ -189,7 +189,7 @@ async def test_notification_channel(
     service = NotificationService(db)
 
     try:
-        result = service.test_channel(channel_id, current_user.id)
+        result = await service.test_channel(channel_id, current_user.id)
         return result
     except ValueError as e:
         raise HTTPException(
