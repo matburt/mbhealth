@@ -317,8 +317,8 @@ class AIAnalysisService:
                 user_time = None
                 if d.recorded_at:
                     user_time = utc_to_user_timezone(d.recorded_at, user_timezone)
-                    # Format as readable string in user's timezone
-                    user_time_str = format_datetime_for_user(d.recorded_at, user_timezone, 'datetime')
+                    # Format as readable string in user's timezone with day of week for better context
+                    user_time_str = format_datetime_for_user(d.recorded_at, user_timezone, '%A, %B %d, %Y at %I:%M %p')
                 else:
                     user_time_str = None
 
@@ -334,7 +334,7 @@ class AIAnalysisService:
                 })
 
             # Add timezone context for the AI
-            timezone_context = f"\nIMPORTANT: All timestamps in the health data are in the user's local timezone: {user_timezone}. Please consider this when analyzing patterns and making time-based observations."
+            timezone_context = f"\nIMPORTANT: All timestamps in the health data are displayed in the user's local timezone ({user_timezone}). The timestamps include day of week, full date, and time with AM/PM for accurate pattern analysis. Please use these specific dates and times to identify trends, patterns, and timing correlations."
 
             # Get provider and create AI provider instance
             if analysis.provider_id:
