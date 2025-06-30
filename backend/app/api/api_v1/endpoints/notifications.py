@@ -101,6 +101,7 @@ def get_notification_channel(
     Get a specific notification channel.
     """
     from app.models.notification import NotificationChannel as ChannelModel
+    from app.core.security import decrypt_data
 
     channel = db.query(ChannelModel).filter(
         ChannelModel.id == channel_id,
@@ -112,6 +113,15 @@ def get_notification_channel(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Channel not found"
         )
+
+    # Decrypt URL before returning
+    try:
+        channel.apprise_url = decrypt_data(channel.apprise_url)
+    except Exception as e:
+        # Log but don't fail the request if decryption fails
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to decrypt URL for channel {channel.id}: {str(e)}")
 
     return channel
 

@@ -134,9 +134,20 @@ class NotificationService:
 
     def get_user_channels(self, user_id: int) -> list[NotificationChannel]:
         """Get all notification channels for a user"""
-        return self.db.query(NotificationChannel).filter(
+        channels = self.db.query(NotificationChannel).filter(
             NotificationChannel.user_id == user_id
         ).order_by(NotificationChannel.created_at.desc()).all()
+        
+        # Decrypt URLs before returning
+        for channel in channels:
+            try:
+                channel.apprise_url = decrypt_data(channel.apprise_url)
+            except Exception as e:
+                logger.warning(f"Failed to decrypt URL for channel {channel.id}: {str(e)}")
+                # Keep the encrypted value if decryption fails
+                pass
+        
+        return channels
 
     def update_channel(
         self,
@@ -166,6 +177,14 @@ class NotificationService:
 
         self.db.commit()
         self.db.refresh(channel)
+
+        # Decrypt URL before returning
+        try:
+            channel.apprise_url = decrypt_data(channel.apprise_url)
+        except Exception as e:
+            logger.warning(f"Failed to decrypt URL for channel {channel.id}: {str(e)}")
+            # Keep the encrypted value if decryption fails
+            pass
 
         return channel
 
