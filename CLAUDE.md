@@ -18,8 +18,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Lint code**: `make lint` (runs ruff)
 - **Type check**: `make type-check` (runs mypy)
 - **Full dev checks**: `make dev` (format, lint, type-check, test)
-- **Database migrations**: `make db-migrate`
+- **Database migrations**: `make db-migrate` (upgrade to latest)
+- **Create new migration**: `make db-revision message="Description"`
+- **Initialize database**: `make db-init` (replaces create_db.py)
 - **Reset database**: `make db-reset`
+- **Check migration status**: `make db-current`
+- **Show migration history**: `make db-history`
+- **Downgrade migration**: `make db-downgrade`
 - **Purge task queue**: `make purge` (clears all pending Celery tasks)
 - **Inspect workers**: `make inspect` (shows active workers and tasks)
 
@@ -31,6 +36,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Docker Commands (from project root)
 - **Start all services**: `docker-compose up -d`
+- **Run migrations in Docker**: `docker-compose --profile migrate up migrate`
 - **View logs**: `docker-compose logs -f`
 - **Stop services**: `docker-compose down`
 
@@ -91,8 +97,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Database Structure
 - **SQLite** for development (file: `backend/health_data.db`)
 - **PostgreSQL** for production
+- **Alembic** for database migrations and schema versioning
 - **Redis** for caching, sessions, and background job queue
-- **Alembic** for database migrations (we aren't actually using alembic right now, call create_db.py for the moment)
 - Core entities: User, HealthData, Family, CareTeam, Note, AIAnalysis, AIProvider, AnalysisJob, AnalysisSettings, AnalysisSchedule, AnalysisWorkflow, NotificationChannel, NotificationPreference
 
 ### AI Integration
