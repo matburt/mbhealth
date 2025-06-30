@@ -1,11 +1,19 @@
-from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.schemas.user import User
+
 from app.api.deps import get_current_active_user
+from app.core.database import get_db
 from app.models.family import Family, FamilyMember
-from app.schemas.family import FamilyCreate, FamilyUpdate, FamilyOut, FamilyMemberCreate, FamilyMemberOut
+from app.schemas.family import (
+    FamilyCreate,
+    FamilyMemberCreate,
+    FamilyMemberOut,
+    FamilyOut,
+    FamilyUpdate,
+)
+from app.schemas.user import User
 
 router = APIRouter()
 
@@ -38,7 +46,7 @@ def create_family(
     db.refresh(member)
     return family
 
-@router.get("/", response_model=List[FamilyOut])
+@router.get("/", response_model=list[FamilyOut])
 def list_families(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
@@ -136,4 +144,4 @@ def remove_family_member(
         raise HTTPException(status_code=404, detail="Member not found")
     db.delete(member)
     db.commit()
-    return {"message": "Member removed"} 
+    return {"message": "Member removed"}

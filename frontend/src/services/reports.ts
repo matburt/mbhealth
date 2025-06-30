@@ -157,7 +157,7 @@ class ReportsService {
     // Use async for:
     // - More than 6 months of data
     // - More than 1000 data points (if known)
-    return daysDiff > 180 || (dataPointCount && dataPointCount > 1000);
+    return daysDiff > 180 || Boolean(dataPointCount && dataPointCount > 1000);
   }
 
   /**
@@ -197,9 +197,10 @@ class ReportsService {
   getRecommendedSettings(
     dataPointCount: number,
     dateRange: { start: Date; end: Date },
-    metricTypes: string[]
+    _metricTypes: string[]
   ): Partial<PDFReportRequest> {
-    const daysDiff = Math.ceil(
+    // Calculate days between start and end date
+    Math.ceil(
       (dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24)
     );
 
@@ -208,7 +209,7 @@ class ReportsService {
       include_summary: true,
       include_trends: dataPointCount > 5, // Only include trends if we have enough data
       // Use all metrics if less than 4, otherwise let user select
-      metric_types: metricTypes.length <= 4 ? metricTypes : null
+      metric_types: _metricTypes.length <= 4 ? _metricTypes : null
     };
   }
 }

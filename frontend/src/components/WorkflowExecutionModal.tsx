@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
 import { WorkflowExecution, WorkflowStepResult, FollowUpSuggestion } from '../types/analysisWorkflow';
 import { analysisWorkflowService } from '../services/analysisWorkflow';
+import { useTimezone } from '../contexts/TimezoneContext';
 
 interface WorkflowExecutionModalProps {
   execution: WorkflowExecution | null;
@@ -18,6 +18,7 @@ const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
 }) => {
   const [currentExecution, setCurrentExecution] = useState<WorkflowExecution | null>(execution);
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
+  const { formatDateTime } = useTimezone();
 
   useEffect(() => {
     setCurrentExecution(execution);
@@ -162,9 +163,9 @@ const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
             <div className="mt-3 space-y-3">
               {/* Timing Info */}
               <div className="text-xs text-gray-500">
-                <p>Started: {format(new Date(result.started_at), 'MMM d, yyyy h:mm a')}</p>
+                <p>Started: {formatDateTime(result.started_at, 'datetime')}</p>
                 {result.completed_at && (
-                  <p>Completed: {format(new Date(result.completed_at), 'MMM d, yyyy h:mm a')}</p>
+                  <p>Completed: {formatDateTime(result.completed_at, 'datetime')}</p>
                 )}
               </div>
 
@@ -252,12 +253,12 @@ const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Started:</span>
-                <p className="font-medium">{format(new Date(currentExecution.started_at), 'MMM d, h:mm a')}</p>
+                <p className="font-medium">{formatDateTime(currentExecution.started_at, 'datetime')}</p>
               </div>
               {currentExecution.completed_at && (
                 <div>
                   <span className="text-gray-600">Completed:</span>
-                  <p className="font-medium">{format(new Date(currentExecution.completed_at), 'MMM d, h:mm a')}</p>
+                  <p className="font-medium">{formatDateTime(currentExecution.completed_at, 'datetime')}</p>
                 </div>
               )}
               <div>

@@ -1,7 +1,10 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
-from sqlalchemy.orm import relationship
 from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -25,4 +28,9 @@ class User(Base):
     notes = relationship("Note", back_populates="user")
     ai_providers = relationship("AIProvider", back_populates="user")
     ai_analyses = relationship("AIAnalysis", back_populates="user")
-    analysis_settings = relationship("AnalysisSettings", back_populates="user", uselist=False) 
+    analysis_settings = relationship("AnalysisSettings", back_populates="user", uselist=False)
+    analysis_schedules = relationship("AnalysisSchedule", back_populates="user")
+    analysis_workflows = relationship("AnalysisWorkflow", back_populates="user")
+    notification_channels = relationship("NotificationChannel", back_populates="user")
+    notification_preferences = relationship("NotificationPreference", back_populates="user")
+    notification_history = relationship("NotificationHistory", back_populates="user")

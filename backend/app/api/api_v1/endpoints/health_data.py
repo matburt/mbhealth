@@ -1,20 +1,22 @@
-from typing import Any, List, Optional
-from datetime import datetime
 import csv
 import io
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from datetime import datetime
+from typing import Any
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+
+from app.api.deps import get_current_active_user
 from app.core.database import get_db
 from app.schemas.health_data import HealthData, HealthDataCreate, HealthDataUpdate
 from app.schemas.user import User
-from app.api.deps import get_current_active_user
 from app.services.health_data import (
     create_health_data,
+    delete_health_data,
     get_health_data,
     get_health_data_by_user,
     update_health_data,
-    delete_health_data
 )
 
 router = APIRouter()
@@ -30,23 +32,38 @@ def create_health_data_endpoint(
     Create new health data entry.
     """
     health_data = create_health_data(db, obj_in=health_data_in, user_id=current_user.id, user_timezone=current_user.timezone)
+
+    # Trigger data threshold schedules in background
+    try:
+        from app.tasks.analysis_scheduler_task import check_data_threshold_schedules_task
+        check_data_threshold_schedules_task.delay(
+            user_id=current_user.id,
+            metric_type=health_data.metric_type,
+            new_data_count=1
+        )
+    except Exception as e:
+        # Don't fail the health data creation if scheduling fails
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to trigger data threshold check: {str(e)}")
+
     return health_data
 
-@router.get("/", response_model=List[HealthData])
+@router.get("/", response_model=list[HealthData])
 def read_health_data(
     db: Session = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
-    metric_type: Optional[str] = Query(None),
-    start_date: Optional[datetime] = Query(None),
-    end_date: Optional[datetime] = Query(None),
+    metric_type: str | None = Query(None),
+    start_date: datetime | None = Query(None),
+    end_date: datetime | None = Query(None),
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
     """
     Retrieve health data entries.
     """
     health_data = get_health_data_by_user(
-        db, 
+        db,
         user_id=current_user.id,
         skip=skip,
         limit=limit,
@@ -137,33 +154,33 @@ def export_health_data_csv(
     Export all health data for the current user as CSV.
     """
     from app.utils.timezone import utc_to_user_timezone
-    
+
     # Get all health data for the user
     health_data = get_health_data_by_user(
-        db, 
+        db,
         user_id=current_user.id,
         skip=0,
         limit=10000  # Get a large number to get all data
     )
-    
+
     # Create CSV content
     output = io.StringIO()
     writer = csv.writer(output)
-    
+
     # Write headers
     headers = [
-        "id", "metric_type", "value", "unit", "systolic", "diastolic", 
+        "id", "metric_type", "value", "unit", "systolic", "diastolic",
         "additional_data", "notes", "recorded_at", "created_at", "updated_at"
     ]
     writer.writerow(headers)
-    
+
     # Write data rows
     for data in health_data:
         # Convert timestamps to user's timezone
         recorded_at_local = utc_to_user_timezone(data.recorded_at, current_user.timezone) if data.recorded_at else None
         created_at_local = utc_to_user_timezone(data.created_at, current_user.timezone)
         updated_at_local = utc_to_user_timezone(data.updated_at, current_user.timezone)
-        
+
         row = [
             data.id,
             data.metric_type,
@@ -178,10 +195,10 @@ def export_health_data_csv(
             updated_at_local.isoformat(),
         ]
         writer.writerow(row)
-    
+
     # Create response
     output.seek(0)
-    
+
     return StreamingResponse(
         io.BytesIO(output.getvalue().encode("utf-8")),
         media_type="text/csv",
@@ -203,12 +220,12 @@ def import_health_data_csv(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File must be a CSV file"
         )
-    
+
     try:
         # Read CSV content
         content = file.file.read().decode("utf-8")
         csv_reader = csv.DictReader(io.StringIO(content))
-        
+
         # Expected headers
         expected_headers = {
             "metric_type", "value", "unit", "recorded_at"
@@ -216,7 +233,7 @@ def import_health_data_csv(
         optional_headers = {
             "systolic", "diastolic", "additional_data", "notes"
         }
-        
+
         # Validate headers
         csv_headers = set(csv_reader.fieldnames or [])
         if not expected_headers.issubset(csv_headers):
@@ -225,10 +242,10 @@ def import_health_data_csv(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Missing required headers: {missing_headers}"
             )
-        
+
         imported_count = 0
         errors = []
-        
+
         for row_num, row in enumerate(csv_reader, start=2):  # Start at 2 because header is row 1
             try:
                 # Parse datetime
@@ -239,7 +256,7 @@ def import_health_data_csv(
                     except ValueError:
                         errors.append(f"Row {row_num}: Invalid date format for recorded_at")
                         continue
-                
+
                 # Parse additional_data if present
                 additional_data = None
                 if row.get("additional_data"):
@@ -249,7 +266,7 @@ def import_health_data_csv(
                     except json.JSONDecodeError:
                         # If it's not valid JSON, treat as string
                         additional_data = {"raw": row["additional_data"]}
-                
+
                 # Create health data entry
                 health_data_create = HealthDataCreate(
                     metric_type=row["metric_type"],
@@ -261,25 +278,25 @@ def import_health_data_csv(
                     notes=row.get("notes") or None,
                     recorded_at=recorded_at
                 )
-                
+
                 create_health_data(db, obj_in=health_data_create, user_id=current_user.id)
                 imported_count += 1
-                
+
             except ValueError as e:
                 errors.append(f"Row {row_num}: Invalid number format - {str(e)}")
             except Exception as e:
                 errors.append(f"Row {row_num}: {str(e)}")
-        
+
         return {
             "message": f"Successfully imported {imported_count} records",
             "imported_count": imported_count,
             "errors": errors
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Error processing CSV file: {str(e)}"
         )
     finally:
-        file.file.close() 
+        file.file.close()

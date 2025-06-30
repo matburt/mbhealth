@@ -10,7 +10,7 @@ const navItems = [
   { to: '/families', label: 'Families' },
   { to: '/care-teams', label: 'Care Teams' },
   { to: '/ai-analysis', label: 'AI Analysis' },
-  { to: '/ai-providers', label: 'AI Providers' },
+  { to: '/notifications', label: 'Notifications' },
   { to: '/settings', label: 'Settings' },
 ];
 

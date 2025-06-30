@@ -1,29 +1,31 @@
-from pydantic import BaseModel
-from typing import Optional, Dict, Any
 from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel
+
 
 class HealthDataBase(BaseModel):
     metric_type: str
     value: float
     unit: str
-    systolic: Optional[float] = None
-    diastolic: Optional[float] = None
-    additional_data: Optional[Dict[str, Any]] = None
-    notes: Optional[str] = None
-    recorded_at: Optional[datetime] = None
+    systolic: float | None = None
+    diastolic: float | None = None
+    additional_data: dict[str, Any] | None = None
+    notes: str | None = None
+    recorded_at: datetime | None = None
 
 class HealthDataCreate(HealthDataBase):
     pass
 
 class HealthDataUpdate(BaseModel):
-    metric_type: Optional[str] = None
-    value: Optional[float] = None
-    unit: Optional[str] = None
-    systolic: Optional[float] = None
-    diastolic: Optional[float] = None
-    additional_data: Optional[Dict[str, Any]] = None
-    notes: Optional[str] = None
-    recorded_at: Optional[datetime] = None
+    metric_type: str | None = None
+    value: float | None = None
+    unit: str | None = None
+    systolic: float | None = None
+    diastolic: float | None = None
+    additional_data: dict[str, Any] | None = None
+    notes: str | None = None
+    recorded_at: datetime | None = None
 
 class HealthDataInDBBase(HealthDataBase):
     id: int
@@ -42,4 +44,5 @@ class HealthDataWithUser(HealthData):
 
 # Import User to avoid circular imports
 from app.schemas.user import User
-HealthDataWithUser.model_rebuild() 
+
+HealthDataWithUser.model_rebuild()

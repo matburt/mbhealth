@@ -1,13 +1,17 @@
+import logging
+from datetime import datetime, timedelta
+
 from celery import current_task
 from sqlalchemy.orm import Session
-from app.core.celery_app import celery_app, TASK_PRIORITY_HIGH, TASK_PRIORITY_NORMAL, TASK_PRIORITY_LOW
+
+from app.core.celery_app import (
+    TASK_PRIORITY_NORMAL,
+    celery_app,
+)
 from app.core.database import SessionLocal
 from app.models.ai_analysis import AIAnalysis, AnalysisJob
 from app.services.ai_analysis_service import AIAnalysisService
 from app.services.ai_providers import AIProviderError
-from datetime import datetime, timedelta
-import logging
-import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -21,41 +25,41 @@ def process_ai_analysis(self, analysis_id: int, user_id: int):
     Process AI analysis in the background
     """
     db = get_db_session()
-    
+
     try:
         # Get the analysis
         analysis = db.query(AIAnalysis).filter(
             AIAnalysis.id == analysis_id,
             AIAnalysis.user_id == user_id
         ).first()
-        
+
         if not analysis:
             logger.error(f"Analysis {analysis_id} not found for user {user_id}")
             return {"error": "Analysis not found"}
-        
+
         # Update analysis status
         analysis.status = "processing"
         db.commit()
-        
+
         # Update task progress
         current_task.update_state(
             state="PROGRESS",
             meta={"current": 10, "total": 100, "status": "Starting analysis..."}
         )
-        
+
         # Initialize service
         service = AIAnalysisService(db)
-        
+
         # Update progress
         current_task.update_state(
-            state="PROGRESS", 
+            state="PROGRESS",
             meta={"current": 30, "total": 100, "status": "Preparing health data..."}
         )
-        
+
         # Execute the analysis using the existing service method
         import asyncio
         import traceback
-        
+
         try:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -63,10 +67,10 @@ def process_ai_analysis(self, analysis_id: int, user_id: int):
                 loop.run_until_complete(service._execute_analysis(analysis, None))
             finally:
                 loop.close()
-            
+
             # Refresh analysis from database to get updated status
             db.refresh(analysis)
-            
+
             # Update progress based on actual analysis status
             if analysis.status == "completed":
                 current_task.update_state(
@@ -87,7 +91,7 @@ def process_ai_analysis(self, analysis_id: int, user_id: int):
                     meta={"current": 90, "total": 100, "status": f"Analysis status: {analysis.status}"}
                 )
                 logger.warning(f"Analysis {analysis_id} in unexpected status: {analysis.status}")
-            
+
             return {
                 "analysis_id": analysis_id,
                 "status": analysis.status,
@@ -96,27 +100,27 @@ def process_ai_analysis(self, analysis_id: int, user_id: int):
                 "cost": analysis.cost,
                 "error_message": analysis.error_message
             }
-            
+
         except Exception as exec_error:
             logger.error(f"Error during analysis execution: {str(exec_error)}")
             logger.error(f"Execution traceback: {traceback.format_exc()}")
-            
+
             # Update analysis status in database
             analysis.status = "failed"
             analysis.error_message = f"Execution error: {str(exec_error)}"
             analysis.completed_at = datetime.utcnow()
             db.commit()
-            
+
             current_task.update_state(
                 state="FAILURE",
                 meta={"error": f"Execution error: {str(exec_error)}"}
             )
-            
+
             raise
-        
+
     except AIProviderError as e:
         logger.error(f"AI Provider error in analysis {analysis_id}: {str(e)}")
-        
+
         # Update analysis status
         analysis = db.query(AIAnalysis).filter(AIAnalysis.id == analysis_id).first()
         if analysis:
@@ -124,18 +128,18 @@ def process_ai_analysis(self, analysis_id: int, user_id: int):
             analysis.error_message = f"AI Provider Error: {str(e)}"
             analysis.completed_at = datetime.utcnow()
             db.commit()
-        
+
         current_task.update_state(
             state="FAILURE",
             meta={"error": f"AI Provider Error: {str(e)}"}
         )
-        
+
         raise
-        
+
     except Exception as exc:
         logger.error(f"Error processing analysis {analysis_id}: {str(exc)}")
         logger.error(traceback.format_exc())
-        
+
         # Update analysis status
         analysis = db.query(AIAnalysis).filter(AIAnalysis.id == analysis_id).first()
         if analysis:
@@ -143,7 +147,7 @@ def process_ai_analysis(self, analysis_id: int, user_id: int):
             analysis.error_message = f"Processing error: {str(exc)}"
             analysis.completed_at = datetime.utcnow()
             db.commit()
-        
+
         # Retry logic
         if self.request.retries < self.max_retries:
             logger.info(f"Retrying analysis {analysis_id} (attempt {self.request.retries + 1})")
@@ -152,14 +156,14 @@ def process_ai_analysis(self, analysis_id: int, user_id: int):
                 meta={"error": str(exc), "retry": self.request.retries + 1}
             )
             raise self.retry(countdown=60 * (2 ** self.request.retries))  # Exponential backoff
-        
+
         current_task.update_state(
             state="FAILURE",
             meta={"error": str(exc)}
         )
-        
+
         raise
-    
+
     finally:
         db.close()
 
@@ -169,7 +173,7 @@ def create_analysis_job(analysis_id: int, user_id: int, provider_id: str = None,
     Create a new analysis job and queue it for processing
     """
     db = get_db_session()
-    
+
     try:
         # Create job record
         job = AnalysisJob(
@@ -182,33 +186,33 @@ def create_analysis_job(analysis_id: int, user_id: int, provider_id: str = None,
         db.add(job)
         db.commit()
         db.refresh(job)
-        
+
         # Queue the actual analysis task with priority
         task = process_ai_analysis.apply_async(
             args=[analysis_id, user_id],
             priority=priority,
             task_id=str(job.id)
         )
-        
+
         # Update job with Celery task ID
         job.job_id = task.id
         job.status = "processing"
         job.started_at = datetime.utcnow()
         db.commit()
-        
+
         logger.info(f"Created analysis job {job.id} for analysis {analysis_id}")
-        
+
         return {
             "job_id": str(job.id),
             "task_id": task.id,
             "status": "queued"
         }
-        
+
     except Exception as e:
         logger.error(f"Error creating analysis job: {str(e)}")
         db.rollback()
         raise
-    
+
     finally:
         db.close()
 
@@ -218,38 +222,38 @@ def cleanup_old_analyses():
     Clean up old completed analyses and jobs (optional maintenance task)
     """
     db = get_db_session()
-    
+
     try:
         # Delete completed analyses older than 30 days
         cutoff_date = datetime.utcnow() - timedelta(days=30)
-        
+
         old_analyses = db.query(AIAnalysis).filter(
             AIAnalysis.status.in_(["completed", "failed"]),
             AIAnalysis.completed_at < cutoff_date
         ).all()
-        
+
         # Delete associated jobs first
         for analysis in old_analyses:
             db.query(AnalysisJob).filter(
                 AnalysisJob.analysis_id == analysis.id
             ).delete()
-        
+
         # Delete analyses
         count = len(old_analyses)
         for analysis in old_analyses:
             db.delete(analysis)
-        
+
         db.commit()
-        
+
         logger.info(f"Cleaned up {count} old analyses")
-        
+
         return {"cleaned_up": count}
-        
+
     except Exception as e:
         logger.error(f"Error during cleanup: {str(e)}")
         db.rollback()
         raise
-    
+
     finally:
         db.close()
 
@@ -259,21 +263,21 @@ def get_analysis_status(analysis_id: int, user_id: int):
     Get the current status of an analysis
     """
     db = get_db_session()
-    
+
     try:
         analysis = db.query(AIAnalysis).filter(
             AIAnalysis.id == analysis_id,
             AIAnalysis.user_id == user_id
         ).first()
-        
+
         if not analysis:
             return {"error": "Analysis not found"}
-        
+
         # Get associated job if exists
         job = db.query(AnalysisJob).filter(
             AnalysisJob.analysis_id == analysis_id
         ).first()
-        
+
         return {
             "analysis_id": analysis_id,
             "status": analysis.status,
@@ -285,11 +289,11 @@ def get_analysis_status(analysis_id: int, user_id: int):
             "job_id": str(job.id) if job else None,
             "task_id": job.job_id if job else None
         }
-        
+
     except Exception as e:
         logger.error(f"Error getting analysis status: {str(e)}")
         return {"error": str(e)}
-    
+
     finally:
         db.close()
 
@@ -299,43 +303,43 @@ def schedule_automatic_analysis(user_id: int, analysis_types: list = None):
     Schedule automatic analysis for a user based on their settings
     """
     db = get_db_session()
-    
+
     try:
         from app.models.ai_analysis import AnalysisSettings
         from app.models.health_data import HealthData
-        
+
         # Get user's analysis settings
         settings = db.query(AnalysisSettings).filter(
             AnalysisSettings.user_id == user_id
         ).first()
-        
+
         if not settings or not settings.auto_analysis_enabled:
             return {"message": "Auto-analysis not enabled for user"}
-        
+
         # Get recent health data (last 30 days)
         recent_cutoff = datetime.utcnow() - timedelta(days=30)
         recent_data = db.query(HealthData).filter(
             HealthData.user_id == user_id,
             HealthData.recorded_at >= recent_cutoff
         ).limit(50).all()  # Limit to recent 50 entries
-        
+
         if not recent_data:
             return {"message": "No recent health data for analysis"}
-        
+
         # Use provided analysis types or default from settings
         types_to_run = analysis_types or settings.default_analysis_types or ["insights"]
         health_data_ids = [data.id for data in recent_data]
-        
+
         # Get preferred providers
         preferred_providers = settings.preferred_providers or []
-        
+
         analyses_created = []
-        
+
         for analysis_type in types_to_run:
             try:
                 # Create analysis using the service
                 service = AIAnalysisService(db)
-                
+
                 from app.schemas.ai_analysis import AIAnalysisCreate
                 analysis_data = AIAnalysisCreate(
                     health_data_ids=health_data_ids,
@@ -343,7 +347,7 @@ def schedule_automatic_analysis(user_id: int, analysis_types: list = None):
                     provider_name="auto-selected",
                     provider_id=preferred_providers[0] if preferred_providers else None
                 )
-                
+
                 # Create analysis synchronously for tasks
                 import asyncio
                 loop = asyncio.new_event_loop()
@@ -356,22 +360,22 @@ def schedule_automatic_analysis(user_id: int, analysis_types: list = None):
                     "analysis_id": analysis.id,
                     "type": analysis_type
                 })
-                
+
             except Exception as e:
                 logger.error(f"Error creating auto-analysis {analysis_type} for user {user_id}: {str(e)}")
                 continue
-        
+
         logger.info(f"Created {len(analyses_created)} automatic analyses for user {user_id}")
-        
+
         return {
             "user_id": user_id,
             "analyses_created": len(analyses_created),
             "analyses": analyses_created
         }
-        
+
     except Exception as e:
         logger.error(f"Error in automatic analysis for user {user_id}: {str(e)}")
         return {"error": str(e)}
-    
+
     finally:
         db.close()

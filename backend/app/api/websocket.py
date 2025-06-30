@@ -1,17 +1,17 @@
-from fastapi import WebSocket, WebSocketDisconnect, Depends
-from typing import Dict, List
 import json
 import logging
 from datetime import datetime
+
+from fastapi import WebSocket, WebSocketDisconnect
+
 from app.api.deps import get_current_user_from_token
-from app.schemas.user import User
 
 logger = logging.getLogger(__name__)
 
 class ConnectionManager:
     def __init__(self):
         # Store connections by user ID
-        self.active_connections: Dict[int, List[WebSocket]] = {}
+        self.active_connections: dict[int, list[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, user_id: int):
         await websocket.accept()
@@ -36,7 +36,7 @@ class ConnectionManager:
                     await websocket.send_text(message)
                 except:
                     disconnected.append(websocket)
-            
+
             # Clean up disconnected websockets
             for ws in disconnected:
                 self.disconnect(ws, user_id)
@@ -65,7 +65,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str = None):
         if not token:
             await websocket.close(code=4001, reason="Authentication required")
             return
-        
+
         # Get user from token (you'll need to implement this)
         try:
             # This is a simplified version - you'll need proper token validation
@@ -73,24 +73,24 @@ async def websocket_endpoint(websocket: WebSocket, token: str = None):
             if not user:
                 await websocket.close(code=4001, reason="Invalid token")
                 return
-        except Exception as e:
+        except Exception:
             await websocket.close(code=4001, reason="Authentication failed")
             return
-        
+
         await manager.connect(websocket, user.id)
-        
+
         try:
             while True:
                 # Keep connection alive and handle any incoming messages
                 data = await websocket.receive_text()
-                
+
                 # Handle ping/pong for connection health
                 if data == "ping":
                     await websocket.send_text("pong")
-                
+
         except WebSocketDisconnect:
             manager.disconnect(websocket, user.id)
-            
+
     except Exception as e:
         logger.error(f"WebSocket error: {str(e)}")
         try:

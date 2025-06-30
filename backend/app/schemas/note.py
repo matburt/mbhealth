@@ -1,6 +1,7 @@
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
+
+from pydantic import BaseModel
+
 
 class NoteBase(BaseModel):
     health_data_id: int
@@ -10,7 +11,7 @@ class NoteCreate(NoteBase):
     pass
 
 class NoteUpdate(BaseModel):
-    content: Optional[str] = None
+    content: str | None = None
 
 class NoteOut(NoteBase):
     id: int
@@ -18,4 +19,4 @@ class NoteOut(NoteBase):
     created_at: datetime
     updated_at: datetime
     class Config:
-        from_attributes = True 
+        from_attributes = True

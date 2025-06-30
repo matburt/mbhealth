@@ -2,13 +2,14 @@
 Timezone utilities for handling datetime conversions between UTC and user timezones.
 """
 
-import pytz
 from datetime import datetime
-from typing import Optional, Union
+
+import pytz
+
 from app.core.config import settings
 
 
-def get_timezone(timezone_name: Optional[str] = None) -> pytz.BaseTzInfo:
+def get_timezone(timezone_name: str | None = None) -> pytz.BaseTzInfo:
     """
     Get timezone object from timezone name.
     
@@ -21,7 +22,7 @@ def get_timezone(timezone_name: Optional[str] = None) -> pytz.BaseTzInfo:
     """
     if timezone_name is None:
         timezone_name = settings.DEFAULT_TIMEZONE
-    
+
     try:
         return pytz.timezone(timezone_name)
     except pytz.UnknownTimeZoneError:
@@ -29,7 +30,7 @@ def get_timezone(timezone_name: Optional[str] = None) -> pytz.BaseTzInfo:
         return pytz.timezone(settings.DEFAULT_TIMEZONE)
 
 
-def utc_to_user_timezone(utc_dt: datetime, user_timezone: Optional[str] = None) -> datetime:
+def utc_to_user_timezone(utc_dt: datetime, user_timezone: str | None = None) -> datetime:
     """
     Convert UTC datetime to user's timezone.
     
@@ -42,19 +43,19 @@ def utc_to_user_timezone(utc_dt: datetime, user_timezone: Optional[str] = None) 
     """
     if utc_dt is None:
         return None
-    
+
     # Ensure datetime is timezone-aware and in UTC
     if utc_dt.tzinfo is None:
         utc_dt = pytz.utc.localize(utc_dt)
     elif utc_dt.tzinfo != pytz.utc:
         utc_dt = utc_dt.astimezone(pytz.utc)
-    
+
     # Convert to user timezone
     user_tz = get_timezone(user_timezone)
     return utc_dt.astimezone(user_tz)
 
 
-def user_timezone_to_utc(local_dt: Union[datetime, str], user_timezone: Optional[str] = None) -> datetime:
+def user_timezone_to_utc(local_dt: datetime | str, user_timezone: str | None = None) -> datetime:
     """
     Convert user's local datetime to UTC.
     
@@ -67,7 +68,7 @@ def user_timezone_to_utc(local_dt: Union[datetime, str], user_timezone: Optional
     """
     if local_dt is None:
         return None
-    
+
     # Convert string to datetime if needed
     if isinstance(local_dt, str):
         # Handle different datetime string formats
@@ -80,19 +81,19 @@ def user_timezone_to_utc(local_dt: Union[datetime, str], user_timezone: Optional
                 local_dt = datetime.fromisoformat(local_dt)
             except ValueError:
                 raise ValueError(f"Unable to parse datetime string: {local_dt}")
-    
+
     user_tz = get_timezone(user_timezone)
-    
+
     # If datetime is naive, assume it's in user's timezone
     if local_dt.tzinfo is None:
         local_dt = user_tz.localize(local_dt)
-    
+
     # Convert to UTC and make naive for database storage
     utc_dt = local_dt.astimezone(pytz.utc)
     return utc_dt.replace(tzinfo=None)
 
 
-def format_datetime_for_user(utc_dt: datetime, user_timezone: Optional[str] = None, 
+def format_datetime_for_user(utc_dt: datetime, user_timezone: str | None = None,
                            format_str: str = "%Y-%m-%d %H:%M:%S") -> str:
     """
     Format UTC datetime for display in user's timezone.
@@ -107,7 +108,7 @@ def format_datetime_for_user(utc_dt: datetime, user_timezone: Optional[str] = No
     """
     if utc_dt is None:
         return ""
-    
+
     local_dt = utc_to_user_timezone(utc_dt, user_timezone)
     return local_dt.strftime(format_str)
 
@@ -129,7 +130,7 @@ def get_available_timezones() -> list[str]:
         "Pacific/Honolulu",      # Hawaii
         "UTC",                   # UTC
     ]
-    
+
     # Add some international timezones
     international_timezones = [
         "Europe/London",
@@ -141,7 +142,7 @@ def get_available_timezones() -> list[str]:
         "Australia/Sydney",
         "Australia/Melbourne",
     ]
-    
+
     return common_timezones + international_timezones
 
 
@@ -162,7 +163,7 @@ def validate_timezone(timezone_name: str) -> bool:
         return False
 
 
-def get_current_time_in_timezone(user_timezone: Optional[str] = None) -> datetime:
+def get_current_time_in_timezone(user_timezone: str | None = None) -> datetime:
     """
     Get current time in user's timezone.
     

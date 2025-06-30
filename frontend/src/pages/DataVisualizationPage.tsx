@@ -8,7 +8,7 @@ import CreateAnalysisModal from '../components/CreateAnalysisModal';
 import PDFExportModal from '../components/PDFExportModal';
 import { healthService } from '../services/health';
 import { aiAnalysisService } from '../services/aiAnalysis';
-import { reportsService } from '../services/reports';
+// import { reportsService } from '../services/reports';
 import { HealthData } from '../types/health';
 import { AIAnalysisCreate } from '../types/aiAnalysis';
 

@@ -26,22 +26,67 @@ A comprehensive health data tracking application with Python FastAPI backend and
 - **Professional PDF Reports**: Generate medical-grade PDF reports with charts, statistics, and clinical notes
 
 ### Enhanced AI Analysis Features
-- **Multi-Provider AI Support**: OpenAI, Anthropic Claude, Google Generative AI, and custom providers
+- **Multi-Provider AI Support**: OpenAI, Anthropic Claude, Google Generative AI, and custom providers with intelligent auto-selection
+- **AI Analysis Hub**: Unified tabbed interface combining analysis creation, provider management, schedules, and workflows
 - **Smart Data Pre-Selection**: Intelligent data filtering by metric type, time range, and relevance
 - **Advanced Data Selection Algorithms**: 
   - Trending data detection using linear regression analysis
   - Anomaly detection with statistical z-score analysis and clinical thresholds
   - Time-of-day filtering (morning, afternoon, evening patterns)
+- **Analysis Automation**: 
+  - **Scheduled Analysis**: Automated health analysis with 6 pre-built templates (daily insights, weekly summaries, blood pressure monitoring, etc.)
+  - **Follow-up Workflows**: Intelligent multi-step analysis chains that automatically trigger based on results
+  - **Data Threshold Triggers**: Analyses that trigger after specific numbers of new readings
+  - **Automatic Provider Selection**: Smart AI provider selection with fallback mechanisms for reliable analysis execution
 - **Analysis Workflows**: Comprehensive multi-step analysis chains with templates:
-  - Comprehensive Health Assessment (4-step: Trends → Anomalies → Insights → Recommendations)
-  - Blood Pressure Deep Dive (specialized cardiovascular analysis)
-  - Anomaly Investigation (deep pattern analysis)
-  - Weekly Health Summary (quick overview with comparisons)
+  - Anomaly Detection Follow-up (automated detailed analysis when anomalies found)
+  - Comprehensive Health Assessment (trends → insights → recommendations chain)
+  - Weekly Health Review (multi-step weekly assessment)
+  - Blood Pressure Alert Follow-up (specialized cardiovascular monitoring)
+  - New User Onboarding (baseline assessment workflow)
+- **Schedule Management**: 
+  - Recurring schedules (daily, weekly, monthly) with customizable timing
+  - Data threshold schedules (trigger after N new readings)
+  - Template-based schedule creation with parameterization
+  - **Smart Provider Selection**: Choose specific AI providers per schedule or use intelligent auto-selection
+  - **Auto-Selection Logic**: Automatically selects best available provider based on user's configured providers, priority, and availability
+  - **Provider Fallback**: Creates providers from environment variables when no user providers are configured
+  - Execution history and performance monitoring
 - **Configuration Management**: Save, load, and organize analysis configurations with favorites and collections
 - **Analysis Presets**: Pre-configured templates for common health monitoring scenarios
 - **Comprehensive Help System**: Interactive 7-section guide covering all analysis features
 - **Follow-up Suggestions**: AI-generated recommendations for next analyses and consultations
 - **Enhanced Error Handling**: Improved truncation detection and user-friendly error messages
+- **Timezone Intelligence**: Automatic timezone conversion for accurate time-based analysis
+
+### Comprehensive Notification System
+- **Universal Platform Support**: 100+ notification services via Apprise integration
+  - Email (SMTP, Gmail, Outlook, Yahoo, custom servers)
+  - Messaging platforms (Discord, Slack, Microsoft Teams, Telegram)
+  - SMS services (Twilio, AWS SNS, Clickatell, custom gateways)
+  - Push notifications (Pushover, Pushbullet, Gotify)
+  - Webhooks and custom integrations
+- **Event-Based Notifications**: Real-time alerts for all health analysis activities
+  - Analysis completion/failure notifications
+  - Schedule execution results and summaries
+  - Workflow completion and step-by-step progress
+  - System alerts and error notifications
+- **Smart Notification Management**:
+  - **Granular Preferences**: Configure different notification settings per event type and channel
+  - **Priority Filtering**: Low, Normal, High, Urgent priority levels with customizable thresholds
+  - **Quiet Hours**: Configure do-not-disturb periods with urgent-only exceptions
+  - **Rate Limiting**: Prevent notification spam with hourly/daily limits per channel
+  - **Content Filtering**: Filter by analysis type, AI provider, or custom criteria
+- **Security & Reliability**:
+  - **Encrypted Storage**: All notification service URLs encrypted at rest using Fernet encryption
+  - **Delivery Tracking**: Complete audit trail of all notifications sent
+  - **Error Handling**: Robust retry logic and fallback mechanisms
+  - **Template System**: Customizable notification content with Jinja2 templating
+- **User Experience**:
+  - **Quick Setup Wizard**: One-click configuration for popular services
+  - **Live Testing**: Test notification channels before saving
+  - **Statistics Dashboard**: Track delivery rates and notification history
+  - **Channel Management**: Easy setup, testing, and management of multiple notification channels
 
 ### Collaboration Features
 - **Family Groups**: Create family circles and share health data
@@ -299,16 +344,13 @@ GOOGLE_AI_API_KEY=your-google-ai-api-key
 # PDF Report Generation (automatic - dependencies installed via pyproject.toml)
 # No additional configuration required - ReportLab, Pillow, and Jinja2 included
 
-# Email Settings (for notifications)
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-
 # Redis (for background processing and caching)
 REDIS_URL=redis://localhost:6379
 CELERY_BROKER_URL=redis://localhost:6379/0
 CELERY_RESULT_BACKEND=redis://localhost:6379/1
+
+# Notification System Encryption
+ENCRYPTION_KEY=your-32-character-encryption-key-here
 ```
 
 ### Frontend Configuration
@@ -317,6 +359,67 @@ The frontend automatically connects to `http://localhost:8000` for the API. To c
 
 1. Edit `frontend/src/services/api.ts`
 2. Update the `BASE_URL` constant
+
+### Notification System Configuration
+
+The notification system supports 100+ services through Apprise. Here are examples for popular services:
+
+#### Email Notifications
+```
+# Gmail
+mailto://username:password@gmail.com
+
+# Outlook/Hotmail
+mailto://username:password@hotmail.com
+
+# Custom SMTP Server
+mailtos://username:password@mail.example.com:587
+```
+
+#### Messaging Platforms
+```
+# Discord Webhook
+discord://webhook_id/webhook_token
+
+# Slack Webhook
+slack://tokenA/tokenB/tokenC
+
+# Microsoft Teams
+msteams://TokenA/TokenB/TokenC
+
+# Telegram Bot
+tgram://bottoken/ChatID
+```
+
+#### SMS Services
+```
+# Twilio
+twilio://AccountSID:AuthToken@FromPhoneNo
+
+# AWS SNS
+sns://AccessKeyID/AccessSecretKey/RegionName/+PhoneNo
+```
+
+#### Push Notifications
+```
+# Pushover
+pover://user@token
+
+# Pushbullet
+pbul://accesstoken
+
+# Gotify
+gotify://hostname/token
+```
+
+#### Webhooks
+```
+# Generic Webhook
+json://hostname/path
+form://hostname/path
+```
+
+For a complete list of supported services and their URL formats, visit the [Apprise documentation](https://github.com/caronc/apprise).
 
 ## 🚀 Running the Application
 
@@ -720,20 +823,26 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   - Multiple report templates (comprehensive, clinical, summary)
   - Both synchronous and asynchronous export options
   - Professional formatting suitable for healthcare providers
-
-### In Progress 🚧
-- [ ] **Scheduled AI Analysis & Notification System** (#12)
-  - Automated analysis scheduling
-  - Email and in-app notifications
-  - Health alert thresholds
-  - Analysis result summaries
+- [x] **Comprehensive Notification System** (v2.4.0)
+  - Universal notification support via Apprise (100+ services)
+  - Event-based notifications for all analysis activities
+  - Smart filtering, rate limiting, and quiet hours
+  - Encrypted storage and comprehensive audit trails
+  - Quick setup wizard and live testing capabilities
 
 ### Planned Features 📋
 - [ ] **Enhanced AI Analysis Features** (#6)
   - Custom analysis templates and community sharing
   - Advanced search and filtering with tagging
   - AI-powered insights dashboard with health scoring
-  - Analysis comparison and trending over time
+- [ ] **Improved Analysis Comparison UX** (#16)
+  - Simplified comparison interface and better user workflows
+  - More practical comparison types aligned with real user needs
+  - Better integration with main analysis flow
+- [ ] **Redesigned Analysis Workflow System** (#17)
+  - Simplified workflow creation focused on common automation needs
+  - Pre-built workflow templates for typical health monitoring scenarios
+  - Better integration with scheduling and notification systems
 - [ ] **Mobile App** (React Native)
   - Cross-platform iOS and Android support
   - Offline data synchronization

@@ -4,8 +4,9 @@ Database initialization script for MBHealth.
 This script creates all database tables based on the SQLAlchemy models.
 """
 
-from app.core.database import engine, Base
+from app.core.database import Base, engine
 from app.models import *  # This ensures all models are registered
+
 
 def create_database():
     """Create all database tables."""
@@ -18,4 +19,4 @@ def create_database():
         raise
 
 if __name__ == "__main__":
-    create_database() 
+    create_database()

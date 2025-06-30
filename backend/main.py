@@ -1,9 +1,11 @@
 import uvicorn
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
+
 from app.api.api_v1.api import api_router
 from app.api.websocket import websocket_endpoint
+from app.core.config import settings
+
 # Import models to ensure they're registered with SQLAlchemy
 from app.models import *
 
@@ -50,4 +52,4 @@ def main():
     )
 
 if __name__ == "__main__":
-    main() 
+    main()

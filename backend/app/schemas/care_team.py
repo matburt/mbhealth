@@ -1,17 +1,18 @@
-from pydantic import BaseModel
-from typing import Optional, List
 from datetime import datetime
+
+from pydantic import BaseModel
+
 
 class CareTeamBase(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
 class CareTeamCreate(CareTeamBase):
     pass
 
 class CareTeamUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
 
 class CareTeamOut(CareTeamBase):
     id: int
@@ -35,4 +36,4 @@ class CareTeamMemberOut(CareTeamMemberBase):
     id: int
     care_team_id: int
     class Config:
-        from_attributes = True 
+        from_attributes = True
