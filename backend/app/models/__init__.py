@@ -20,7 +20,7 @@ from .analysis_workflow import (
     WorkflowStepResult,
     WorkflowTemplate,
 )
-from .care_team import CareTeam, CareTeamMember
+from .care_team import CareTeam, CareTeamInvitation, CareTeamMember
 from .family import Family, FamilyMember
 from .health_data import HealthData
 from .note import Note

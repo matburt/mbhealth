@@ -200,6 +200,12 @@ const CareTeamsPage: React.FC = () => {
             setInviteModalOpen(false);
             setSelectedCareTeam(null);
           }}
+          careTeamId={selectedCareTeam.id}
+          onInviteSent={() => {
+            setInviteModalOpen(false);
+            setSelectedCareTeam(null);
+            // Optionally refresh the care team members list
+          }}
         />
       )}
     </div>
