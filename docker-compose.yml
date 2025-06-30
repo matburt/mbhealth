@@ -31,6 +31,22 @@ services:
       timeout: 5s
       retries: 5
 
+  # Database migrations
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://mbhealth:mbhealth_password@postgres:5432/mbhealth
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    profiles:
+      - migrate
+
   # Backend API
   backend:
     build:

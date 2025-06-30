@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.api_v1.api import api_router
 from app.api.websocket import websocket_endpoint
 from app.core.config import settings
+from app.core.database import init_db
 
 # Import models to ensure they're registered with SQLAlchemy
 from app.models import *
@@ -15,6 +16,16 @@ app = FastAPI(
     version="1.0.0",
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup"""
+    print("Running database migrations on startup...")
+    success = init_db()
+    if not success:
+        print("WARNING: Database migration failed during startup")
+    else:
+        print("Database initialization completed successfully")
 
 # Set up CORS
 app.add_middleware(

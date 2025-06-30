@@ -87,6 +87,15 @@ db-reset: ## Reset database (delete and recreate)
 	rm -f health_data.db
 	uv run alembic upgrade head
 
+db-history: ## Show migration history
+	uv run alembic history
+
+db-current: ## Show current migration
+	uv run alembic current
+
+db-init: ## Initialize database with migrations (replaces create_db.py)
+	uv run python -c "from app.core.database import init_db; init_db()"
+
 # Documentation targets
 docs-serve: ## Serve documentation locally
 	uv run mkdocs serve
