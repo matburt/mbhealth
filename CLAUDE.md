@@ -128,6 +128,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - `app/api/api_v1/endpoints/notifications.py`: Notification management API
   - Frontend components in `src/components/Notification*.tsx`
 
+## Database Migrations
+
+### Important: Creating New Migrations
+**ALWAYS create a new migration when you:**
+- Add or remove a model/table
+- Add, remove, or modify columns
+- Change column types or constraints
+- Add or modify indexes
+- Change foreign key relationships
+
+### Migration Workflow
+1. **Make model changes** in `app/models/`
+2. **Generate migration**: `make db-revision message="Add new column to users"`
+3. **Review the generated migration** in `alembic/versions/`
+4. **Apply migration**: `make db-migrate`
+5. **Test rollback**: `make db-downgrade` (then `make db-migrate` to go back up)
+
+### Common Migration Commands
+- `make db-revision message="Description"` - Generate new migration after model changes
+- `make db-migrate` - Apply pending migrations
+- `make db-current` - Check current migration version
+- `make db-history` - View migration history
+- `make db-downgrade` - Rollback one migration
+- `make db-reset` - Delete database and recreate from migrations
+
+### Migration Best Practices
+- Always review auto-generated migrations before applying
+- Test migrations on a copy of production data
+- Include both upgrade and downgrade operations
+- Keep migrations small and focused
+- Never edit applied migrations - create new ones instead
+
 ## Development Patterns
 
 ### Backend Patterns
