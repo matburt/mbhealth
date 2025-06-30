@@ -204,6 +204,56 @@ const NotificationHelpGuide: React.FC = () => {
           ]
         }
       ]
+    },
+    {
+      name: 'Custom & Other Services',
+      icon: '🔗',
+      examples: [
+        {
+          name: 'Webhook (Generic)',
+          description: 'Send notifications to any HTTP endpoint',
+          url: 'https://your-webhook-url.com/notify',
+          steps: [
+            'Set up an HTTP endpoint to receive POST requests',
+            'Use your webhook URL directly',
+            'Apprise will send JSON payload to your endpoint',
+            'Format: https://your-webhook-url.com/notify'
+          ]
+        },
+        {
+          name: 'Matrix',
+          description: 'Send notifications to Matrix rooms',
+          url: 'matrix://user:password@hostname',
+          steps: [
+            'Have a Matrix account and access to a room',
+            'Get your Matrix server hostname',
+            'Use your Matrix credentials',
+            'Format: matrix://username:password@matrix.server.com'
+          ]
+        },
+        {
+          name: 'NTFY',
+          description: 'Simple pub-sub notifications',
+          url: 'ntfy://topic',
+          steps: [
+            'Choose a topic name for your notifications',
+            'Subscribe to the topic in the NTFY app',
+            'Format: ntfy://your_topic_name',
+            'Or use custom server: ntfy://server.com/topic'
+          ]
+        },
+        {
+          name: 'Other Services',
+          description: 'Apprise supports 100+ notification services',
+          url: 'See documentation →',
+          steps: [
+            'Visit the official Apprise documentation',
+            'Find your preferred notification service',
+            'Copy the URL format for your service',
+            'Supported: Rocket.Chat, Mattermost, PagerDuty, Opsgenie, Signal, and many more!'
+          ]
+        }
+      ]
     }
   ];
 
@@ -296,11 +346,25 @@ const NotificationHelpGuide: React.FC = () => {
                         <div className="mt-3 space-y-3">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              URL Format:
+                              {example.name === 'Other Services' ? 'Documentation:' : 'URL Format:'}
                             </label>
-                            <code className="block p-2 bg-gray-100 rounded text-sm font-mono text-gray-800 break-all">
-                              {example.url}
-                            </code>
+                            {example.name === 'Other Services' ? (
+                              <a
+                                href="https://github.com/caronc/apprise/wiki"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                📚 View Apprise Documentation
+                                <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </a>
+                            ) : (
+                              <code className="block p-2 bg-gray-100 rounded text-sm font-mono text-gray-800 break-all">
+                                {example.url}
+                              </code>
+                            )}
                           </div>
                           
                           <div>

@@ -169,6 +169,11 @@ export interface QuickSetupRequest {
   email?: string;
   discord_webhook?: string;
   slack_webhook?: string;
+  custom_channel?: {
+    name: string;
+    channel_type: NotificationChannelType;
+    apprise_url: string;
+  };
   enable_all_events?: boolean;
   priority_level?: NotificationPriority;
 }

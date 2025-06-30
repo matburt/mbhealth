@@ -29,7 +29,8 @@ const QuickSetupModal: React.FC<QuickSetupModalProps> = ({ onClose, onSetup }) =
     }
   };
 
-  const canProceedToStep2 = setup.email || setup.discord_webhook || setup.slack_webhook;
+  const canProceedToStep2 = setup.email || setup.discord_webhook || setup.slack_webhook || 
+    (setup.custom_channel?.name && setup.custom_channel?.apprise_url);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -141,6 +142,76 @@ const QuickSetupModal: React.FC<QuickSetupModalProps> = ({ onClose, onSetup }) =
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Create an app in your Slack workspace and get the webhook URL
+                  </p>
+                </div>
+
+                {/* Custom Channel Setup */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <span className="text-2xl">🔗</span>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Custom Channel</h4>
+                      <p className="text-sm text-gray-600">Use any Apprise-supported service</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Channel name (e.g., My Telegram Bot)"
+                      value={setup.custom_channel?.name || ''}
+                      onChange={(e) => setSetup({ 
+                        ...setup, 
+                        custom_channel: { 
+                          ...setup.custom_channel,
+                          name: e.target.value,
+                          channel_type: setup.custom_channel?.channel_type || 'custom',
+                          apprise_url: setup.custom_channel?.apprise_url || ''
+                        } 
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    
+                    <select
+                      value={setup.custom_channel?.channel_type || 'custom'}
+                      onChange={(e) => setSetup({ 
+                        ...setup, 
+                        custom_channel: { 
+                          ...setup.custom_channel,
+                          name: setup.custom_channel?.name || '',
+                          channel_type: e.target.value as any,
+                          apprise_url: setup.custom_channel?.apprise_url || ''
+                        } 
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="custom">Custom/Other</option>
+                      <option value="telegram">Telegram</option>
+                      <option value="teams">Microsoft Teams</option>
+                      <option value="pushover">Pushover</option>
+                      <option value="webhooks">Webhook</option>
+                      <option value="sms">SMS</option>
+                    </select>
+                    
+                    <input
+                      type="text"
+                      placeholder="Apprise URL (e.g., tgram://bot_token/chat_id)"
+                      value={setup.custom_channel?.apprise_url || ''}
+                      onChange={(e) => setSetup({ 
+                        ...setup, 
+                        custom_channel: { 
+                          ...setup.custom_channel,
+                          name: setup.custom_channel?.name || '',
+                          channel_type: setup.custom_channel?.channel_type || 'custom',
+                          apprise_url: e.target.value
+                        } 
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                    />
+                  </div>
+                  
+                  <p className="text-xs text-gray-500 mt-2">
+                    Check the Help Guide for URL formats for your specific service
                   </p>
                 </div>
 

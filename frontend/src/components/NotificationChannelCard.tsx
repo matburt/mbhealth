@@ -18,7 +18,8 @@ const NotificationChannelCard: React.FC<NotificationChannelCardProps> = ({
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<NotificationChannelUpdate>({
     name: channel.name,
-    is_enabled: channel.is_enabled
+    is_enabled: channel.is_enabled,
+    apprise_url: channel.apprise_url
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -89,11 +90,11 @@ const NotificationChannelCard: React.FC<NotificationChannelCardProps> = ({
     <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <span className="text-2xl">
+        <div className="flex items-center space-x-3 min-w-0 flex-1">
+          <span className="text-2xl flex-shrink-0">
             {notificationService.getChannelTypeIcon(channel.channel_type)}
           </span>
-          <div>
+          <div className="min-w-0 flex-1">
             {editing ? (
               <input
                 type="text"
@@ -107,11 +108,14 @@ const NotificationChannelCard: React.FC<NotificationChannelCardProps> = ({
             <p className="text-sm text-gray-600 capitalize">
               {channel.channel_type.replace('_', ' ')}
             </p>
+            <p className="text-xs text-gray-500 font-mono break-all">
+              {channel.apprise_url}
+            </p>
           </div>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor()}`}>
+        <div className="flex items-center space-x-2 flex-shrink-0">
+          <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor()}`}>
             {getStatusText()}
           </span>
           {editing ? (
@@ -141,6 +145,25 @@ const NotificationChannelCard: React.FC<NotificationChannelCardProps> = ({
       {error && (
         <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 text-sm rounded">
           {error}
+        </div>
+      )}
+
+      {/* URL Editing */}
+      {editing && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Notification URL
+          </label>
+          <input
+            type="text"
+            value={editForm.apprise_url || ''}
+            onChange={(e) => setEditForm({ ...editForm, apprise_url: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+            placeholder="Enter Apprise URL (e.g., mailto://email@example.com, discord://webhook_url)"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Enter a valid Apprise URL. Check the Help Guide for examples.
+          </p>
         </div>
       )}
 
@@ -177,7 +200,11 @@ const NotificationChannelCard: React.FC<NotificationChannelCardProps> = ({
               <button
                 onClick={() => {
                   setEditing(false);
-                  setEditForm({ name: channel.name, is_enabled: channel.is_enabled });
+                  setEditForm({ 
+                    name: channel.name, 
+                    is_enabled: channel.is_enabled,
+                    apprise_url: channel.apprise_url
+                  });
                   setError(null);
                 }}
                 className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
