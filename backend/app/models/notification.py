@@ -6,6 +6,7 @@ and notification templates using Apprise for multi-service delivery.
 """
 
 import enum
+import uuid
 
 from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
@@ -61,7 +62,7 @@ class NotificationChannel(Base):
     """User's configured notification channels (Apprise URLs)"""
     __tablename__ = "notification_channels"
 
-    id = Column(String, primary_key=True, default=lambda: str(func.gen_random_uuid()))
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     # Channel configuration
@@ -89,7 +90,7 @@ class NotificationPreference(Base):
     """User preferences for when and how to receive notifications"""
     __tablename__ = "notification_preferences"
 
-    id = Column(String, primary_key=True, default=lambda: str(func.gen_random_uuid()))
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     channel_id = Column(String, ForeignKey("notification_channels.id"), nullable=False)
 
@@ -128,7 +129,7 @@ class NotificationTemplate(Base):
     """Templates for notification content"""
     __tablename__ = "notification_templates"
 
-    id = Column(String, primary_key=True, default=lambda: str(func.gen_random_uuid()))
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
 
     # Template identification
     event_type = Column(Enum(NotificationEventType), nullable=False)
@@ -161,7 +162,7 @@ class NotificationHistory(Base):
     """History of sent notifications"""
     __tablename__ = "notification_history"
 
-    id = Column(String, primary_key=True, default=lambda: str(func.gen_random_uuid()))
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     channel_id = Column(String, ForeignKey("notification_channels.id"))
 
@@ -203,7 +204,7 @@ class NotificationQueue(Base):
     """Queue for pending notifications"""
     __tablename__ = "notification_queue"
 
-    id = Column(String, primary_key=True, default=lambda: str(func.gen_random_uuid()))
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     channel_id = Column(String, ForeignKey("notification_channels.id"), nullable=False)
 
@@ -243,7 +244,7 @@ class NotificationRateLimit(Base):
     """Rate limiting tracking for notifications"""
     __tablename__ = "notification_rate_limits"
 
-    id = Column(String, primary_key=True, default=lambda: str(func.gen_random_uuid()))
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     channel_id = Column(String, ForeignKey("notification_channels.id"), nullable=False)
     event_type = Column(Enum(NotificationEventType), nullable=False)
