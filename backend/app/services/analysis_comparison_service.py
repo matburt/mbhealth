@@ -48,7 +48,7 @@ class AnalysisComparisonService:
         self.db.refresh(comparison)
 
         # Perform the actual comparison analysis
-        self._perform_comparison_analysis(comparison)
+        self._perform_saved_comparison_analysis(comparison)
 
         return comparison
 
@@ -501,6 +501,62 @@ class AnalysisComparisonService:
         confidence = base_score + data_point_bonus + similarity_bonus + provider_bonus - difference_penalty
         return max(0.0, min(1.0, confidence))
 
+    def _perform_saved_comparison_analysis(self, comparison: AnalysisComparison):
+        """Perform analysis for a saved comparison and update results"""
+        try:
+            # Get the analyses
+            analyses = self.db.query(AIAnalysis).filter(
+                and_(
+                    AIAnalysis.id.in_(comparison.analysis_ids),
+                    AIAnalysis.user_id == comparison.user_id,
+                    AIAnalysis.status == 'completed'
+                )
+            ).all()
+
+            if not analyses:
+                comparison.status = "failed"
+                comparison.error_message = "No valid analyses found"
+                self.db.commit()
+                return
+
+            # Create a comparison request from saved criteria
+            request = ComparisonRequest(
+                analysis_ids=comparison.analysis_ids,
+                comparison_type=comparison.comparison_type,
+                **(comparison.comparison_criteria or {})
+            )
+
+            # Perform the comparison
+            if comparison.comparison_type == "side_by_side":
+                result = self._compare_side_by_side(analyses, request)
+            elif comparison.comparison_type == "temporal_trend":
+                result = self._compare_temporal_trend(analyses, request)
+            elif comparison.comparison_type == "provider_performance":
+                result = self._compare_provider_performance(analyses, request)
+            else:
+                comparison.status = "failed"
+                comparison.error_message = f"Unknown comparison type: {comparison.comparison_type}"
+                self.db.commit()
+                return
+
+            # Update comparison with results
+            comparison.results = {
+                "summary": result.summary,
+                "differences": result.differences,
+                "similarities": result.similarities,
+                "statistical_analysis": result.statistical_analysis,
+                "recommendations": result.recommendations,
+                "confidence_score": result.confidence_score
+            }
+            comparison.status = "completed"
+            self.db.commit()
+
+        except Exception as e:
+            logger.error(f"Error performing saved comparison analysis: {str(e)}")
+            comparison.status = "failed"
+            comparison.error_message = str(e)
+            self.db.commit()
+
     def _calculate_provider_metrics(self, analyses: list[AIAnalysis]) -> dict[str, Any]:
         """Calculate metrics for a specific provider"""
         total_analyses = len(analyses)
@@ -676,3 +732,77 @@ class AnalysisComparisonService:
             "confidence": 0.6,
             "recommendations": ["Continue current analysis frequency"]
         }
+
+    def _calculate_comprehensive_provider_metrics(self, analyses: list[AIAnalysis]) -> dict[str, Any]:
+        """Calculate comprehensive metrics for a provider"""
+        return self._calculate_provider_metrics(analyses)
+
+    def _generate_provider_rankings(self, provider_metrics: dict[str, dict[str, Any]], requested_metrics: list[str]) -> dict[str, Any]:
+        """Generate provider rankings based on requested metrics"""
+        rankings = {}
+        
+        for metric in requested_metrics:
+            if metric == "success_rate":
+                rankings["success_rate"] = sorted(
+                    provider_metrics.keys(),
+                    key=lambda p: provider_metrics[p].get("success_rate", 0),
+                    reverse=True
+                )
+            elif metric == "speed":
+                rankings["speed"] = sorted(
+                    [p for p in provider_metrics.keys() if provider_metrics[p].get("avg_processing_time")],
+                    key=lambda p: provider_metrics[p]["avg_processing_time"]
+                )
+            elif metric == "cost":
+                rankings["cost"] = sorted(
+                    [p for p in provider_metrics.keys() if provider_metrics[p].get("avg_cost")],
+                    key=lambda p: provider_metrics[p]["avg_cost"]
+                )
+        
+        return rankings
+
+    def _generate_provider_recommendations(self, provider_metrics: dict[str, dict[str, Any]], rankings: dict[str, Any]) -> dict[str, Any]:
+        """Generate recommendations based on provider performance"""
+        recommendations = {}
+        
+        if "success_rate" in rankings and rankings["success_rate"]:
+            best_provider = rankings["success_rate"][0]
+            recommendations["best_overall"] = f"Consider using {best_provider} for highest success rate"
+        
+        if "speed" in rankings and rankings["speed"]:
+            fastest_provider = rankings["speed"][0]
+            recommendations["fastest"] = f"{fastest_provider} provides fastest analysis"
+        
+        if "cost" in rankings and rankings["cost"]:
+            cheapest_provider = rankings["cost"][0]
+            recommendations["most_economical"] = f"{cheapest_provider} offers best cost efficiency"
+        
+        return recommendations
+
+    def _analyze_provider_costs(self, provider_metrics: dict[str, dict[str, Any]]) -> dict[str, Any]:
+        """Analyze cost patterns across providers"""
+        cost_analysis = {"total_costs": {}, "cost_per_analysis": {}}
+        
+        for provider, metrics in provider_metrics.items():
+            cost_analysis["total_costs"][provider] = metrics.get("total_cost", 0)
+            cost_analysis["cost_per_analysis"][provider] = metrics.get("avg_cost", 0)
+        
+        return cost_analysis
+
+    def _analyze_provider_efficiency(self, provider_metrics: dict[str, dict[str, Any]]) -> dict[str, Any]:
+        """Analyze efficiency patterns across providers"""
+        efficiency = {}
+        
+        for provider, metrics in provider_metrics.items():
+            success_rate = metrics.get("success_rate", 0)
+            avg_time = metrics.get("avg_processing_time", float('inf'))
+            
+            # Efficiency score: success rate / processing time
+            efficiency_score = success_rate / (avg_time / 60) if avg_time and avg_time != float('inf') else 0
+            efficiency[provider] = {
+                "efficiency_score": efficiency_score,
+                "success_rate": success_rate,
+                "avg_processing_time": avg_time
+            }
+        
+        return efficiency
