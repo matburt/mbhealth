@@ -24,6 +24,14 @@ from .care_team import CareTeam, CareTeamMember
 from .family import Family, FamilyMember
 from .health_data import HealthData
 from .note import Note
+from .notification import (
+    NotificationChannel,
+    NotificationPreference,
+    NotificationTemplate,
+    NotificationHistory,
+    NotificationQueue,
+    NotificationRateLimit,
+)
 from .user import User
 
 __all__ = [
@@ -48,5 +56,11 @@ __all__ = [
     "AnalysisComparison",
     "ProviderPerformanceMetrics",
     "AnalysisTrend",
-    "AnalysisImprovementSuggestion"
+    "AnalysisImprovementSuggestion",
+    "NotificationChannel",
+    "NotificationPreference",
+    "NotificationTemplate",
+    "NotificationHistory",
+    "NotificationQueue",
+    "NotificationRateLimit"
 ]
