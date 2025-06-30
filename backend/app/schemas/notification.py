@@ -318,11 +318,18 @@ class NotificationConfig(BaseModel):
 
 
 # Quick Setup Schemas
+class CustomChannelSetup(BaseModel):
+    """Schema for custom channel in quick setup"""
+    name: str
+    channel_type: NotificationChannelType
+    apprise_url: str
+
 class QuickSetupRequest(BaseModel):
     """Schema for quick notification setup"""
     email: str | None = None
     discord_webhook: str | None = None
     slack_webhook: str | None = None
+    custom_channel: CustomChannelSetup | None = None
     enable_all_events: bool = True
     priority_level: NotificationPriority = NotificationPriority.NORMAL
 

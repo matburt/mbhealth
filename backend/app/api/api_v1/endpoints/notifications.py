@@ -633,6 +633,23 @@ async def quick_notification_setup(
             else:
                 tests_failed.append(slack_channel.id)
 
+        # Create custom channel if provided
+        if setup_request.custom_channel:
+            custom_channel = service.create_channel(
+                user_id=current_user.id,
+                name=setup_request.custom_channel.name,
+                channel_type=setup_request.custom_channel.channel_type,
+                apprise_url=setup_request.custom_channel.apprise_url
+            )
+            channels_created.append(custom_channel.id)
+
+            # Test channel
+            test_result = await service._test_channel(custom_channel)
+            if test_result["success"]:
+                tests_passed.append(custom_channel.id)
+            else:
+                tests_failed.append(custom_channel.id)
+
         # Create default preferences if requested
         if setup_request.enable_all_events:
             default_events = [
