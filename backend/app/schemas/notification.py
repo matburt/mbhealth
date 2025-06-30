@@ -35,11 +35,26 @@ class NotificationChannelBase(BaseModel):
             'mailto://', 'mailtos://', 'discord://', 'slack://', 'teams://',
             'telegram://', 'pushover://', 'webhook://', 'webhooks://',
             'sms://', 'email://', 'json://', 'xml://', 'twilio://',
-            'smtp://', 'smtps://', 'ses://', 'sendgrid://', 'mailgun://'
+            'smtp://', 'smtps://', 'ses://', 'sendgrid://', 'mailgun://',
+            'http://', 'https://',  # Allow generic HTTP URLs for webhooks
+            'matrix://', 'rocket://', 'mattermost://', 'ntfy://', 'gotify://',
+            'windows://', 'macos://', 'gnome://', 'kde://',  # Desktop notifications
+            'msteams://', 'office365://', 'pagerduty://', 'opsgenie://',
+            'signal://', 'whatsapp://', 'nexmo://', 'sinch://', 'bulksms://'
         ]
 
-        if not any(v.lower().startswith(prefix) for prefix in valid_prefixes):
-            raise ValueError(f"Invalid Apprise URL format. Must start with one of: {', '.join(valid_prefixes)}")
+        # Check if it matches any valid prefix or is a valid URL-like pattern
+        v_lower = v.lower().strip()
+        is_valid = (
+            any(v_lower.startswith(prefix) for prefix in valid_prefixes) or
+            # Allow basic email format for mailto
+            '@' in v and '.' in v.split('@')[-1] or
+            # Allow webhook URLs that start with http/https
+            (v_lower.startswith(('http://', 'https://')) and '.' in v)
+        )
+        
+        if not is_valid:
+            raise ValueError(f"Invalid Apprise URL format. Must start with one of: {', '.join(sorted(valid_prefixes))} or be a valid email/webhook URL")
 
         return v
 
@@ -62,10 +77,14 @@ class NotificationChannelUpdate(BaseModel):
         return v
 
 
-class NotificationChannel(NotificationChannelBase):
-    """Schema for notification channel response"""
+class NotificationChannel(BaseModel):
+    """Schema for notification channel response - without URL validation"""
     id: str
     user_id: int
+    name: str
+    channel_type: NotificationChannelType
+    apprise_url: str  # No validation on read
+    is_enabled: bool
     is_verified: bool
     last_test_at: datetime | None = None
     last_test_success: bool | None = None
