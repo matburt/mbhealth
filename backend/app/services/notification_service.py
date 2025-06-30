@@ -5,7 +5,6 @@ Comprehensive notification service using Apprise for multi-platform notification
 Handles notification delivery, templating, rate limiting, and queuing.
 """
 
-import asyncio
 import json
 import logging
 from datetime import datetime, timedelta
@@ -66,9 +65,6 @@ class NotificationService:
         self.db.add(channel)
         self.db.commit()
         self.db.refresh(channel)
-
-        # Test the channel immediately
-        asyncio.create_task(self._test_channel(channel))
 
         return channel
 
