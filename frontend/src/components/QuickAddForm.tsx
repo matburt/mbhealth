@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { healthService } from '../services/health';
 import { HealthDataCreate } from '../types/health';
 import { useTimezone } from '../contexts/TimezoneContext';
+import { useAuth } from '../contexts/AuthContext';
+import { createUnitConverter, getUnitLabel } from '../utils/units';
 
 interface QuickAddFormData {
   metric_type: string;
@@ -14,18 +16,30 @@ interface QuickAddFormData {
   recorded_at: string;
 }
 
-const metricTypes = [
-  { value: 'blood_pressure', label: 'Blood Pressure', unit: 'mmHg' },
-  { value: 'blood_sugar', label: 'Blood Sugar', unit: 'mg/dL' },
-  { value: 'weight', label: 'Weight', unit: 'kg' },
-  { value: 'heart_rate', label: 'Heart Rate', unit: 'bpm' },
-  { value: 'temperature', label: 'Temperature', unit: '°C' },
-];
-
 const QuickAddForm: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { getCurrentDateTimeLocal, convertToUTC } = useTimezone();
+  const { user } = useAuth();
+  
+  // Create unit converter and metric types based on user preferences
+  const unitConverter = useMemo(() => user ? createUnitConverter(user) : null, [user]);
+  
+  const metricTypes = useMemo(() => [
+    { value: 'blood_pressure', label: 'Blood Pressure', unit: 'mmHg' },
+    { value: 'blood_sugar', label: 'Blood Sugar', unit: 'mg/dL' },
+    { 
+      value: 'weight', 
+      label: 'Weight', 
+      unit: unitConverter ? getUnitLabel('weight', unitConverter.getUserUnitForMetric('weight')) : 'lbs'
+    },
+    { value: 'heart_rate', label: 'Heart Rate', unit: 'bpm' },
+    { 
+      value: 'temperature', 
+      label: 'Temperature', 
+      unit: unitConverter ? getUnitLabel('temperature', unitConverter.getUserUnitForMetric('temperature')) : '°F'
+    },
+  ], [unitConverter]);
   
   const {
     register,
@@ -45,10 +59,30 @@ const QuickAddForm: React.FC = () => {
   const onSubmit = async (data: QuickAddFormData) => {
     setIsLoading(true);
     try {
+      // Determine storage unit and convert value if needed
+      const inputValue = parseFloat(data.value);
+      let storageUnit = currentMetric?.unit || '';
+      let storageValue = inputValue;
+
+      // Convert from user's preferred units to storage units if needed
+      if (unitConverter && (data.metric_type === 'weight' || data.metric_type === 'temperature')) {
+        // Default storage units
+        const storageUnits = {
+          weight: 'kg',
+          temperature: 'c'
+        };
+        
+        const defaultStorageUnit = storageUnits[data.metric_type as keyof typeof storageUnits];
+        if (defaultStorageUnit) {
+          storageUnit = defaultStorageUnit;
+          storageValue = unitConverter.convertFromUserUnits(inputValue, data.metric_type, defaultStorageUnit);
+        }
+      }
+
       const healthData: HealthDataCreate = {
         metric_type: data.metric_type,
-        value: parseFloat(data.value),
-        unit: currentMetric?.unit || '',
+        value: storageValue,
+        unit: storageUnit,
         notes: data.notes,
         recorded_at: convertToUTC(data.recorded_at),
       };

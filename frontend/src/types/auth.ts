@@ -24,6 +24,9 @@ export interface User {
   is_superuser: boolean;
   timezone: string;
   ai_context_profile?: string;
+  weight_unit: 'kg' | 'lbs';
+  temperature_unit: 'c' | 'f';
+  height_unit: 'cm' | 'ft';
   created_at: string;
   updated_at: string;
 } 

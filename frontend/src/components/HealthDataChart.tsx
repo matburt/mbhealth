@@ -18,6 +18,8 @@ import {
 import { subDays } from 'date-fns';
 import { HealthData } from '../types/health';
 import { useTimezone } from '../contexts/TimezoneContext';
+import { useAuth } from '../contexts/AuthContext';
+import { createUnitConverter, shouldConvertMetric } from '../utils/units';
 
 interface HealthDataChartProps {
   data: HealthData[];
@@ -39,6 +41,10 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
   showTargets = false
 }) => {
   const { formatDateTime } = useTimezone();
+  const { user } = useAuth();
+  
+  // Create unit converter based on user preferences
+  const unitConverter = useMemo(() => user ? createUnitConverter(user) : null, [user]);
   // Filter data by metric type and time range
   const filteredData = useMemo(() => {
     let filtered = data;
@@ -61,9 +67,20 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
   // Transform data for charts
   const chartData = useMemo(() => {
     return filteredData.map(item => {
-      const value = item.metric_type === 'blood_pressure' 
+      let value = item.metric_type === 'blood_pressure' 
         ? ((item.systolic || 0) + (item.diastolic || 0)) / 2 
         : item.value;
+      
+      let displayUnit = item.unit;
+      
+      // Convert to user's preferred units if applicable
+      if (unitConverter && shouldConvertMetric(item.metric_type) && item.value !== null) {
+        const converted = unitConverter.convertToUserUnits(item.value, item.metric_type, item.unit);
+        value = item.metric_type === 'blood_pressure' 
+          ? ((item.systolic || 0) + (item.diastolic || 0)) / 2  // Don't convert BP
+          : converted.value;
+        displayUnit = item.metric_type === 'blood_pressure' ? item.unit : converted.unit;
+      }
       
       return {
         date: formatDateTime(item.recorded_at, 'datetime'),
@@ -71,12 +88,13 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
         value: value,
         systolic: item.systolic,
         diastolic: item.diastolic,
-        unit: item.unit,
+        unit: displayUnit,
+        originalUnit: item.unit,
         metricType: item.metric_type,
         notes: item.notes
       };
     });
-  }, [filteredData]);
+  }, [filteredData, unitConverter, formatDateTime]);
 
   // Calculate statistics
   const stats = useMemo(() => {

@@ -10,6 +10,9 @@ interface SettingsFormData {
   email: string;
   timezone: string;
   ai_context_profile: string;
+  weight_unit: 'kg' | 'lbs';
+  temperature_unit: 'c' | 'f';
+  height_unit: 'cm' | 'ft';
 }
 
 const SettingsPage: React.FC = () => {
@@ -31,6 +34,9 @@ const SettingsPage: React.FC = () => {
       setValue('email', user.email || '');
       setValue('timezone', user.timezone || userTimezone);
       setValue('ai_context_profile', user.ai_context_profile || '');
+      setValue('weight_unit', user.weight_unit || 'lbs');
+      setValue('temperature_unit', user.temperature_unit || 'f');
+      setValue('height_unit', user.height_unit || 'ft');
     }
   }, [user, userTimezone, setValue]);
 
@@ -45,6 +51,9 @@ const SettingsPage: React.FC = () => {
         email: data.email,
         timezone: data.timezone,
         ai_context_profile: data.ai_context_profile,
+        weight_unit: data.weight_unit,
+        temperature_unit: data.temperature_unit,
+        height_unit: data.height_unit,
       });
 
       // Update auth context
@@ -150,6 +159,64 @@ const SettingsPage: React.FC = () => {
                 </p>
               </div>
 
+              {/* Unit Preferences */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Unit Preferences</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Choose your preferred units for displaying health measurements.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Weight Unit */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Weight
+                    </label>
+                    <select
+                      {...register('weight_unit', { required: 'Weight unit is required' })}
+                      className="input-field"
+                    >
+                      <option value="lbs">Pounds (lbs)</option>
+                      <option value="kg">Kilograms (kg)</option>
+                    </select>
+                  </div>
+
+                  {/* Temperature Unit */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Temperature
+                    </label>
+                    <select
+                      {...register('temperature_unit', { required: 'Temperature unit is required' })}
+                      className="input-field"
+                    >
+                      <option value="f">Fahrenheit (°F)</option>
+                      <option value="c">Celsius (°C)</option>
+                    </select>
+                  </div>
+
+                  {/* Height Unit */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Height
+                    </label>
+                    <select
+                      {...register('height_unit', { required: 'Height unit is required' })}
+                      className="input-field"
+                    >
+                      <option value="ft">Feet & Inches (ft)</option>
+                      <option value="cm">Centimeters (cm)</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="mt-3 text-xs text-gray-500">
+                  <p>• Changes will apply to all new measurements and data displays</p>
+                  <p>• Existing data will be converted automatically</p>
+                  <p>• US units (lbs, °F, ft) are selected by default</p>
+                </div>
+              </div>
+
               {/* AI Context Profile */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -242,6 +309,8 @@ const SettingsPage: React.FC = () => {
             <ul className="text-sm text-gray-700 space-y-2">
               <li>• Changes to your timezone will affect all date displays</li>
               <li>• Your data is always stored securely in UTC</li>
+              <li>• Unit preferences apply to all measurements and charts</li>
+              <li>• US units (lbs, °F, ft) are the default for new users</li>
               <li>• Email changes may require verification</li>
               <li>• AI context helps provide more personalized health insights</li>
               <li>• Your AI context is only used for analysis, never shared</li>

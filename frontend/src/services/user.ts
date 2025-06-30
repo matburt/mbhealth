@@ -6,6 +6,9 @@ export interface UpdateProfileRequest {
   email?: string;
   timezone?: string;
   ai_context_profile?: string;
+  weight_unit?: 'kg' | 'lbs';
+  temperature_unit?: 'c' | 'f';
+  height_unit?: 'cm' | 'ft';
 }
 
 class UserService {

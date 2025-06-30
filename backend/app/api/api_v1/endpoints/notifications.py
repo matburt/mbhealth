@@ -100,8 +100,8 @@ def get_notification_channel(
     """
     Get a specific notification channel.
     """
-    from app.models.notification import NotificationChannel as ChannelModel
     from app.core.security import decrypt_data
+    from app.models.notification import NotificationChannel as ChannelModel
 
     channel = db.query(ChannelModel).filter(
         ChannelModel.id == channel_id,

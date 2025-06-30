@@ -3,6 +3,8 @@ import toast from 'react-hot-toast';
 import { healthService } from '../services/health';
 import { HealthData } from '../types/health';
 import { useTimezone } from '../contexts/TimezoneContext';
+import { useAuth } from '../contexts/AuthContext';
+import { createUnitConverter, shouldConvertMetric } from '../utils/units';
 import NotesModal from './NotesModal';
 import EditHealthDataModal from './EditHealthDataModal';
 
@@ -18,13 +20,33 @@ const HealthDataTable: React.FC<HealthDataTableProps> = ({ data, onDataChange })
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingHealthData, setEditingHealthData] = useState<HealthData | null>(null);
   const { formatDateTime } = useTimezone();
+  const { user } = useAuth();
+
+  // Create unit converter based on user preferences
+  const unitConverter = user ? createUnitConverter(user) : null;
 
   const getMetricDisplay = (data: HealthData) => {
+    if (!unitConverter) {
+      // Fallback if no user/converter available
+      switch (data.metric_type) {
+        case 'blood_pressure':
+          return `${data.systolic}/${data.diastolic} ${data.unit}`;
+        default:
+          return `${data.value} ${data.unit}`;
+      }
+    }
+
     switch (data.metric_type) {
       case 'blood_pressure':
+        // Blood pressure doesn't need conversion
         return `${data.systolic}/${data.diastolic} ${data.unit}`;
       default:
-        return `${data.value} ${data.unit}`;
+        if (shouldConvertMetric(data.metric_type) && data.value !== null) {
+          const converted = unitConverter.convertToUserUnits(data.value, data.metric_type, data.unit);
+          return `${converted.value.toFixed(1)} ${converted.unit}`;
+        } else {
+          return `${data.value} ${data.unit}`;
+        }
     }
   };
 

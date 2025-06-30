@@ -26,11 +26,11 @@ from .health_data import HealthData
 from .note import Note
 from .notification import (
     NotificationChannel,
-    NotificationPreference,
-    NotificationTemplate,
     NotificationHistory,
+    NotificationPreference,
     NotificationQueue,
     NotificationRateLimit,
+    NotificationTemplate,
 )
 from .user import User
 
