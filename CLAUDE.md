@@ -93,7 +93,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **PostgreSQL** for production
 - **Redis** for caching, sessions, and background job queue
 - **Alembic** for database migrations (we aren't actually using alembic right now, call create_db.py for the moment)
-- Core entities: User, HealthData, Family, CareTeam, Note, AIAnalysis, AIProvider, AnalysisJob, AnalysisSettings
+- Core entities: User, HealthData, Family, CareTeam, Note, AIAnalysis, AIProvider, AnalysisJob, AnalysisSettings, AnalysisSchedule, AnalysisWorkflow, NotificationChannel, NotificationPreference
 
 ### AI Integration
 - **Multiple AI providers**: OpenAI, OpenRouter, Google Generative AI, Anthropic Claude, Custom providers
@@ -109,6 +109,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Automatic token attachment via axios interceptors
 - 401 responses automatically redirect to login page
 - Token expiration handled gracefully
+
+### Notification System
+- **Apprise integration**: Universal notification support for 100+ services
+- **Event-based notifications**: Real-time alerts for analysis completion, schedule execution, workflow progress
+- **Encrypted storage**: Notification service URLs encrypted using Fernet encryption
+- **Smart management**: Rate limiting, quiet hours, priority filtering, content customization
+- **Channel types**: Email, Discord, Slack, Teams, Telegram, SMS, Webhooks, Push notifications
+- **Service locations**:
+  - `app/services/notification_service.py`: Core notification orchestration
+  - `app/models/notification.py`: Database models for channels, preferences, history
+  - `app/api/api_v1/endpoints/notifications.py`: Notification management API
+  - Frontend components in `src/components/Notification*.tsx`
 
 ## Development Patterns
 

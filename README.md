@@ -835,7 +835,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   - Custom analysis templates and community sharing
   - Advanced search and filtering with tagging
   - AI-powered insights dashboard with health scoring
-  - Analysis comparison and trending over time
+- [ ] **Improved Analysis Comparison UX** (#16)
+  - Simplified comparison interface and better user workflows
+  - More practical comparison types aligned with real user needs
+  - Better integration with main analysis flow
+- [ ] **Redesigned Analysis Workflow System** (#17)
+  - Simplified workflow creation focused on common automation needs
+  - Pre-built workflow templates for typical health monitoring scenarios
+  - Better integration with scheduling and notification systems
 - [ ] **Mobile App** (React Native)
   - Cross-platform iOS and Android support
   - Offline data synchronization
