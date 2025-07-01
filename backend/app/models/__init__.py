@@ -8,12 +8,6 @@ from .ai_analysis import (
     AnalysisScheduleExecution,
     AnalysisSettings,
 )
-from .analysis_comparison import (
-    AnalysisComparison,
-    AnalysisImprovementSuggestion,
-    AnalysisTrend,
-    ProviderPerformanceMetrics,
-)
 from .analysis_workflow import (
     AnalysisWorkflow,
     AnalysisWorkflowExecution,
@@ -53,10 +47,6 @@ __all__ = [
     "AnalysisWorkflowExecution",
     "WorkflowTemplate",
     "WorkflowStepResult",
-    "AnalysisComparison",
-    "ProviderPerformanceMetrics",
-    "AnalysisTrend",
-    "AnalysisImprovementSuggestion",
     "NotificationChannel",
     "NotificationPreference",
     "NotificationTemplate",

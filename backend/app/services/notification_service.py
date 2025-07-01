@@ -137,7 +137,7 @@ class NotificationService:
         channels = self.db.query(NotificationChannel).filter(
             NotificationChannel.user_id == user_id
         ).order_by(NotificationChannel.created_at.desc()).all()
-        
+
         # Decrypt URLs before returning
         for channel in channels:
             try:
@@ -146,7 +146,7 @@ class NotificationService:
                 logger.warning(f"Failed to decrypt URL for channel {channel.id}: {str(e)}")
                 # Keep the encrypted value if decryption fails
                 pass
-        
+
         return channels
 
     def update_channel(

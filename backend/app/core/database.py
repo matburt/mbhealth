@@ -30,7 +30,7 @@ def run_migrations():
     try:
         # Get the project root directory (where alembic.ini is located)
         project_root = Path(__file__).parent.parent.parent
-        
+
         # Run alembic upgrade head
         result = subprocess.run(
             [sys.executable, "-m", "alembic", "upgrade", "head"],

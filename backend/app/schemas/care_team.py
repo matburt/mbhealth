@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr
 
@@ -7,7 +6,7 @@ from pydantic import BaseModel, EmailStr
 class UserInfo(BaseModel):
     id: int
     username: str
-    full_name: Optional[str] = None
+    full_name: str | None = None
     email: str
 
     class Config:
@@ -16,8 +15,8 @@ class UserInfo(BaseModel):
 
 class CareTeamBase(BaseModel):
     name: str
-    description: Optional[str] = None
-    specialty: Optional[str] = None
+    description: str | None = None
+    specialty: str | None = None
 
 
 class CareTeamCreate(CareTeamBase):
@@ -25,9 +24,9 @@ class CareTeamCreate(CareTeamBase):
 
 
 class CareTeamUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    specialty: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
+    specialty: str | None = None
 
 
 class CareTeamOut(CareTeamBase):
@@ -43,7 +42,7 @@ class CareTeamOut(CareTeamBase):
 class CareTeamMemberBase(BaseModel):
     user_id: int
     role: str  # admin, provider, viewer
-    specialty: Optional[str] = None
+    specialty: str | None = None
 
 
 class CareTeamMemberCreate(CareTeamMemberBase):
@@ -51,8 +50,8 @@ class CareTeamMemberCreate(CareTeamMemberBase):
 
 
 class CareTeamMemberUpdate(BaseModel):
-    role: Optional[str] = None
-    specialty: Optional[str] = None
+    role: str | None = None
+    specialty: str | None = None
 
 
 class CareTeamMemberOut(CareTeamMemberBase):
@@ -69,7 +68,7 @@ class CareTeamInviteCreate(BaseModel):
     care_team_id: int
     email: EmailStr
     role: str  # provider, viewer
-    specialty: Optional[str] = None
+    specialty: str | None = None
 
 
 class CareTeamInvitationOut(BaseModel):
@@ -77,7 +76,7 @@ class CareTeamInvitationOut(BaseModel):
     care_team_id: int
     email: str
     role: str
-    specialty: Optional[str] = None
+    specialty: str | None = None
     status: str  # pending, accepted, declined
     created_at: datetime
     care_team: CareTeamOut

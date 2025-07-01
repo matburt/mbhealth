@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr
 
 # Valid unit options
 WeightUnit = Literal["kg", "lbs"]

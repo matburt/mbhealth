@@ -16,12 +16,12 @@ class User(Base):
     full_name = Column(String, nullable=True)
     timezone = Column(String, default="America/New_York", nullable=False)  # User's timezone preference
     ai_context_profile = Column(Text, nullable=True)  # Additional context for AI analysis
-    
+
     # Unit Preferences
     weight_unit = Column(String, default="lbs", nullable=False)  # "kg" or "lbs"
     temperature_unit = Column(String, default="f", nullable=False)  # "c" or "f"
     height_unit = Column(String, default="ft", nullable=False)  # "cm" or "ft"
-    
+
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)

@@ -52,7 +52,7 @@ class NotificationChannelBase(BaseModel):
             # Allow webhook URLs that start with http/https
             (v_lower.startswith(('http://', 'https://')) and '.' in v)
         )
-        
+
         if not is_valid:
             raise ValueError(f"Invalid Apprise URL format. Must start with one of: {', '.join(sorted(valid_prefixes))} or be a valid email/webhook URL")
 

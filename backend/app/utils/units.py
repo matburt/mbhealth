@@ -151,13 +151,13 @@ def format_value_with_unit(
 
 
 def should_convert_metric(metric_type: str) -> bool:
-    """Check if a metric type supports unit conversion"""
+    # Check if a metric type supports unit conversion
     convertible_metrics = {"weight", "temperature", "height"}
     return metric_type in convertible_metrics
 
 
 class UnitConverter:
-    """Helper class for unit conversions with user preferences"""
+    # Helper class for unit conversions with user preferences
 
     def __init__(self, user_weight_unit: str = "lbs", user_temperature_unit: str = "f", user_height_unit: str = "ft"):
         self.user_weight_unit = user_weight_unit
@@ -165,7 +165,7 @@ class UnitConverter:
         self.user_height_unit = user_height_unit
 
     def convert_to_user_units(self, value: float, metric_type: str, stored_unit: str) -> tuple[float, str]:
-        """Convert a stored value to user's preferred units"""
+        # Convert a stored value to user's preferred units
         user_unit = self.get_user_unit_for_metric(metric_type)
 
         if should_convert_metric(metric_type):
@@ -175,7 +175,7 @@ class UnitConverter:
             return value, stored_unit
 
     def convert_from_user_units(self, value: float, metric_type: str, target_unit: str) -> float:
-        """Convert a value from user's units to target storage unit"""
+        # Convert a value from user's units to target storage unit
         user_unit = self.get_user_unit_for_metric(metric_type)
 
         if should_convert_metric(metric_type):
@@ -184,7 +184,7 @@ class UnitConverter:
             return value
 
     def get_user_unit_for_metric(self, metric_type: str) -> str:
-        """Get user's preferred unit for a metric type"""
+        # Get user's preferred unit for a metric type
         if metric_type == "weight":
             return self.user_weight_unit
         elif metric_type == "temperature":
@@ -196,6 +196,6 @@ class UnitConverter:
             return get_default_unit_for_metric(metric_type, "imperial")
 
     def format_value(self, value: float, metric_type: str, precision: int = 1) -> str:
-        """Format value with user's preferred units"""
+        # Format value with user's preferred units
         user_unit = self.get_user_unit_for_metric(metric_type)
         return format_value_with_unit(value, metric_type, user_unit, precision)

@@ -82,7 +82,7 @@ def run_migrations_online() -> None:
     # Override the sqlalchemy.url in the configuration
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = get_url()
-    
+
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
@@ -92,7 +92,7 @@ def run_migrations_online() -> None:
     with connectable.connect() as connection:
         # Check if we're using SQLite and enable batch mode if needed
         is_sqlite = str(settings.DATABASE_URL).startswith("sqlite")
-        
+
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
