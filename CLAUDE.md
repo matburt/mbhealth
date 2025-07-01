@@ -33,6 +33,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build**: `npm run build`
 - **Lint**: `npm run lint`
 - **Preview build**: `npm run preview`
+- **Run tests**: `npm test` (interactive mode)
+- **Run tests once**: `npm run test:run`
+- **Test with coverage**: `npm run test:coverage`
+- **Test UI**: `npm run test:ui` (visual test interface)
 
 ### Docker Commands (from project root)
 - **Start all services**: `docker-compose up -d`
