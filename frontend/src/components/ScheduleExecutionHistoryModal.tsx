@@ -76,9 +76,9 @@ const ScheduleExecutionHistoryModal: React.FC<ScheduleExecutionHistoryModalProps
     }
   };
 
-  const openAnalysisInNewTab = (analysisId: number) => {
+  const openAnalysis = (analysisId: number) => {
     // Navigate to AI Analysis page with this analysis selected
-    window.open(`/ai-analysis?analysis=${analysisId}`, '_blank');
+    window.location.href = `/ai-analysis?analysis=${analysisId}`;
   };
 
   const formatDuration = (startedAt: string, completedAt?: string) => {
@@ -301,7 +301,7 @@ const ScheduleExecutionHistoryModal: React.FC<ScheduleExecutionHistoryModalProps
                                                     {analysis.status}
                                                   </span>
                                                   <button
-                                                    onClick={() => openAnalysisInNewTab(analysis.id)}
+                                                    onClick={() => openAnalysis(analysis.id)}
                                                     className="text-blue-600 hover:text-blue-900 text-sm"
                                                   >
                                                     View Full →

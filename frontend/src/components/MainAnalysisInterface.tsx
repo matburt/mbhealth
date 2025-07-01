@@ -11,10 +11,47 @@ const MainAnalysisInterface: React.FC = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [filter, setFilter] = useState('all'); // all, completed, pending, failed
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedAnalysisId, setExpandedAnalysisId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchAnalyses();
   }, []);
+
+  // Check for analysis query parameter and handle auto-expansion
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const analysisId = urlParams.get('analysis');
+    
+    if (analysisId && analyses.length > 0) {
+      const targetAnalysisId = parseInt(analysisId);
+      const targetAnalysis = analyses.find((a: AIAnalysisResponse) => a.id === targetAnalysisId);
+      
+      if (targetAnalysis) {
+        setExpandedAnalysisId(targetAnalysisId);
+        
+        // Clear the query parameter to keep URL clean
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('analysis');
+        window.history.replaceState({}, '', newUrl.toString());
+        
+        // Scroll to the analysis after a short delay to ensure rendering is complete
+        setTimeout(() => {
+          const element = document.getElementById(`analysis-${targetAnalysisId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Add a brief highlight effect
+            element.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.3)';
+            setTimeout(() => {
+              element.style.boxShadow = '';
+            }, 2000);
+          }
+        }, 100);
+      } else {
+        // Analysis not found, show a toast message
+        toast.error('Analysis not found or access denied');
+      }
+    }
+  }, [analyses]);
 
   const fetchAnalyses = async () => {
     setLoading(true);
@@ -188,11 +225,13 @@ const MainAnalysisInterface: React.FC = () => {
       ) : (
         <div className="space-y-6">
           {filteredAnalyses.map((analysis) => (
-            <AnalysisCard
-              key={analysis.id}
-              analysis={analysis}
-              onAnalysisDeleted={handleAnalysisDeleted}
-            />
+            <div key={analysis.id} id={`analysis-${analysis.id}`}>
+              <AnalysisCard
+                analysis={analysis}
+                onAnalysisDeleted={handleAnalysisDeleted}
+                initialExpanded={expandedAnalysisId === analysis.id}
+              />
+            </div>
           ))}
         </div>
       )}
