@@ -164,22 +164,14 @@ const FamiliesPage: React.FC = () => {
           ) : (
             <div className="space-y-6">
               {families.map((family) => (
-                <div key={family.id} className="relative">
-                  <FamilyCard
-                    family={family}
-                    members={familyMembers[family.id] || []}
-                    onFamilyUpdated={handleFamilyUpdated}
-                    onMemberRemoved={handleMemberRemoved}
-                  />
-                  <div className="absolute top-6 right-6">
-                    <button
-                      onClick={() => handleInviteMember(family)}
-                      className="btn-secondary text-sm px-3 py-1"
-                    >
-                      Invite Member
-                    </button>
-                  </div>
-                </div>
+                <FamilyCard
+                  key={family.id}
+                  family={family}
+                  members={familyMembers[family.id] || []}
+                  onFamilyUpdated={handleFamilyUpdated}
+                  onMemberRemoved={handleMemberRemoved}
+                  onInviteMember={() => handleInviteMember(family)}
+                />
               ))}
             </div>
           )}
