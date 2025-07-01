@@ -7,10 +7,11 @@ import { AIAnalysisResponse } from '../types/aiAnalysis';
 interface AnalysisCardProps {
   analysis: AIAnalysisResponse;
   onAnalysisDeleted: () => void;
+  initialExpanded?: boolean;
 }
 
-const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted, initialExpanded = false }) => {
+  const [isExpanded, setIsExpanded] = useState(initialExpanded);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [progress, setProgress] = useState<any>(null);
