@@ -113,9 +113,34 @@ class GoogleProvider(BaseAIProvider):
                 response.raise_for_status()
                 result = response.json()
 
+                # Validate response structure
+                if "candidates" not in result or not result["candidates"]:
+                    raise AIProviderError("Google AI API returned empty or invalid response: no candidates found")
+
                 # Extract content based on model type
                 if model.startswith("gemini"):
                     candidate = result["candidates"][0]
+                    
+                    # Check if candidate has the expected structure
+                    if "content" not in candidate:
+                        # Handle case where content is blocked or unavailable
+                        finish_reason = candidate.get("finishReason", "UNKNOWN")
+                        if finish_reason == "SAFETY":
+                            raise AIProviderError("Google AI blocked the request for safety reasons. Try rephrasing your request.")
+                        elif finish_reason == "RECITATION":
+                            raise AIProviderError("Google AI blocked the request due to recitation concerns. Try rephrasing your request.")
+                        elif finish_reason in ["OTHER", "UNKNOWN"]:
+                            raise AIProviderError(f"Google AI could not generate a response (reason: {finish_reason}). Please try again.")
+                        else:
+                            raise AIProviderError(f"Google AI response incomplete - no content available (finish reason: {finish_reason})")
+                    
+                    # Validate parts structure
+                    if "parts" not in candidate["content"] or not candidate["content"]["parts"]:
+                        raise AIProviderError("Google AI API returned malformed response: missing or empty content parts")
+                    
+                    if not candidate["content"]["parts"][0] or "text" not in candidate["content"]["parts"][0]:
+                        raise AIProviderError("Google AI API returned malformed response: missing text in content parts")
+                    
                     content = candidate["content"]["parts"][0]["text"]
 
                     # Check for truncation
@@ -139,6 +164,11 @@ class GoogleProvider(BaseAIProvider):
                 else:
                     # Legacy chat-bison format
                     candidate = result["candidates"][0]
+                    
+                    # Validate legacy response structure
+                    if "content" not in candidate:
+                        raise AIProviderError("Google AI API returned malformed legacy response: missing content")
+                    
                     content = candidate["content"]
                     token_usage = {}  # Legacy model doesn't provide usage stats
                     metadata = {"provider": "google", "model_type": "legacy"}
@@ -163,8 +193,12 @@ class GoogleProvider(BaseAIProvider):
             except:
                 error_msg += f" - {e.response.text}"
             raise AIProviderError(error_msg)
+        except AIProviderError:
+            # Re-raise our custom errors as-is
+            raise
         except Exception as e:
-            raise AIProviderError(f"Google AI request failed: {str(e)}")
+            # Add more context to generic errors
+            raise AIProviderError(f"Google AI request failed: {str(e)}. This may be due to API response format changes or network issues.")
 
     def estimate_cost(self, prompt: str, health_data: list[dict[str, Any]]) -> float:
         """Estimate cost for Google AI analysis"""
