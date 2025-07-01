@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import AnalysisSchedulesPage from '../pages/AnalysisSchedulesPage';
 import AIProvidersPage from '../pages/AIProvidersPage';
 import AnalysisWorkflowsPage from '../pages/AnalysisWorkflowsPage';
-import AnalysisComparisonInterface from './AnalysisComparisonInterface';
 
 interface Tab {
   id: string;
@@ -17,12 +16,6 @@ const tabs: Tab[] = [
     label: 'AI Analysis',
     icon: '🤖',
     component: () => <div>AI Analysis Content</div> // This will be the main analysis interface
-  },
-  {
-    id: 'comparison',
-    label: 'Comparison',
-    icon: '📊',
-    component: AnalysisComparisonInterface
   },
   {
     id: 'providers',
