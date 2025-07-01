@@ -10,13 +10,15 @@ interface FamilyCardProps {
   members: FamilyMember[];
   onFamilyUpdated: () => void;
   onMemberRemoved: () => void;
+  onInviteMember: () => void;
 }
 
 const FamilyCard: React.FC<FamilyCardProps> = ({ 
   family, 
   members, 
   onFamilyUpdated, 
-  onMemberRemoved 
+  onMemberRemoved,
+  onInviteMember
 }) => {
   const { user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -91,6 +93,12 @@ const FamilyCard: React.FC<FamilyCardProps> = ({
             </div>
           </div>
           <div className="flex space-x-2">
+            <button
+              onClick={onInviteMember}
+              className="btn-secondary text-sm px-3 py-1"
+            >
+              Invite Member
+            </button>
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="text-primary-600 hover:text-primary-700 text-sm font-medium"
