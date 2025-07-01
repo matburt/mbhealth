@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { aiAnalysisService } from '../services/aiAnalysis';
 import { AIAnalysisResponse } from '../types/aiAnalysis';
+import { useTimezone } from '../contexts/TimezoneContext';
 
 interface AnalysisCardProps {
   analysis: AIAnalysisResponse;
@@ -11,6 +12,7 @@ interface AnalysisCardProps {
 }
 
 const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted, initialExpanded = false }) => {
+  const { formatDateTime } = useTimezone();
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -159,11 +161,11 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted
                 {getProviderIcon(analysis.provider)} {analysis.provider.toUpperCase()}
               </span>
               <span>{analysis.health_data_ids.length} data points</span>
-              <span>Created {format(new Date(analysis.created_at), 'MMM d, yyyy h:mm a')}</span>
+              <span>Created {formatDateTime(analysis.created_at, 'datetime')}</span>
             </div>
             {analysis.completed_at && (
               <p className="text-xs text-gray-500">
-                Completed {format(new Date(analysis.completed_at), 'MMM d, yyyy h:mm a')}
+                Completed {formatDateTime(analysis.completed_at, 'datetime')}
               </p>
             )}
           </div>
