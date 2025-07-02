@@ -1,13 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { healthService } from '../services/health';
 import { HealthData } from '../types/health';
 import { useTimezone } from '../contexts/TimezoneContext';
+import { useAuth } from '../contexts/AuthContext';
+import { createUnitConverter, shouldConvertMetric } from '../utils/units';
 
 const RecentHealthData: React.FC = () => {
   const [recentData, setRecentData] = useState<HealthData[]>([]);
   const [loading, setLoading] = useState(true);
   const { formatDateTime } = useTimezone();
+  const { user } = useAuth();
+
+  // Create unit converter based on user preferences
+  const unitConverter = useMemo(() => user ? createUnitConverter(user) : null, [user]);
 
   useEffect(() => {
     const fetchRecentData = async () => {
@@ -31,11 +37,23 @@ const RecentHealthData: React.FC = () => {
       case 'blood_sugar':
         return `${data.value} ${data.unit}`;
       case 'weight':
-        return `${data.value} ${data.unit}`;
+        // Convert to user's preferred units if applicable
+        if (unitConverter && shouldConvertMetric('weight') && data.value !== null) {
+          const converted = unitConverter.convertToUserUnits(data.value, 'weight', data.unit);
+          return `${converted.value.toFixed(1)} ${converted.unit}`;
+        } else {
+          return `${data.value} ${data.unit}`;
+        }
       case 'heart_rate':
         return `${data.value} ${data.unit}`;
       case 'temperature':
-        return `${data.value} ${data.unit}`;
+        // Convert to user's preferred units if applicable
+        if (unitConverter && shouldConvertMetric('temperature') && data.value !== null) {
+          const converted = unitConverter.convertToUserUnits(data.value, 'temperature', data.unit);
+          return `${converted.value.toFixed(1)} ${converted.unit}`;
+        } else {
+          return `${data.value} ${data.unit}`;
+        }
       default:
         return `${data.value} ${data.unit}`;
     }
