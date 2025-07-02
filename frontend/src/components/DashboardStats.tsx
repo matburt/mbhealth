@@ -78,7 +78,7 @@ const DashboardStats: React.FC = () => {
           label: 'Weight',
           icon: '⚖️',
           color: 'bg-health-weight/10 text-health-weight',
-          unit: unitConverter ? getUnitLabel('weight', unitConverter.getUserUnitForMetric('weight')) : 'lbs'
+          unit: unitConverter ? getUnitLabel('weight', unitConverter.getUserUnitForMetric('weight')) : 'kg'
         };
       case 'heart_rate':
         return {
