@@ -82,7 +82,7 @@ const PDFExportModal: React.FC<PDFExportModalProps> = ({
       setLoading(true);
       const response = await reportsService.getAvailableMetrics();
       setAvailableMetrics(response.metrics);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Failed to load available metrics');
       console.error('Error fetching metrics:', error);
     } finally {
@@ -94,7 +94,7 @@ const PDFExportModal: React.FC<PDFExportModalProps> = ({
     try {
       const response = await reportsService.getReportTemplates();
       setTemplates(response.templates);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Failed to load report templates');
       console.error('Error fetching templates:', error);
     }
@@ -142,7 +142,7 @@ const PDFExportModal: React.FC<PDFExportModalProps> = ({
         pollJobStatus(response.job_id);
         onClose();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Export error:', error);
       if (error.response?.status === 404) {
         toast.error('No data found for the selected criteria');

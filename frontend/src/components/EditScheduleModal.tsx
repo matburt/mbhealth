@@ -43,12 +43,12 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({ schedule, onClose
     }
   };
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   // Note: Data config changes not implemented in edit modal for simplicity
-  // const handleDataConfigChange = (field: string, value: any) => {
+  // const handleDataConfigChange = (field: string, value: unknown) => {
   //   setFormData(prev => ({
   //     ...prev,
   //     data_selection_config: {
@@ -70,7 +70,7 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({ schedule, onClose
       setError(null);
       await updateSchedule(schedule.id, formData);
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to update schedule');
     } finally {
       setLoading(false);

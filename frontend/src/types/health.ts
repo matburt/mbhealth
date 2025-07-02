@@ -6,7 +6,7 @@ export interface HealthData {
   unit: string;
   systolic?: number;
   diastolic?: number;
-  additional_data?: Record<string, any>;
+  additional_data?: Record<string, unknown>;
   notes?: string;
   recorded_at: string;
   created_at: string;
@@ -19,7 +19,7 @@ export interface HealthDataCreate {
   unit: string;
   systolic?: number;
   diastolic?: number;
-  additional_data?: Record<string, any>;
+  additional_data?: Record<string, unknown>;
   notes?: string;
   recorded_at?: string;
 }
@@ -30,7 +30,7 @@ export interface HealthDataUpdate {
   unit?: string;
   systolic?: number;
   diastolic?: number;
-  additional_data?: Record<string, any>;
+  additional_data?: Record<string, unknown>;
   notes?: string;
   recorded_at?: string;
 }

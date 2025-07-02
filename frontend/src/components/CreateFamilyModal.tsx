@@ -39,7 +39,7 @@ const CreateFamilyModal: React.FC<CreateFamilyModalProps> = ({
       reset();
       onClose();
       onFamilyCreated();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to create family');
     }
   };

@@ -37,8 +37,8 @@ const AddNoteForm: React.FC<AddNoteFormProps> = ({ healthDataId, onNoteAdded }) 
       reset();
       setIsExpanded(false);
       onNoteAdded?.();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to add note');
+    } catch (error: unknown) {
+      toast.error("Failed to add note");
     } finally {
       setIsSubmitting(false);
     }

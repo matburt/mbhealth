@@ -40,7 +40,7 @@ const DataVisualizationPage: React.FC = () => {
     try {
       const data = await healthService.getHealthData();
       setHealthData(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to fetch health data');
     } finally {
       setLoading(false);
@@ -130,7 +130,7 @@ const DataVisualizationPage: React.FC = () => {
       await aiAnalysisService.createAnalysis(analysisData);
       toast.success(`Analysis created for ${filteredData.length} ${selectedMetric.replace('_', ' ')} readings`);
       navigate('/ai-analysis');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to create analysis');
     } finally {
       setGeneratingQuickAnalysis(false);

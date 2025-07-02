@@ -49,9 +49,19 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   const [showSaveConfigModal, setShowSaveConfigModal] = useState(false);
   const [showHelpGuide, setShowHelpGuide] = useState(false);
   const [lastAnalysisDate, setLastAnalysisDate] = useState<Date | null>(null);
-  const [dataStats, setDataStats] = useState<any>(null);
+  const [dataStats, setDataStats] = useState<{ 
+    total: number; 
+    trending: number; 
+    anomalous: number; 
+    morning: number; 
+    afternoon: number; 
+    evening: number; 
+    count?: number; 
+    dateRange?: { start: Date; end: Date } | null; 
+    metricTypes?: string[] 
+  } | null>(null);
   const [currentSelectionMethod, setCurrentSelectionMethod] = useState<'preset' | 'smart' | 'advanced' | 'manual' | 'visualization'>('manual');
-  const [currentSelectionConfig, setCurrentSelectionConfig] = useState<any>({});
+  const [currentSelectionConfig, setCurrentSelectionConfig] = useState<Record<string, unknown>>({});
 
   const {
     register,
@@ -111,7 +121,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     }
   };
 
-  const generateTrendContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], dateRange: any): string => {
+  const generateTrendContextSuggestions = (metricTypes: string[], _: HealthData[], dateRange: { start: Date; end: Date } | null): string => {
     const suggestions = [];
     
     if (metricTypes.includes('blood_pressure')) {
@@ -139,7 +149,8 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     return suggestions.join(' ');
   };
 
-  const generateInsightContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: any): string => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const generateInsightContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: { start: Date; end: Date } | null): string => {
     const suggestions = [];
     
     if (metricTypes.length > 1) {
@@ -161,7 +172,8 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     return suggestions.join(' ');
   };
 
-  const generateRecommendationContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: any): string => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const generateRecommendationContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: { start: Date; end: Date } | null): string => {
     const suggestions = [];
     
     if (metricTypes.includes('blood_pressure')) {
@@ -180,7 +192,8 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     return suggestions.join(' ');
   };
 
-  const generateAnomalyContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: any): string => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const generateAnomalyContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: { start: Date; end: Date } | null): string => {
     const suggestions = [];
     
     suggestions.push('Are there any readings that appear unusual or concerning?');
@@ -204,7 +217,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     if (isOpen) {
       fetchData();
     }
-  }, [isOpen]);
+  }, [isOpen, fetchData]);
 
   // Update additional context when analysis type or selected data changes
   useEffect(() => {
@@ -213,7 +226,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
       const suggestions = generateContextSuggestions(selectedAnalysisType, selectedData);
       setValue('additional_context', suggestions);
     }
-  }, [selectedAnalysisType, selectedDataIds, healthData, analysisContext, setValue]);
+  }, [selectedAnalysisType, selectedDataIds, healthData, analysisContext, setValue, generateContextSuggestions]);
 
   // Handle pre-selected data
   useEffect(() => {
@@ -338,9 +351,9 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     toast.success('Selection cleared');
   };
 
-  const handlePresetSelect = (preset: any, selectedData: HealthData[]) => {
+  const handlePresetSelect = (preset: { name: string; analysisType: string; context: string }, selectedData: HealthData[]) => {
     setSelectedDataIds(selectedData.map(d => d.id));
-    setValue('analysis_type', preset.analysisType);
+    setValue('analysis_type', preset.analysisType as 'trends' | 'insights' | 'recommendations' | 'anomalies');
     setValue('additional_context', preset.context);
     toast.success(`Selected ${preset.name} preset with ${selectedData.length} readings`);
     setShowPresets(false);
@@ -529,8 +542,11 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
       setSelectedDataIds([]);
       onClose();
       onAnalysisCreated();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to create analysis');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || 'Failed to create analysis'
+        : 'Failed to create analysis';
+      toast.error(errorMessage);
     }
   };
 

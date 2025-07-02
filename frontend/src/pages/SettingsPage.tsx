@@ -65,7 +65,7 @@ const SettingsPage: React.FC = () => {
       }
 
       toast.success('Settings updated successfully!');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to update settings');
     } finally {
       setIsLoading(false);

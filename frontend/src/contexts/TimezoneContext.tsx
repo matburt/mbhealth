@@ -64,9 +64,14 @@ export const TimezoneProvider: React.FC<TimezoneProviderProps> = ({ children }) 
     }
   };
 
-  const handleSetUserTimezone = (timezone: string) => {
+  const handleSetUserTimezone = async (timezone: string) => {
     setUserTimezone(timezone);
-    // TODO: Save to user preferences via API
+    try {
+      await timezoneService.saveUserTimezone(timezone);
+    } catch (err) {
+      console.error('Failed to save timezone preference:', err);
+      // Could show a toast notification here in the future
+    }
   };
 
   const formatDateTime = (

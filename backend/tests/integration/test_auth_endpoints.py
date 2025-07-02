@@ -2,6 +2,7 @@
 Integration tests for authentication endpoints.
 """
 import pytest
+
 from app.core.security import get_password_hash
 
 

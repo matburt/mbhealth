@@ -33,9 +33,9 @@ export interface AIProvider {
   name: string;
   type: string;
   endpoint?: string;
-  models?: any;
+  models?: unknown;
   default_model?: string;
-  parameters?: any;
+  parameters?: unknown;
   enabled: boolean;
   priority: number;
   created_at: string;
@@ -47,9 +47,9 @@ export interface AIProviderCreate {
   type: string;
   endpoint?: string;
   api_key?: string;
-  models?: any;
+  models?: unknown;
   default_model?: string;
-  parameters?: any;
+  parameters?: unknown;
   enabled?: boolean;
   priority?: number;
 }
@@ -59,9 +59,9 @@ export interface AIProviderUpdate {
   type?: string;
   endpoint?: string;
   api_key?: string;
-  models?: any;
+  models?: unknown;
   default_model?: string;
-  parameters?: any;
+  parameters?: unknown;
   enabled?: boolean;
   priority?: number;
 }

@@ -40,6 +40,13 @@ class TimezoneService {
   }
 
   /**
+   * Save user's timezone preference
+   */
+  async saveUserTimezone(timezone: string): Promise<void> {
+    await api.put('/users/me', { timezone });
+  }
+
+  /**
    * Convert UTC datetime to user's local timezone
    */
   convertUTCToLocal(utcDatetime: string, _timezone: string = 'America/New_York'): Date {

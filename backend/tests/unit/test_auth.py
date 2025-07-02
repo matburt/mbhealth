@@ -2,7 +2,8 @@
 Unit tests for authentication functionality.
 """
 import pytest
-from app.core.security import verify_password, get_password_hash, create_access_token
+
+from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.user import User
 
 

@@ -263,7 +263,7 @@ class AnalysisWorkflowService {
     step: AnalysisStep, 
     currentDataIds: number[], 
     healthData: HealthData[], 
-    _previousResults: WorkflowStepResult[]
+    
   ): number[] {
     const currentData = healthData.filter(d => currentDataIds.includes(d.id));
 

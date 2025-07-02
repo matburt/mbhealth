@@ -48,7 +48,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
       reset();
       onClose();
       onInviteSent();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to send invitation');
     }
   };

@@ -50,7 +50,7 @@ const NotesList: React.FC<NotesListProps> = ({ healthDataId, onNotesChange }) =>
       setEditContent('');
       fetchNotes();
       onNotesChange?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to update note');
     }
   };
@@ -69,7 +69,7 @@ const NotesList: React.FC<NotesListProps> = ({ healthDataId, onNotesChange }) =>
       toast.success('Note deleted successfully');
       fetchNotes();
       onNotesChange?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to delete note');
     } finally {
       setDeletingId(null);

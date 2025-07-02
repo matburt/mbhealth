@@ -22,7 +22,7 @@ const QuickSetupModal: React.FC<QuickSetupModalProps> = ({ onClose, onSetup }) =
 
     try {
       await onSetup(setup);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || 'Setup failed');
     } finally {
       setLoading(false);

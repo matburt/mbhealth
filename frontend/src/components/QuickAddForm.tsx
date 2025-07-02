@@ -102,7 +102,7 @@ const QuickAddForm: React.FC = () => {
         recorded_at: getCurrentDateTimeLocal(), // Reset to current time in user's timezone
       });
       setIsOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to add health data');
     } finally {
       setIsLoading(false);

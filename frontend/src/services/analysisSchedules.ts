@@ -99,7 +99,7 @@ export interface AnalysisScheduleExecution {
   completed_at?: string;
   status: 'running' | 'completed' | 'failed';
   execution_type: 'scheduled' | 'manual' | 'data_triggered';
-  trigger_data?: Record<string, any>;
+  trigger_data?: Record<string, unknown>;
   analyses_created?: number[];
   analyses_count: number;
   success_count: number;
@@ -120,11 +120,11 @@ export interface ScheduleTemplate {
   data_threshold_count?: number;
   data_threshold_metric?: string;
   analysis_types: string[];
-  data_selection_config: Record<string, any>;
+  data_selection_config: Record<string, unknown>;
   parameters?: Record<string, {
     type: 'string' | 'number' | 'select' | 'array' | 'time' | 'boolean';
     description: string;
-    default: any;
+    default: unknown;
     options?: string[];
     min?: number;
     max?: number;
@@ -212,7 +212,7 @@ export const getScheduleTemplates = async (): Promise<ScheduleTemplate[]> => {
 
 export const createFromTemplate = async (
   templateId: string,
-  customizations?: Record<string, any>
+  customizations?: Record<string, unknown>
 ): Promise<AnalysisSchedule> => {
   const response = await api.post(`/analysis-schedules/templates/${templateId}`, customizations);
   return response.data;
@@ -240,12 +240,12 @@ export const getRecentActivity = async (days: number = 7): Promise<any[]> => {
   return response.data;
 };
 
-export const getActivityStats = async (days: number = 30): Promise<Record<string, any>> => {
+export const getActivityStats = async (days: number = 30): Promise<Record<string, unknown>> => {
   const response = await api.get(`/analysis-schedules/history/stats?days=${days}`);
   return response.data;
 };
 
-export const getAnalysisInteractionSummary = async (analysisId: number): Promise<Record<string, any>> => {
+export const getAnalysisInteractionSummary = async (analysisId: number): Promise<Record<string, unknown>> => {
   const response = await api.get(`/analysis-schedules/history/analysis/${analysisId}/summary`);
   return response.data;
 };

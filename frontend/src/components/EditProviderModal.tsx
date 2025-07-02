@@ -43,7 +43,7 @@ const EditProviderModal: React.FC<EditProviderModalProps> = ({
     setTestResult(null);
   };
 
-  const handleParameterChange = (key: string, value: any) => {
+  const handleParameterChange = (key: string, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       parameters: {
@@ -113,7 +113,7 @@ const EditProviderModal: React.FC<EditProviderModalProps> = ({
       await aiAnalysisService.updateProvider(provider.id, updateData);
       toast.success('Provider updated successfully');
       onProviderUpdated();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to update provider:', error);
       toast.error(error.response?.data?.detail || 'Failed to update provider');
     } finally {

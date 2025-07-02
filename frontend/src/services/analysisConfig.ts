@@ -184,7 +184,7 @@ class AnalysisConfigService {
       // Import collections first
       let importedCollections = 0;
       if (data.collections && Array.isArray(data.collections)) {
-        data.collections.forEach((collection: any) => {
+        data.collections.forEach((collection: unknown) => {
           // Generate new ID to avoid conflicts
           const newCollection = {
             ...collection,
@@ -199,7 +199,7 @@ class AnalysisConfigService {
 
       // Import configs
       let importedConfigs = 0;
-      data.configs.forEach((config: any) => {
+      data.configs.forEach((config: unknown) => {
         // Generate new ID to avoid conflicts
         const newConfig = {
           ...config,

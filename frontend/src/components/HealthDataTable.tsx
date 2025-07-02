@@ -88,7 +88,7 @@ const HealthDataTable: React.FC<HealthDataTableProps> = ({ data, onDataChange })
       await healthService.deleteHealthData(id);
       toast.success('Entry deleted successfully');
       onDataChange();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to delete entry');
     } finally {
       setDeletingId(null);

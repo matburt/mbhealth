@@ -19,18 +19,18 @@ const mockUser = {
 }
 
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
-  initialEntries?: string[]
+  
   user?: typeof mockUser | null
 }
 
 const AllTheProviders = ({ 
   children, 
   user = mockUser,
-  initialEntries = ['/']
+  
 }: { 
   children: React.ReactNode
   user?: typeof mockUser | null
-  initialEntries?: string[]
+  
 }) => {
   // Mock AuthContext value
   const authContextValue = {
@@ -53,11 +53,11 @@ const AllTheProviders = ({
 
 const customRender = (
   ui: ReactElement,
-  { user, initialEntries, ...options }: CustomRenderOptions = {}
+  { user,  ...options }: CustomRenderOptions = {}
 ) => {
   return render(ui, {
     wrapper: (props) => (
-      <AllTheProviders {...props} user={user} initialEntries={initialEntries} />
+      <AllTheProviders {...props} user={user} 
     ),
     ...options,
   })

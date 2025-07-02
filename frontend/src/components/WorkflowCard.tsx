@@ -12,7 +12,7 @@ interface WorkflowCardProps {
 
 const WorkflowCard: React.FC<WorkflowCardProps> = ({
   workflow,
-  onUpdate: _onUpdate,
+  onUpdate: 
   onDelete,
   onToggle,
   onViewExecutions

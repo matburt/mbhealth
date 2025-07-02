@@ -319,46 +319,100 @@ mbhealth/
 
 ## ⚙️ Configuration
 
-### Environment Variables
+### Environment-Based Configuration
 
-Create a `.env` file in the backend directory:
+MBHealth now supports environment-based configuration for easy deployment across development, staging, and production environments. Configuration files are automatically loaded based on your environment.
 
-```env
-# Security
-SECRET_KEY=your-super-secret-key-here-make-it-long-and-random
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+### Backend Configuration
 
-# Database
-DATABASE_URL=sqlite:///./health_data.db
-# For PostgreSQL: DATABASE_URL=postgresql://user:password@localhost/mbhealth
+The backend uses environment files with automatic validation:
 
-# CORS Settings
-ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+1. **Copy the example configuration**:
+   ```bash
+   cd backend
+   cp .env.example .env
+   ```
 
-# AI Service API Keys (optional)
-OPENAI_API_KEY=your-openai-api-key
-OPENROUTER_API_KEY=your-openrouter-api-key
-GOOGLE_AI_API_KEY=your-google-ai-api-key
+2. **Edit `.env` with your settings**:
+   ```env
+   # Environment Configuration
+   ENVIRONMENT=development  # development, staging, or production
+   DEBUG=false
+   LOG_LEVEL=INFO
 
-# PDF Report Generation (automatic - dependencies installed via pyproject.toml)
-# No additional configuration required - ReportLab, Pillow, and Jinja2 included
+   # Security (REQUIRED - change SECRET_KEY in production)
+   SECRET_KEY=your-secret-key-change-in-production-make-it-at-least-32-characters-long
+   DATABASE_URL=sqlite:///./health_data.db
 
-# Redis (for background processing and caching)
-REDIS_URL=redis://localhost:6379
-CELERY_BROKER_URL=redis://localhost:6379/0
-CELERY_RESULT_BACKEND=redis://localhost:6379/1
+   # CORS Origins (comma-separated)
+   BACKEND_CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 
-# Notification System Encryption
-ENCRYPTION_KEY=your-32-character-encryption-key-here
-```
+   # AI Provider API Keys (all optional)
+   OPENAI_API_KEY=sk-...
+   OPENROUTER_API_KEY=sk-or-...
+   GOOGLE_AI_API_KEY=...
+   ANTHROPIC_API_KEY=sk-ant-...
+
+   # Feature Flags
+   ENABLE_AI_ANALYSIS=true
+   ENABLE_NOTIFICATIONS=true
+   ENABLE_WORKFLOWS=true
+
+   # Redis Configuration
+   REDIS_URL=redis://localhost:6379/0
+
+   # Timezone Configuration
+   DEFAULT_TIMEZONE=America/New_York
+
+   # WebSocket Configuration  
+   WEBSOCKET_URL=ws://localhost:8000/ws
+
+   # Encryption (optional - for encrypting sensitive data)
+   ENCRYPTION_KEY=...
+   ```
+
+3. **Environment-specific configurations**:
+   - `.env.development` - Development settings (auto-loaded in dev mode)
+   - `.env.production` - Production settings (auto-loaded in production)
+   - `.env.example` - Template with all available options
 
 ### Frontend Configuration
 
-The frontend automatically connects to `http://localhost:8000` for the API. To change this:
+The frontend automatically detects the environment and configures API endpoints accordingly:
 
-1. Edit `frontend/src/services/api.ts`
-2. Update the `BASE_URL` constant
+1. **Environment files** (optional overrides):
+   ```bash
+   cd frontend
+   
+   # Development overrides (optional)
+   # .env.development
+   VITE_API_URL=http://localhost:8000/api/v1
+   VITE_WS_URL=ws://localhost:8000/ws
+   VITE_LOG_LEVEL=debug
+
+   # Production settings (optional)
+   # .env.production  
+   VITE_API_URL=/api/v1
+   VITE_WS_URL=/ws
+   VITE_LOG_LEVEL=warn
+
+   # Local overrides (gitignored)
+   # .env.local
+   VITE_API_URL=http://192.168.1.100:8000/api/v1
+   ```
+
+2. **Automatic configuration**:
+   - Development: Uses `http://localhost:8000/api/v1` by default
+   - Production: Uses relative paths `/api/v1` for reverse proxy setups
+   - WebSocket URLs configured automatically based on environment
+
+### Configuration Validation
+
+The application validates all configuration on startup:
+- **Required fields**: Ensures critical settings like SECRET_KEY and DATABASE_URL are set
+- **Security checks**: Prevents using default secrets in production
+- **Format validation**: Validates log levels, environment values, and CORS origins
+- **Feature flags**: Enable/disable functionality based on environment needs
 
 ### Notification System Configuration
 

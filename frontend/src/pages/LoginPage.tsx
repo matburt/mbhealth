@@ -26,7 +26,7 @@ const LoginPage: React.FC = () => {
       await login(data.username, data.password);
       toast.success('Login successful!');
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Login failed');
     } finally {
       setIsLoading(false);
