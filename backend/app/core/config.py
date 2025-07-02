@@ -40,8 +40,8 @@ class Settings(BaseSettings):
     WEBSOCKET_URL: str = Field(default="ws://localhost:8000/ws", env="WEBSOCKET_URL")
 
     # CORS Origins
-    BACKEND_CORS_ORIGINS: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:5173"],
+    BACKEND_CORS_ORIGINS: str = Field(
+        default="http://localhost:3000,http://localhost:5173",
         env="BACKEND_CORS_ORIGINS"
     )
 
@@ -53,11 +53,12 @@ class Settings(BaseSettings):
     # Timezone Configuration
     DEFAULT_TIMEZONE: str = Field(default="America/New_York", env="DEFAULT_TIMEZONE")
 
-    @validator('BACKEND_CORS_ORIGINS', pre=True)
-    def parse_cors_origins(cls, v):
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(',')]
-        return v
+    @property
+    def cors_origins(self) -> List[str]:
+        """Parse CORS origins from string"""
+        if isinstance(self.BACKEND_CORS_ORIGINS, str):
+            return [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(',') if origin.strip()]
+        return self.BACKEND_CORS_ORIGINS
 
     @validator('LOG_LEVEL')
     def validate_log_level(cls, v):
