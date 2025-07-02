@@ -921,4 +921,28 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   - Multi-language support (i18n)
   - Advanced reporting and data export
   - Integration with Electronic Health Records (EHR)
-  - API for third-party integrations 
+  - API for third-party integrations
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`docs/`](docs/) directory:
+
+### 📖 **Quick Links**
+- **[Documentation Index](docs/README.md)** - Complete documentation overview
+- **[API Reference](docs/API_REFERENCE.md)** - Detailed API documentation
+- **[Error Handling Examples](docs/ERROR_HANDLING_EXAMPLES.md)** - Error handling patterns and examples
+- **[PostgreSQL Setup](docs/POSTGRESQL_SETUP.md)** - Production database setup guide
+- **[Development Guide](CLAUDE.md)** - Architecture, commands, and development patterns
+
+### 🔧 **For Developers**
+- **Architecture**: See [CLAUDE.md](CLAUDE.md#architecture-overview) for system architecture
+- **Error Handling**: Review [Error Handling Patterns](CLAUDE.md#error-handling-and-resilience)  
+- **API Integration**: Use [API Reference](docs/API_REFERENCE.md) for endpoint details
+- **Health Monitoring**: Check [Health Endpoints](docs/API_REFERENCE.md#health--monitoring-endpoints)
+
+### 🚀 **For Operations**
+- **Database Setup**: Follow [PostgreSQL Setup](docs/POSTGRESQL_SETUP.md)
+- **Health Monitoring**: Use `/api/v1/health/` endpoints for system monitoring
+- **Error Patterns**: Reference [Error Handling Examples](docs/ERROR_HANDLING_EXAMPLES.md)
+
+**Interactive API Documentation**: Available at `http://localhost:8000/docs` when backend is running 
