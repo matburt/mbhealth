@@ -273,7 +273,7 @@ class AnalysisWorkflowService {
 
       case 'filter':
         const config = step.data_selection.config;
-        {let filteredData = currentData;
+        let filteredData = currentData;
 
         if (config?.filter_by?.metric_types) {
           filteredData = filteredData.filter(d => 
@@ -299,7 +299,7 @@ class AnalysisWorkflowService {
 
       case 'extend':
         // Add more data based on extend configuration
-        {let extendedData = [...currentData];
+        let extendedData = [...currentData];
         const extendConfig = step.data_selection.config?.extend_with;
 
         if (extendConfig?.metric_types) {
@@ -322,7 +322,7 @@ class AnalysisWorkflowService {
   }
 
   private buildStepContext(step: AnalysisStep, previousResults: WorkflowStepResult[]): string {
-    {let context = step.additional_context || '';
+    let context = step.additional_context || '';
 
     // Add context from previous steps if dependencies exist
     if (step.depends_on && step.depends_on.length > 0) {
@@ -346,7 +346,7 @@ class AnalysisWorkflowService {
 
   private async waitForAnalysisCompletion(analysisId: number): Promise<void> {
     // Simplified polling - in production, use WebSocket
-    {let attempts = 0;
+    let attempts = 0;
     const maxAttempts = 60; // 5 minutes max
 
     while (attempts < maxAttempts) {
@@ -423,7 +423,7 @@ class AnalysisWorkflowService {
   // Comparative Analysis
   async executeComparativeAnalysis(config: ComparativeAnalysisConfig): Promise<AIAnalysisResponse> {
     const currentAnalysis = await aiAnalysisService.getAnalysis(config.current_analysis_id);
-    {let comparisonAnalysis: AIAnalysisResponse | null = null;
+    let comparisonAnalysis: AIAnalysisResponse | null = null;
 
     // Get comparison analysis based on type
     switch (config.comparison_type) {

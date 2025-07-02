@@ -301,8 +301,8 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   };
 
   const selectDataByPeriod = (period: 'week' | 'month') => {
-    {let startDate: Date;
-    {let endDate: Date;
+    let startDate: Date;
+    let endDate: Date;
     
     if (period === 'week') {
       startDate = startOfWeek(new Date());
@@ -416,7 +416,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     setCurrentSelectionConfig(selectionConfig);
 
     // Apply data selection
-    {let filteredData: HealthData[] = [];
+    let filteredData: HealthData[] = [];
     switch (type) {
       case 'smart':
         if (selectionConfig.metric_types?.length) {
