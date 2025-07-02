@@ -213,6 +213,41 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     return suggestions.join(' ');
   };
 
+  // Define fetchData before any useEffect that uses it
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [healthDataResult, providersResult, analysesResult] = await Promise.all([
+        preSelectedData ? Promise.resolve(preSelectedData) : aiAnalysisService.getHealthDataForAnalysis(),
+        aiAnalysisService.getProviders(true), // Only enabled providers
+        aiAnalysisService.getAnalysisHistory() // Get last analysis date
+      ]);
+      
+      if (!preSelectedData) {
+        setHealthData(healthDataResult);
+        // Calculate data statistics for advanced selection
+        setDataStats(getDataStatistics(healthDataResult));
+      } else {
+        setDataStats(getDataStatistics(preSelectedData));
+      }
+      setProviders(providersResult);
+      
+      // Find the most recent analysis date
+      if (analysesResult.length > 0) {
+        const sortedAnalyses = analysesResult.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setLastAnalysisDate(new Date(sortedAnalyses[0].created_at));
+      }
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+      toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  }, [preSelectedData]);
+
+
   useEffect(() => {
     if (isOpen) {
       fetchData();
@@ -245,38 +280,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     }
   }, [preSelectedData, analysisContext, setValue]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [healthDataResult, providersResult, analysesResult] = await Promise.all([
-        preSelectedData ? Promise.resolve(preSelectedData) : aiAnalysisService.getHealthDataForAnalysis(),
-        aiAnalysisService.getProviders(true), // Only enabled providers
-        aiAnalysisService.getAnalysisHistory() // Get last analysis date
-      ]);
-      
-      if (!preSelectedData) {
-        setHealthData(healthDataResult);
-        // Calculate data statistics for advanced selection
-        setDataStats(getDataStatistics(healthDataResult));
-      } else {
-        setDataStats(getDataStatistics(preSelectedData));
-      }
-      setProviders(providersResult);
-      
-      // Find the most recent analysis date
-      if (analysesResult.length > 0) {
-        const sortedAnalyses = analysesResult.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-        setLastAnalysisDate(new Date(sortedAnalyses[0].created_at));
-      }
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Moved fetchData definition before useEffect
 
   // Smart selection functions
   const selectDataByMetric = (metricType: string) => {
