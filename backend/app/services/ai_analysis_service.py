@@ -9,6 +9,9 @@ from sqlalchemy import and_, desc
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.exceptions import (
+    log_exception_context,
+)
 from app.models.ai_analysis import AIAnalysis, AIProvider
 from app.models.health_data import HealthData
 from app.schemas.ai_analysis import (
@@ -266,15 +269,29 @@ class AIAnalysisService:
         except Exception as e:
             logger.error(f"Failed to create analysis: {str(e)}")
             logger.error(f"Analysis data: {analysis_data}")
-            # If we have a database record, mark it as failed
+            # If we have a database record, mark it as failed with proper error handling
             try:
                 if 'db_analysis' in locals():
                     db_analysis.status = "failed"
                     db_analysis.error_message = f"Creation failed: {str(e)}"
                     db_analysis.completed_at = datetime.utcnow()
                     self.db.commit()
-            except:
-                pass  # Don't raise during error handling
+            except Exception as commit_error:
+                # Log the error but don't mask the original exception
+                log_exception_context(
+                    commit_error,
+                    {
+                        "operation": "mark_analysis_failed",
+                        "analysis_id": getattr(db_analysis, 'id', 'unknown'),
+                        "original_error": str(e)
+                    },
+                    level="error"
+                )
+                # Try to rollback the transaction
+                try:
+                    self.db.rollback()
+                except Exception:
+                    pass  # If rollback fails, there's nothing more we can do
             raise
 
     async def _execute_analysis(self, analysis: AIAnalysis, additional_context: str | None = None):

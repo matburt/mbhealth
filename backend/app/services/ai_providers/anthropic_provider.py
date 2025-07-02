@@ -145,7 +145,7 @@ class AnthropicProvider(BaseAIProvider):
             try:
                 error_detail = e.response.json()
                 error_msg += f" - {error_detail.get('error', {}).get('message', 'Unknown error')}"
-            except:
+            except Exception:
                 error_msg += f" - {e.response.text}"
             raise AIProviderError(error_msg)
         except Exception as e:

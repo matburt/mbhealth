@@ -120,7 +120,7 @@ class GoogleProvider(BaseAIProvider):
                 # Extract content based on model type
                 if model.startswith("gemini"):
                     candidate = result["candidates"][0]
-                    
+
                     # Check if candidate has the expected structure
                     if "content" not in candidate:
                         # Handle case where content is blocked or unavailable
@@ -133,14 +133,14 @@ class GoogleProvider(BaseAIProvider):
                             raise AIProviderError(f"Google AI could not generate a response (reason: {finish_reason}). Please try again.")
                         else:
                             raise AIProviderError(f"Google AI response incomplete - no content available (finish reason: {finish_reason})")
-                    
+
                     # Validate parts structure
                     if "parts" not in candidate["content"] or not candidate["content"]["parts"]:
                         raise AIProviderError("Google AI API returned malformed response: missing or empty content parts")
-                    
+
                     if not candidate["content"]["parts"][0] or "text" not in candidate["content"]["parts"][0]:
                         raise AIProviderError("Google AI API returned malformed response: missing text in content parts")
-                    
+
                     content = candidate["content"]["parts"][0]["text"]
 
                     # Check for truncation
@@ -164,11 +164,11 @@ class GoogleProvider(BaseAIProvider):
                 else:
                     # Legacy chat-bison format
                     candidate = result["candidates"][0]
-                    
+
                     # Validate legacy response structure
                     if "content" not in candidate:
                         raise AIProviderError("Google AI API returned malformed legacy response: missing content")
-                    
+
                     content = candidate["content"]
                     token_usage = {}  # Legacy model doesn't provide usage stats
                     metadata = {"provider": "google", "model_type": "legacy"}

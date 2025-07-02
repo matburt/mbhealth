@@ -4,7 +4,6 @@ Pytest configuration and shared fixtures for MBHealth backend tests.
 import asyncio
 import os
 import tempfile
-from typing import AsyncGenerator, Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,7 +12,6 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.api.deps import get_current_user
-from app.core.config import settings
 from app.core.database import Base, get_db
 from app.core.security import get_password_hash
 from app.models.user import User
@@ -56,7 +54,7 @@ def client(test_db_session):
             pass
 
     app.dependency_overrides[get_db] = override_get_db
-    
+
     try:
         with TestClient(app) as test_client:
             yield test_client
@@ -88,7 +86,7 @@ def authenticated_client(client, test_user):
         return test_user
 
     app.dependency_overrides[get_current_user] = override_get_current_user
-    
+
     try:
         yield client
     finally:

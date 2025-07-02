@@ -49,8 +49,12 @@ class CustomProvider(BaseAIProvider):
                             "available_models": available_models,
                             "response_time": response.elapsed.total_seconds()
                         }
-                except:
-                    pass  # Fall back to test completion
+                except Exception as e:
+                    # Log the error but continue with test completion fallback
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.debug(f"Failed to fetch models list from {self.endpoint}/models: {str(e)}")
+                    # Fall back to test completion
 
                 # Fallback: test with a simple completion
                 payload = {
@@ -156,7 +160,7 @@ class CustomProvider(BaseAIProvider):
             try:
                 error_detail = e.response.json()
                 error_msg += f" - {error_detail.get('error', {}).get('message', 'Unknown error')}"
-            except:
+            except Exception:
                 error_msg += f" - {e.response.text}"
             raise AIProviderError(error_msg)
         except Exception as e:

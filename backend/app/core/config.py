@@ -1,6 +1,5 @@
 
 import os
-from typing import List, Optional
 
 from pydantic import Field, validator
 from pydantic_settings import BaseSettings
@@ -25,13 +24,13 @@ class Settings(BaseSettings):
     DATABASE_URL: str = Field(..., env="DATABASE_URL")
 
     # AI API Keys (all optional)
-    OPENAI_API_KEY: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
-    OPENROUTER_API_KEY: Optional[str] = Field(default=None, env="OPENROUTER_API_KEY")
-    GOOGLE_AI_API_KEY: Optional[str] = Field(default=None, env="GOOGLE_AI_API_KEY")
-    ANTHROPIC_API_KEY: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
+    OPENAI_API_KEY: str | None = Field(default=None, env="OPENAI_API_KEY")
+    OPENROUTER_API_KEY: str | None = Field(default=None, env="OPENROUTER_API_KEY")
+    GOOGLE_AI_API_KEY: str | None = Field(default=None, env="GOOGLE_AI_API_KEY")
+    ANTHROPIC_API_KEY: str | None = Field(default=None, env="ANTHROPIC_API_KEY")
 
     # Encryption
-    ENCRYPTION_KEY: Optional[str] = Field(default=None, env="ENCRYPTION_KEY")
+    ENCRYPTION_KEY: str | None = Field(default=None, env="ENCRYPTION_KEY")
 
     # Redis/Celery
     REDIS_URL: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
@@ -47,14 +46,14 @@ class Settings(BaseSettings):
 
     # Feature Flags
     ENABLE_AI_ANALYSIS: bool = Field(default=True, env="ENABLE_AI_ANALYSIS")
-    ENABLE_NOTIFICATIONS: bool = Field(default=True, env="ENABLE_NOTIFICATIONS")  
+    ENABLE_NOTIFICATIONS: bool = Field(default=True, env="ENABLE_NOTIFICATIONS")
     ENABLE_WORKFLOWS: bool = Field(default=True, env="ENABLE_WORKFLOWS")
 
     # Timezone Configuration
     DEFAULT_TIMEZONE: str = Field(default="America/New_York", env="DEFAULT_TIMEZONE")
 
     @property
-    def cors_origins(self) -> List[str]:
+    def cors_origins(self) -> list[str]:
         """Parse CORS origins from string"""
         if isinstance(self.BACKEND_CORS_ORIGINS, str):
             return [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(',') if origin.strip()]
@@ -81,7 +80,7 @@ class Settings(BaseSettings):
             raise ValueError(f'Invalid environment. Must be one of: {valid_envs}')
         return v
 
-    def get_configured_ai_providers(self) -> List[str]:
+    def get_configured_ai_providers(self) -> list[str]:
         """Return list of configured AI providers"""
         providers = []
         if self.OPENAI_API_KEY:
