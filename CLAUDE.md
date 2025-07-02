@@ -63,7 +63,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Key Backend Components
 - `app/api/api_v1/api.py`: Main API router that includes all endpoint routers
-- `app/core/config.py`: Configuration management with pydantic-settings
+- `app/core/config.py`: Environment-based configuration management with validation and feature flags
 - `app/core/database.py`: Database connection and session management
 - `app/core/security.py`: JWT token handling and password hashing
 - `app/core/celery_app.py`: Celery configuration for background processing
@@ -86,9 +86,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **React Hook Form** for form management
 
 ### Key Frontend Components
-- `src/services/api.ts`: Axios instance with JWT interceptors (base URL: http://localhost:8000/api/v1)
+- `src/config/environment.ts`: Environment-based configuration management with smart defaults
+- `src/services/api.ts`: Axios instance with JWT interceptors and environment-aware API URLs
 - `src/services/aiAnalysis.ts`: AI analysis and provider management API service
 - `src/contexts/AuthContext.tsx`: Authentication state management
+- `src/contexts/TimezoneContext.tsx`: Timezone management with backend persistence
 - `src/components/`: Reusable UI components
 - `src/components/AnalysisCard.tsx`: Real-time analysis status display with progress tracking
 - `src/components/CreateProviderModal.tsx`: AI provider configuration interface
@@ -113,6 +115,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Encrypted storage**: Secure API key management with Fernet encryption
 - **Real-time updates**: WebSocket support for analysis status updates
 - **Configurable via environment variables**: API keys are optional
+
+### Configuration Management
+- **Environment-based configuration**: Automatic environment detection with smart defaults
+- **Backend validation**: Pydantic-based validation with security checks and feature flags
+- **Frontend configuration**: Environment-aware API URLs and WebSocket endpoints
+- **Development/Production modes**: Separate configuration files for different environments
+- **Security validation**: Prevents deployment with default secrets in production
+- **Feature flags**: Enable/disable AI analysis, notifications, and workflows per environment
 
 ### Authentication Flow
 - JWT tokens stored in localStorage

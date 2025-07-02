@@ -1,8 +1,9 @@
 """
 Integration tests for health data endpoints.
 """
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
 
 
 class TestHealthDataEndpoints:

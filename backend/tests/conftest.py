@@ -2,21 +2,22 @@
 Pytest configuration and shared fixtures for MBHealth backend tests.
 """
 import asyncio
-import pytest
-import tempfile
 import os
+import tempfile
 from typing import AsyncGenerator, Generator
+
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from main import app
-from app.core.database import Base, get_db
-from app.core.config import settings
-from app.models.user import User
-from app.core.security import get_password_hash
 from app.api.deps import get_current_user
+from app.core.config import settings
+from app.core.database import Base, get_db
+from app.core.security import get_password_hash
+from app.models.user import User
+from main import app
 
 
 # Test database setup

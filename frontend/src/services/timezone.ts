@@ -40,6 +40,13 @@ class TimezoneService {
   }
 
   /**
+   * Save user's timezone preference
+   */
+  async saveUserTimezone(timezone: string): Promise<void> {
+    await api.put('/users/me', { timezone });
+  }
+
+  /**
    * Convert UTC datetime to user's local timezone
    */
   convertUTCToLocal(utcDatetime: string, _timezone: string = 'America/New_York'): Date {
@@ -72,7 +79,7 @@ class TimezoneService {
         options.day = 'numeric';
         options.hour = 'numeric';
         options.minute = '2-digit';
-        }break;break;
+        break;
       case 'long':
         options.year = 'numeric';
         options.month = 'long';
@@ -81,16 +88,16 @@ class TimezoneService {
         options.minute = '2-digit';
         options.second = '2-digit';
         options.timeZoneName = 'short';
-        }break;break;
+        break;
       case 'date':
         options.year = 'numeric';
         options.month = 'short';
         options.day = 'numeric';
-        }break;break;
+        break;
       case 'time':
         options.hour = 'numeric';
         options.minute = '2-digit';
-        }break;break;
+        break;
       case 'datetime':
       default:
         options.year = 'numeric';
@@ -98,7 +105,7 @@ class TimezoneService {
         options.day = 'numeric';
         options.hour = 'numeric';
         options.minute = '2-digit';
-        }break;break;
+        break;
     }
 
     return new Intl.DateTimeFormat('en-US', options).format(date);

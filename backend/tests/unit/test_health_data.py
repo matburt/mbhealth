@@ -1,10 +1,12 @@
 """
 Unit tests for health data functionality.
 """
-import pytest
 from datetime import datetime
+
+import pytest
+
 from app.models.health_data import HealthData
-from app.utils.units import convert_health_data_value, UnitConverter
+from app.utils.units import UnitConverter, convert_health_data_value
 
 
 class TestHealthDataModel:

@@ -133,33 +133,45 @@ setup_backend() {
     if [ ! -f .env ]; then
         print_status "Creating .env file..."
         cat > .env << EOF
-# Security
-SECRET_KEY=your-super-secret-key-here-make-it-long-and-random
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+# Environment Configuration
+ENVIRONMENT=development
+DEBUG=true
+LOG_LEVEL=DEBUG
 
-# Database
+# Security (REQUIRED - change SECRET_KEY in production)
+SECRET_KEY=development-secret-key-change-in-production-at-least-32-chars
 DATABASE_URL=sqlite:///./health_data.db
 
-# CORS Settings
-ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+# CORS Origins (comma-separated)
+BACKEND_CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173
 
-# AI Service API Keys (optional)
+# AI Provider API Keys (all optional)
 OPENAI_API_KEY=your-openai-api-key
 OPENROUTER_API_KEY=your-openrouter-api-key
 GOOGLE_AI_API_KEY=your-google-ai-api-key
 ANTHROPIC_API_KEY=your-anthropic-api-key
 
-# Redis (for caching and sessions)
-REDIS_URL=redis://localhost:6379
+# Feature Flags
+ENABLE_AI_ANALYSIS=true
+ENABLE_NOTIFICATIONS=true
+ENABLE_WORKFLOWS=true
 
-# Celery Configuration
+# Redis Configuration
+REDIS_URL=redis://localhost:6379/0
+
+# Timezone Configuration
+DEFAULT_TIMEZONE=America/New_York
+
+# WebSocket Configuration
+WEBSOCKET_URL=ws://localhost:8000/ws
+
+# Celery Configuration (optional override)
 CELERY_BROKER_URL=redis://localhost:6379/0
 CELERY_RESULT_BACKEND=redis://localhost:6379/1
 EOF
         print_success "Created .env file"
     else
-        print_status ".env file already exists"
+        print_status ".env file already exists (consider updating with new configuration options)"
     fi
     
     # Initialize database
