@@ -201,8 +201,67 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Environment config: `backend/.env` (create from README examples)
 - Database file: `backend/health_data.db` (SQLite, auto-created)
 
+## Error Handling and Resilience
+
+### Backend Error Handling
+- **Structured Exceptions**: Use `app.core.exceptions` for consistent error responses
+  - `AppException`: Base class with error codes and user-friendly messages
+  - `ValidationException`: For input validation errors (422 status)
+  - `AIProviderException`: For AI service failures (503/500 status)
+  - `DatabaseException`: For database operation failures
+  - `CircuitBreakerException`: When services are temporarily unavailable
+
+- **Circuit Breaker Pattern**: Protect against cascading failures
+  - Import: `from app.core.circuit_breaker import circuit_breaker, circuit_registry`
+  - Usage: `@circuit_breaker("service_name", failure_threshold=5, recovery_timeout=120)`
+  - Monitor: GET `/api/v1/health/circuit-breakers` for status
+
+- **Retry Logic**: Automatic retry with exponential backoff
+  - Import: `from app.services.retry_service import retry_on_failure, retry_service`
+  - Decorator: `@retry_on_failure("service_name", "ai_provider", max_attempts=3)`
+  - Manual: `await retry_service.retry_async(func, *args, service_name="test")`
+
+- **Database Operations**: Use safe wrappers for transient error handling
+  - Import: `from app.core.exceptions import safe_database_operation`
+  - Usage: `@safe_database_operation("user creation")`
+
+### Frontend Error Handling
+- **Error Boundaries**: React components that catch JavaScript errors
+  - `ErrorBoundary`: Wrap components to catch and display errors gracefully
+  - `RouteErrorBoundary`: Route-level error handling for navigation errors
+  - Usage: Already integrated in `main.tsx` and route definitions
+
+- **Centralized Error Hook**: Consistent error handling across components
+  - Import: `import { useErrorHandler } from './hooks/useErrorHandler'`
+  - Usage: `const { handleError, withErrorHandling, clearError } = useErrorHandler()`
+  - Auto-retry: `const result = await withErrorHandling(async () => api.call())`
+
+- **API Service**: Enhanced axios client with retry and circuit breaker logic
+  - Import: `import { apiGet, apiPost, apiPut, apiDelete } from './services/api'`
+  - Retry config: `apiGet(url, config, { retries: 3, retryDelay: 1000 })`
+  - Automatic handling of 401, 403, 404, 5xx errors
+
+### Error Handling Best Practices
+1. **Never use bare `except:` clauses** - always specify exception types
+2. **Use structured exceptions** from `app.core.exceptions` for consistent responses
+3. **Apply circuit breakers** to external service calls (AI providers, APIs)
+4. **Wrap database operations** with `@safe_database_operation` decorator
+5. **Use retry decorators** for transient failures (network, rate limits)
+6. **Log errors with context** using `log_exception_context(error, context)`
+7. **Handle errors in React** with error boundaries and the `useErrorHandler` hook
+8. **Test error scenarios** - see `tests/unit/test_error_handling.py` for examples
+
+### Health Monitoring
+- **Health Endpoints**: 
+  - GET `/api/v1/health/` - Basic service health
+  - GET `/api/v1/health/circuit-breakers` - Circuit breaker status
+  - GET `/api/v1/health/detailed` - Comprehensive system health
+- **Circuit Breaker Monitoring**: Check failure counts and recovery times
+- **Error Logging**: All errors logged with structured context for observability
+
 ## Testing
 - **Backend**: pytest with coverage reporting, async test support
 - **Frontend**: Vite's built-in test runner
 - **Test databases**: Separate test database configurations
+- **Error Testing**: Comprehensive error scenario tests in `test_error_handling.py`
 - Run `make test` (backend) or `npm test` (frontend) for testing

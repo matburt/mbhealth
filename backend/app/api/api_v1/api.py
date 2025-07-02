@@ -7,6 +7,7 @@ from app.api.api_v1.endpoints import (
     auth,
     care_teams,
     families,
+    health,
     health_data,
     notes,
     notifications,
@@ -19,6 +20,7 @@ api_router = APIRouter()
 
 api_router.include_router(auth.router, prefix="/auth", tags=["authentication"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
+api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(health_data.router, prefix="/health-data", tags=["health-data"])
 api_router.include_router(families.router, prefix="/families", tags=["families"])
 api_router.include_router(care_teams.router, prefix="/care-teams", tags=["care-teams"])

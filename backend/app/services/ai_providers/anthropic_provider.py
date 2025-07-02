@@ -4,6 +4,8 @@ from typing import Any
 import httpx
 
 from .base import AIProviderError, AIProviderResponse, BaseAIProvider
+from ..retry_service import retry_on_failure
+from ...core.circuit_breaker import circuit_breaker
 
 
 class AnthropicProvider(BaseAIProvider):
@@ -25,6 +27,8 @@ class AnthropicProvider(BaseAIProvider):
     def get_default_model(self) -> str:
         return "claude-3-5-sonnet-20241022"
 
+    @circuit_breaker("anthropic_test", failure_threshold=3)
+    @retry_on_failure("anthropic_test", "ai_provider", max_attempts=2, retryable_exceptions=(httpx.HTTPStatusError, httpx.RequestError))
     async def test_connection(self) -> dict[str, Any]:
         """Test connection to Anthropic API"""
         try:
@@ -74,6 +78,8 @@ class AnthropicProvider(BaseAIProvider):
                 "response_time": None
             }
 
+    @circuit_breaker("anthropic_analysis", failure_threshold=5, recovery_timeout=120)
+    @retry_on_failure("anthropic_analysis", "ai_provider", max_attempts=3, retryable_exceptions=(httpx.HTTPStatusError, httpx.RequestError, httpx.TimeoutException))
     async def generate_analysis(
         self,
         prompt: str,

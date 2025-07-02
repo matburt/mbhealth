@@ -1,7 +1,8 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
+import RouteErrorBoundary from './components/RouteErrorBoundary';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
@@ -51,31 +52,31 @@ const App: React.FC = () => {
         <PublicRoute>
           <LoginPage />
         </PublicRoute>
-      } />
+      } errorElement={<RouteErrorBoundary />} />
       <Route path="/signup" element={
         <PublicRoute>
           <SignupPage />
         </PublicRoute>
-      } />
+      } errorElement={<RouteErrorBoundary />} />
       
       {/* Protected routes */}
       <Route path="/" element={
         <ProtectedRoute>
           <Layout />
         </ProtectedRoute>
-      }>
-        <Route index element={<DashboardPage />} />
-        <Route path="health-data" element={<HealthDataPage />} />
-        <Route path="data-visualization" element={<DataVisualizationPage />} />
-        <Route path="notes" element={<NotesPage />} />
-        <Route path="families" element={<FamiliesPage />} />
-        <Route path="care-teams" element={<CareTeamsPage />} />
-        <Route path="ai-analysis" element={<AIAnalysisPage />} />
-        <Route path="notifications" element={<NotificationsPage />} />
-        <Route path="settings" element={<SettingsPage />} />
+      } errorElement={<RouteErrorBoundary />}>
+        <Route index element={<DashboardPage />} errorElement={<RouteErrorBoundary />} />
+        <Route path="health-data" element={<HealthDataPage />} errorElement={<RouteErrorBoundary />} />
+        <Route path="data-visualization" element={<DataVisualizationPage />} errorElement={<RouteErrorBoundary />} />
+        <Route path="notes" element={<NotesPage />} errorElement={<RouteErrorBoundary />} />
+        <Route path="families" element={<FamiliesPage />} errorElement={<RouteErrorBoundary />} />
+        <Route path="care-teams" element={<CareTeamsPage />} errorElement={<RouteErrorBoundary />} />
+        <Route path="ai-analysis" element={<AIAnalysisPage />} errorElement={<RouteErrorBoundary />} />
+        <Route path="notifications" element={<NotificationsPage />} errorElement={<RouteErrorBoundary />} />
+        <Route path="settings" element={<SettingsPage />} errorElement={<RouteErrorBoundary />} />
       </Route>
       
-      <Route path="*" element={<NotFoundPage />} />
+      <Route path="*" element={<NotFoundPage />} errorElement={<RouteErrorBoundary />} />
     </Routes>
   );
 };

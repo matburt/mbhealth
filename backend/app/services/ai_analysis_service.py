@@ -11,7 +11,10 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.exceptions import (
     log_exception_context,
+    DatabaseException,
+    safe_database_operation
 )
+from app.services.retry_service import retry_service
 from app.models.ai_analysis import AIAnalysis, AIProvider
 from app.models.health_data import HealthData
 from app.schemas.ai_analysis import (
@@ -64,6 +67,7 @@ class AIAnalysisService:
             return ""
 
     # AI Provider Management
+    @safe_database_operation("create AI provider")
     async def create_provider(self, user_id: int, provider_data: AIProviderCreate) -> AIProvider:
         """Create a new AI provider for a user"""
         # Encrypt API key if provided
@@ -133,7 +137,7 @@ class AIAnalysisService:
         return True
 
     async def test_provider(self, user_id: int, provider_id: str) -> dict[str, Any]:
-        """Test connection to an AI provider"""
+        """Test connection to an AI provider with retry and circuit breaker protection"""
         provider = self.get_provider(user_id, provider_id)
         if not provider:
             return {"success": False, "message": "Provider not found"}
@@ -408,12 +412,19 @@ class AIAnalysisService:
             # Always add timezone context so AI understands the timestamps
             prompt += timezone_context
 
-            # Execute analysis
+            # Execute analysis with retry protection
             logger.info(f"Executing AI analysis for analysis {analysis.id}")
-            result = await ai_provider.generate_analysis(
+            
+            # Use retry service for the analysis generation
+            result = await retry_service.retry_async(
+                ai_provider.generate_analysis,
                 prompt,
                 health_data_list,
-                model=model
+                model=model,
+                service_name=f"{provider.type if provider else analysis.provider_name}_analysis",
+                service_type="ai_provider",
+                retryable_exceptions=(AIProviderError, Exception),
+                circuit_breaker_name=f"{provider.type if provider else analysis.provider_name}_analysis"
             )
 
             # Update analysis with results

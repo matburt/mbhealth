@@ -4,6 +4,8 @@ from typing import Any
 import httpx
 
 from .base import AIProviderError, AIProviderResponse, BaseAIProvider
+from ..retry_service import retry_on_failure
+from ...core.circuit_breaker import circuit_breaker
 
 
 class GoogleProvider(BaseAIProvider):
@@ -24,6 +26,8 @@ class GoogleProvider(BaseAIProvider):
     def get_default_model(self) -> str:
         return "gemini-1.5-flash"
 
+    @circuit_breaker("google_test", failure_threshold=3)
+    @retry_on_failure("google_test", "ai_provider", max_attempts=2, retryable_exceptions=(httpx.HTTPStatusError, httpx.RequestError))
     async def test_connection(self) -> dict[str, Any]:
         """Test connection to Google AI API"""
         try:
@@ -60,6 +64,8 @@ class GoogleProvider(BaseAIProvider):
                 "response_time": None
             }
 
+    @circuit_breaker("google_analysis", failure_threshold=5, recovery_timeout=120)
+    @retry_on_failure("google_analysis", "ai_provider", max_attempts=3, retryable_exceptions=(httpx.HTTPStatusError, httpx.RequestError, httpx.TimeoutException))
     async def generate_analysis(
         self,
         prompt: str,
