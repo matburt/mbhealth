@@ -1,13 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { healthService } from '../services/health';
 import { HealthData } from '../types/health';
 import { useTimezone } from '../contexts/TimezoneContext';
+import { useAuth } from '../contexts/AuthContext';
+import { createUnitConverter, shouldConvertMetric } from '../utils/units';
 
 const RecentHealthData: React.FC = () => {
   const [recentData, setRecentData] = useState<HealthData[]>([]);
   const [loading, setLoading] = useState(true);
   const { formatDateTime } = useTimezone();
+  const { user } = useAuth();
+
+  // Create unit converter based on user preferences
+  const unitConverter = useMemo(() => user ? createUnitConverter(user) : null, [user]);
 
   useEffect(() => {
     const fetchRecentData = async () => {
@@ -25,16 +31,31 @@ const RecentHealthData: React.FC = () => {
   }, []);
 
   const getMetricDisplay = (data: HealthData) => {
+    if (!unitConverter) {
+      // Fallback if no user/converter available
+      switch (data.metric_type) {
+        case 'blood_pressure':
+          return `${data.systolic}/${data.diastolic} ${data.unit}`;
+        default:
+          return `${data.value} ${data.unit}`;
+      }
+    }
+
     switch (data.metric_type) {
       case 'blood_pressure':
         return `${data.systolic}/${data.diastolic} ${data.unit}`;
       case 'blood_sugar':
         return `${data.value} ${data.unit}`;
       case 'weight':
-        return `${data.value} ${data.unit}`;
-      case 'heart_rate':
-        return `${data.value} ${data.unit}`;
       case 'temperature':
+      case 'height':
+        if (shouldConvertMetric(data.metric_type) && data.value !== null) {
+          const converted = unitConverter.convertToUserUnits(data.value, data.metric_type, data.unit);
+          return `${converted.value.toFixed(1)} ${converted.unit}`;
+        } else {
+          return `${data.value} ${data.unit}`;
+        }
+      case 'heart_rate':
         return `${data.value} ${data.unit}`;
       default:
         return `${data.value} ${data.unit}`;
