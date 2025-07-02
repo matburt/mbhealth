@@ -279,13 +279,13 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
   };
 
   // Handle data point selection
-  {const handleDataPointClick = (data: unknown) => {
+  const handleDataPointClick = (data: any) => {
     if (onDataPointClick) {
       onDataPointClick(data.originalData);
     }
     
     // Toggle selection for analysis
-    {const pointId = data.id;
+    const pointId = data.id;
     setSelectedDataPoints(prev => 
       prev.includes(pointId) 
         ? prev.filter(id => id !== pointId)
@@ -294,7 +294,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
   };
 
   // Get selected data for analysis
-  {const getSelectedData = () => {
+  const getSelectedData = () => {
     return filteredData.filter(item => selectedDataPoints.includes(item.id));
   };
 

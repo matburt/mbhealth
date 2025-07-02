@@ -41,7 +41,7 @@ const RecentHealthData: React.FC = () => {
     }
   };
 
-  {const getMetricColor = (metricType: string) => {
+  const getMetricColor = (metricType: string) => {
     switch (metricType) {
       case 'blood_pressure':
         return 'text-health-blood';
@@ -54,7 +54,7 @@ const RecentHealthData: React.FC = () => {
     }
   };
 
-  {const getMetricIcon = (metricType: string) => {
+  const getMetricIcon = (metricType: string) => {
     switch (metricType) {
       case 'blood_pressure':
         return '🩸';
