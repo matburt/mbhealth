@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { healthService } from '../services/health';
 import { HealthData } from '../types/health';
+import { useAuth } from '../contexts/AuthContext';
+import { createUnitConverter, getUnitLabel, shouldConvertMetric } from '../utils/units';
 
 interface MetricStats {
   count: number;
@@ -12,6 +14,10 @@ interface MetricStats {
 const DashboardStats: React.FC = () => {
   const [stats, setStats] = useState<Record<string, MetricStats>>({});
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  // Create unit converter based on user preferences
+  const unitConverter = useMemo(() => user ? createUnitConverter(user) : null, [user]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -72,7 +78,7 @@ const DashboardStats: React.FC = () => {
           label: 'Weight',
           icon: '⚖️',
           color: 'bg-health-weight/10 text-health-weight',
-          unit: 'kg'
+          unit: unitConverter ? getUnitLabel('weight', unitConverter.getUserUnitForMetric('weight')) : 'lbs'
         };
       case 'heart_rate':
         return {
@@ -97,7 +103,26 @@ const DashboardStats: React.FC = () => {
     if (metricType === 'blood_pressure') {
       return `${data.systolic}/${data.diastolic} ${data.unit}`;
     }
-    return `${data.value} ${data.unit}`;
+
+    // Convert to user's preferred units if applicable
+    if (unitConverter && shouldConvertMetric(metricType) && data.value !== null) {
+      const converted = unitConverter.convertToUserUnits(data.value, metricType, data.unit);
+      return `${converted.value.toFixed(1)} ${converted.unit}`;
+    } else {
+      return `${data.value} ${data.unit}`;
+    }
+  };
+
+  const getAverageValue = (metricType: string, average: number, latestData?: HealthData) => {
+    if (!latestData) return average;
+
+    // Convert average to user's preferred units if applicable
+    if (unitConverter && shouldConvertMetric(metricType)) {
+      const converted = unitConverter.convertToUserUnits(average, metricType, latestData.unit);
+      return converted.value.toFixed(1);
+    } else {
+      return average;
+    }
   };
 
   if (loading) {
@@ -144,7 +169,7 @@ const DashboardStats: React.FC = () => {
               <div className="flex justify-between text-sm text-gray-500">
                 <span>{metricStats.count} entries</span>
                 {metricStats.average && (
-                  <span>Avg: {metricStats.average} {info.unit}</span>
+                  <span>Avg: {getAverageValue(metricType, metricStats.average, metricStats.latest)} {info.unit}</span>
                 )}
               </div>
             </div>
