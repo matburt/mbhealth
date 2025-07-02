@@ -431,7 +431,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
               : healthData.filter(d => new Date(d.recorded_at) >= cutoffDate);
           }
         }
-        }break;break;
+        break;
       case 'advanced':
         if (selectionConfig.trending_data?.enabled) {
           filteredData = findTrendingData(healthData, 0.6, selectionConfig.trending_data.min_strength);
@@ -448,12 +448,12 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
             ? filteredData.filter(d => timeFilteredData.some(t => t.id === d.id))
             : timeFilteredData;
         }
-        }break;break;
+        break;
       case 'manual':
         if (selectionConfig.health_data_ids?.length) {
           filteredData = healthData.filter(d => selectionConfig.health_data_ids!.includes(d.id));
         }
-        }break;break;
+        break;
       default:
         filteredData = healthData;
     }

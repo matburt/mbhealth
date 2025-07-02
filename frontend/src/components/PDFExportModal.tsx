@@ -217,16 +217,16 @@ const PDFExportModal: React.FC<PDFExportModalProps> = ({
     switch (range) {
       case 'week':
         startDate = subDays(today, 7);
-        }break;break;
+        break;
       case 'month':
         startDate = startOfMonth(today);
-        }break;break;
+        break;
       case '3months':
         startDate = subDays(today, 90);
-        }break;break;
+        break;
       case 'year':
         startDate = subDays(today, 365);
-        }break;break;
+        break;
       default:
         return;
     }

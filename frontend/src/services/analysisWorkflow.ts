@@ -433,17 +433,17 @@ class AnalysisWorkflowService {
             config.comparison_config.previous_analysis_id
           );
         }
-        }break;break;
+        break;
       
       case 'time_period':
         // Find analysis from specified time period
         // Implementation would filter by time period based on config
-        }break;break;
+        break;
       
       case 'similar_data':
         // Find analysis with similar data characteristics
         // Implementation would match based on criteria
-        }break;break;
+        break;
     }
 
     // Create comparative analysis request
