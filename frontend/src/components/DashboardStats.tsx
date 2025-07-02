@@ -91,7 +91,7 @@ const DashboardStats: React.FC = () => {
     }
   };
 
-  {const getLatestValue = (metricType: string, data?: HealthData) => {
+  const getLatestValue = (metricType: string, data?: HealthData) => {
     if (!data) return 'No data';
     
     if (metricType === 'blood_pressure') {
@@ -116,7 +116,7 @@ const DashboardStats: React.FC = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {Object.entries(stats).map(([metricType, metricStats]) => {
-        {const info = getMetricInfo(metricType);
+        const info = getMetricInfo(metricType);
         
         return (
           <div key={metricType} className="card">

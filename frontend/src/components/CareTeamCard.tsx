@@ -73,10 +73,10 @@ const CareTeamCard: React.FC<CareTeamCardProps> = ({
     }
   };
 
-  {const getSpecialtyIcon = (specialty?: string) => {
+  const getSpecialtyIcon = (specialty?: string) => {
     if (!specialty) return '🏥';
     
-    {const specialtyLower = specialty.toLowerCase();
+    const specialtyLower = specialty.toLowerCase();
     if (specialtyLower.includes('cardio')) return '❤️';
     if (specialtyLower.includes('neuro')) return '🧠';
     if (specialtyLower.includes('ortho')) return '🦴';

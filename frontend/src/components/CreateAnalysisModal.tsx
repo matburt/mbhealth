@@ -106,7 +106,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     }
   };
 
-  {const getDefaultContextForAnalysisType = (analysisType: string): string => {
+  const getDefaultContextForAnalysisType = (analysisType: string): string => {
     switch (analysisType) {
       case 'trends':
         return 'Analyze trends and patterns in my health data. Focus on identifying improvements, deteriorations, or significant changes over time.';
@@ -121,8 +121,8 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     }
   };
 
-  {const generateTrendContextSuggestions = (metricTypes: string[], _: HealthData[], dateRange: { start: Date; end: Date } | null): string => {
-    {const suggestions = [];
+  const generateTrendContextSuggestions = (metricTypes: string[], _: HealthData[], dateRange: { start: Date; end: Date } | null): string => {
+    const suggestions = [];
     
     if (metricTypes.includes('blood_pressure')) {
       suggestions.push('Are my blood pressure readings improving or getting worse over time?');
@@ -142,7 +142,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     }
     
     if (dateRange) {
-      {const days = Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
+      const days = Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
       suggestions.push(`Focus on the ${days}-day period from ${dateRange.start.toLocaleDateString()} to ${dateRange.end.toLocaleDateString()}.`);
     }
     
@@ -150,8 +150,8 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  {const generateInsightContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: { start: Date; end: Date } | null): string => {
-    {const suggestions = [];
+  const generateInsightContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: { start: Date; end: Date } | null): string => {
+    const suggestions = [];
     
     if (metricTypes.length > 1) {
       suggestions.push('Are there any correlations between my different health metrics?');
@@ -173,8 +173,8 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  {const generateRecommendationContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: { start: Date; end: Date } | null): string => {
-    {const suggestions = [];
+  const generateRecommendationContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: { start: Date; end: Date } | null): string => {
+    const suggestions = [];
     
     if (metricTypes.includes('blood_pressure')) {
       suggestions.push('What lifestyle changes could help improve my blood pressure?');
@@ -193,8 +193,8 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  {const generateAnomalyContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: { start: Date; end: Date } | null): string => {
-    {const suggestions = [];
+  const generateAnomalyContextSuggestions = (metricTypes: string[], _selectedData: HealthData[], _dateRange: { start: Date; end: Date } | null): string => {
+    const suggestions = [];
     
     suggestions.push('Are there any readings that appear unusual or concerning?');
     
@@ -222,8 +222,8 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   // Update additional context when analysis type or selected data changes
   useEffect(() => {
     if (selectedAnalysisType && !analysisContext) { // Don't override pre-filled context
-      {const selectedData = healthData.filter(d => selectedDataIds.includes(d.id));
-      {const suggestions = generateContextSuggestions(selectedAnalysisType, selectedData);
+      const selectedData = healthData.filter(d => selectedDataIds.includes(d.id));
+      const suggestions = generateContextSuggestions(selectedAnalysisType, selectedData);
       setValue('additional_context', suggestions);
     }
   }, [selectedAnalysisType, selectedDataIds, healthData, analysisContext, setValue, generateContextSuggestions]);
@@ -245,10 +245,10 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     }
   }, [preSelectedData, analysisContext, setValue]);
 
-  {const fetchData = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      {const [healthDataResult, providersResult, analysesResult] = await Promise.all([
+      const [healthDataResult, providersResult, analysesResult] = await Promise.all([
         preSelectedData ? Promise.resolve(preSelectedData) : aiAnalysisService.getHealthDataForAnalysis(),
         aiAnalysisService.getProviders(true), // Only enabled providers
         aiAnalysisService.getAnalysisHistory() // Get last analysis date
@@ -265,7 +265,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
       
       // Find the most recent analysis date
       if (analysesResult.length > 0) {
-        {const sortedAnalyses = analysesResult.sort((a, b) => 
+        const sortedAnalyses = analysesResult.sort((a, b) => 
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
         setLastAnalysisDate(new Date(sortedAnalyses[0].created_at));
@@ -279,28 +279,28 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   };
 
   // Smart selection functions
-  {const selectDataByMetric = (metricType: string) => {
-    {const filteredData = healthData.filter(data => data.metric_type === metricType);
-    {const ids = filteredData.map(data => data.id);
+  const selectDataByMetric = (metricType: string) => {
+    const filteredData = healthData.filter(data => data.metric_type === metricType);
+    const ids = filteredData.map(data => data.id);
     setSelectedDataIds(ids);
     setCurrentSelectionMethod('smart');
     setCurrentSelectionConfig({ metric_types: [metricType] });
     toast.success(`Selected ${ids.length} ${metricType.replace('_', ' ')} readings`);
   };
 
-  {const selectDataByTimeRange = (days: number) => {
-    {const cutoffDate = subDays(new Date(), days);
-    {const filteredData = healthData.filter(data => 
+  const selectDataByTimeRange = (days: number) => {
+    const cutoffDate = subDays(new Date(), days);
+    const filteredData = healthData.filter(data => 
       new Date(data.recorded_at) >= cutoffDate
     );
-    {const ids = filteredData.map(data => data.id);
+    const ids = filteredData.map(data => data.id);
     setSelectedDataIds(ids);
     setCurrentSelectionMethod('smart');
     setCurrentSelectionConfig({ time_range: `${days}d` });
     toast.success(`Selected ${ids.length} readings from the last ${days} days`);
   };
 
-  {const selectDataByPeriod = (period: 'week' | 'month') => {
+  const selectDataByPeriod = (period: 'week' | 'month') => {
     {let startDate: Date;
     {let endDate: Date;
     
@@ -312,46 +312,46 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
       endDate = endOfMonth(new Date());
     }
     
-    {const filteredData = healthData.filter(data => {
-      {const dataDate = new Date(data.recorded_at);
+    const filteredData = healthData.filter(data => {
+      const dataDate = new Date(data.recorded_at);
       return dataDate >= startDate && dataDate <= endDate;
     });
     
-    {const ids = filteredData.map(data => data.id);
+    const ids = filteredData.map(data => data.id);
     setSelectedDataIds(ids);
     toast.success(`Selected ${ids.length} readings from this ${period}`);
   };
 
-  {const selectDataSinceLastAnalysis = () => {
+  const selectDataSinceLastAnalysis = () => {
     if (!lastAnalysisDate) {
       toast.error('No previous analysis found');
       return;
     }
     
-    {const filteredData = healthData.filter(data => 
+    const filteredData = healthData.filter(data => 
       new Date(data.recorded_at) > lastAnalysisDate
     );
-    {const ids = filteredData.map(data => data.id);
+    const ids = filteredData.map(data => data.id);
     setSelectedDataIds(ids);
     toast.success(`Selected ${ids.length} readings since last analysis`);
   };
 
-  {const selectMostRecentReadings = (count: number) => {
-    {const sortedData = [...healthData].sort((a, b) => 
+  const selectMostRecentReadings = (count: number) => {
+    const sortedData = [...healthData].sort((a, b) => 
       new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
     );
-    {const recentData = sortedData.slice(0, count);
-    {const ids = recentData.map(data => data.id);
+    const recentData = sortedData.slice(0, count);
+    const ids = recentData.map(data => data.id);
     setSelectedDataIds(ids);
     toast.success(`Selected ${ids.length} most recent readings`);
   };
 
-  {const clearSelection = () => {
+  const clearSelection = () => {
     setSelectedDataIds([]);
     toast.success('Selection cleared');
   };
 
-  {const handlePresetSelect = (preset: { name: string; analysisType: string; context: string }, selectedData: HealthData[]) => {
+  const handlePresetSelect = (preset: { name: string; analysisType: string; context: string }, selectedData: HealthData[]) => {
     setSelectedDataIds(selectedData.map(d => d.id));
     setValue('analysis_type', preset.analysisType as 'trends' | 'insights' | 'recommendations' | 'anomalies');
     setValue('additional_context', preset.context);
@@ -362,27 +362,27 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   };
 
   // Advanced selection functions
-  {const selectTrendingData = (minStrength: 'weak' | 'moderate' | 'strong' = 'moderate') => {
-    {const trendingData = findTrendingData(healthData, 0.6, minStrength);
-    {const ids = trendingData.map(data => data.id);
+  const selectTrendingData = (minStrength: 'weak' | 'moderate' | 'strong' = 'moderate') => {
+    const trendingData = findTrendingData(healthData, 0.6, minStrength);
+    const ids = trendingData.map(data => data.id);
     setSelectedDataIds(ids);
     setCurrentSelectionMethod('advanced');
     setCurrentSelectionConfig({ trending_data: { enabled: true, min_strength: minStrength } });
     toast.success(`Selected ${ids.length} data points with ${minStrength}+ trends`);
   };
 
-  {const selectAnomalousData = (minSeverity: 'low' | 'medium' | 'high' = 'medium') => {
-    {const anomalousData = findAnomalousData(healthData, minSeverity);
-    {const ids = anomalousData.map(data => data.id);
+  const selectAnomalousData = (minSeverity: 'low' | 'medium' | 'high' = 'medium') => {
+    const anomalousData = findAnomalousData(healthData, minSeverity);
+    const ids = anomalousData.map(data => data.id);
     setSelectedDataIds(ids);
     setCurrentSelectionMethod('advanced');
     setCurrentSelectionConfig({ anomalous_data: { enabled: true, min_severity: minSeverity } });
     toast.success(`Selected ${ids.length} anomalous readings (${minSeverity}+ severity)`);
   };
 
-  {const selectByTimeOfDay = (timeOfDay: 'morning' | 'afternoon' | 'evening') => {
-    {const filteredData = filterByTimeOfDay(healthData, timeOfDay);
-    {const ids = filteredData.map(data => data.id);
+  const selectByTimeOfDay = (timeOfDay: 'morning' | 'afternoon' | 'evening') => {
+    const filteredData = filterByTimeOfDay(healthData, timeOfDay);
+    const ids = filteredData.map(data => data.id);
     setSelectedDataIds(ids);
     setCurrentSelectionMethod('advanced');
     setCurrentSelectionConfig({ time_of_day: timeOfDay });
@@ -390,7 +390,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
   };
 
   // Saved configuration handlers
-  {const handleSaveConfiguration = () => {
+  const handleSaveConfiguration = () => {
     if (selectedDataIds.length === 0) {
       toast.error('Please select some data before saving configuration');
       return;
@@ -398,11 +398,11 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     setShowSaveConfigModal(true);
   };
 
-  {const handleConfigSaved = (config: AnalysisConfig) => {
+  const handleConfigSaved = (config: AnalysisConfig) => {
     toast.success(`Configuration "${config.name}" saved successfully`);
   };
 
-  {const handleLoadConfiguration = (config: AnalysisConfig) => {
+  const handleLoadConfiguration = (config: AnalysisConfig) => {
     // Apply the saved configuration
     setValue('analysis_type', config.analysis_type);
     setValue('additional_context', config.additional_context || '');
@@ -411,7 +411,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     }
 
     // Apply data selection based on config
-    {const { type, config: selectionConfig } = config.data_selection;
+    const { type, config: selectionConfig } = config.data_selection;
     setCurrentSelectionMethod(type);
     setCurrentSelectionConfig(selectionConfig);
 
@@ -423,9 +423,9 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
           filteredData = healthData.filter(d => selectionConfig.metric_types!.includes(d.metric_type));
         }
         if (selectionConfig.time_range) {
-          {const days = parseInt(selectionConfig.time_range.replace('d', ''));
+          const days = parseInt(selectionConfig.time_range.replace('d', ''));
           if (!isNaN(days)) {
-            {const cutoffDate = subDays(new Date(), days);
+            const cutoffDate = subDays(new Date(), days);
             filteredData = filteredData.length > 0 
               ? filteredData.filter(d => new Date(d.recorded_at) >= cutoffDate)
               : healthData.filter(d => new Date(d.recorded_at) >= cutoffDate);
@@ -437,13 +437,13 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
           filteredData = findTrendingData(healthData, 0.6, selectionConfig.trending_data.min_strength);
         }
         if (selectionConfig.anomalous_data?.enabled) {
-          {const anomalousData = findAnomalousData(healthData, selectionConfig.anomalous_data.min_severity);
+          const anomalousData = findAnomalousData(healthData, selectionConfig.anomalous_data.min_severity);
           filteredData = filteredData.length > 0 
             ? filteredData.filter(d => anomalousData.some(a => a.id === d.id))
             : anomalousData;
         }
         if (selectionConfig.time_of_day) {
-          {const timeFilteredData = filterByTimeOfDay(healthData, selectionConfig.time_of_day);
+          const timeFilteredData = filterByTimeOfDay(healthData, selectionConfig.time_of_day);
           filteredData = filteredData.length > 0 
             ? filteredData.filter(d => timeFilteredData.some(t => t.id === d.id))
             : timeFilteredData;
@@ -579,7 +579,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
     }
   };
 
-  {const getMetricIcon = (metricType: string) => {
+  const getMetricIcon = (metricType: string) => {
     switch (metricType) {
       case 'blood_pressure':
         return '🩸';
@@ -809,7 +809,7 @@ const CreateAnalysisModal: React.FC<CreateAnalysisModalProps> = ({
                         // Fetch all data instead of pre-selected
                         setLoading(true);
                         try {
-                          {const healthDataResult = await aiAnalysisService.getHealthDataForAnalysis();
+                          const healthDataResult = await aiAnalysisService.getHealthDataForAnalysis();
                           setHealthData(healthDataResult);
                           setDataStats(getDataStatistics(healthDataResult));
                         } catch (error) {

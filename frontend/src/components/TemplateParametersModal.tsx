@@ -91,7 +91,7 @@ const TemplateParametersModal: React.FC<TemplateParametersModalProps> = ({
                   type="checkbox"
                   checked={(values[key] || param.default || []).includes(option)}
                   onChange={(e) => {
-                    {const currentArray = values[key] || param.default || [];
+                    const currentArray = values[key] || param.default || [];
                     if (e.target.checked) {
                       handleInputChange(key, [...currentArray, option]);
                     } else {
@@ -133,7 +133,7 @@ const TemplateParametersModal: React.FC<TemplateParametersModalProps> = ({
     }
   };
 
-  {const hasParameters = Object.keys(parameters).length > 0;
+  const hasParameters = Object.keys(parameters).length > 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

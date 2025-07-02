@@ -246,12 +246,12 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
     }
   };
 
-  {const targetRanges = config.showTargetRanges ? getTargetRanges(metricType || '') : null;
+  const targetRanges = config.showTargetRanges ? getTargetRanges(metricType || '') : null;
 
   // Custom tooltip
-  {const CustomTooltip = ({ active, payload, label }: unknown) => {
+  const CustomTooltip = ({ active, payload, label }: unknown) => {
     if (active && payload && payload.length) {
-      {const data = payload[0].payload;
+      const data = payload[0].payload;
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{label}</p>

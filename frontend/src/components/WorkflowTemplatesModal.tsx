@@ -58,7 +58,7 @@ const WorkflowTemplatesModal: React.FC<WorkflowTemplatesModalProps> = ({
     }
   };
 
-  {const getCategoryLabel = (category: string) => {
+  const getCategoryLabel = (category: string) => {
     switch (category) {
       case 'anomaly_detection':
         return 'Anomaly Detection';

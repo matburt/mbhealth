@@ -138,7 +138,7 @@ export function convertHealthDataValue(
  * Get default unit for a metric type
  */
 export function getDefaultUnit(metricType: string, system: 'imperial' | 'metric' = 'imperial'): string {
-  {const defaults: Record<string, Record<string, string>> = {
+  const defaults: Record<string, Record<string, string>> = {
     imperial: {
       weight: 'lbs',
       temperature: 'f',
@@ -172,7 +172,7 @@ export function formatValueWithUnit(
   if (metricType === 'height' && unit === 'ft') {
     return formatHeightImperial(value);
   } else {
-    {const unitLabel = getUnitLabel(metricType, unit);
+    const unitLabel = getUnitLabel(metricType, unit);
     return `${value.toFixed(precision)} ${unitLabel}`;
   }
 }
@@ -181,7 +181,7 @@ export function formatValueWithUnit(
  * Check if a metric type supports unit conversion
  */
 export function shouldConvertMetric(metricType: string): boolean {
-  {const convertibleMetrics = new Set(['weight', 'temperature', 'height']);
+  const convertibleMetrics = new Set(['weight', 'temperature', 'height']);
   return convertibleMetrics.has(metricType);
 }
 
@@ -195,10 +195,10 @@ export class UnitConverter {
    * Convert a stored value to user's preferred units
    */
   convertToUserUnits(value: number, metricType: string, storedUnit: string): { value: number; unit: string } {
-    {const userUnit = this.getUserUnitForMetric(metricType);
+    const userUnit = this.getUserUnitForMetric(metricType);
     
     if (shouldConvertMetric(metricType)) {
-      {const convertedValue = convertHealthDataValue(value, metricType, storedUnit, userUnit);
+      const convertedValue = convertHealthDataValue(value, metricType, storedUnit, userUnit);
       return { value: convertedValue, unit: userUnit };
     } else {
       return { value, unit: storedUnit };
@@ -209,7 +209,7 @@ export class UnitConverter {
    * Convert a value from user's units to target storage unit
    */
   convertFromUserUnits(value: number, metricType: string, targetUnit: string): number {
-    {const userUnit = this.getUserUnitForMetric(metricType);
+    const userUnit = this.getUserUnitForMetric(metricType);
     
     if (shouldConvertMetric(metricType)) {
       return convertHealthDataValue(value, metricType, userUnit, targetUnit);
@@ -238,7 +238,7 @@ export class UnitConverter {
    * Format value with user's preferred units
    */
   formatValue(value: number, metricType: string, precision: number = 1): string {
-    {const userUnit = this.getUserUnitForMetric(metricType);
+    const userUnit = this.getUserUnitForMetric(metricType);
     return formatValueWithUnit(value, metricType, userUnit, precision);
   }
 }

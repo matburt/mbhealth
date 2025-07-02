@@ -99,7 +99,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted
     }
   };
 
-  {const getAnalysisTypeIcon = (type: string) => {
+  const getAnalysisTypeIcon = (type: string) => {
     switch (type) {
       case 'trends':
         return '📈';
@@ -114,7 +114,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted
     }
   };
 
-  {const getProviderIcon = (provider: string) => {
+  const getProviderIcon = (provider: string) => {
     switch (provider) {
       case 'openai':
         return '🤖';
@@ -127,7 +127,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted
     }
   };
 
-  {const formatResponse = (content: string) => {
+  const formatResponse = (content: string) => {
     // Simple formatting for markdown-like content
     return content
       .split('\n')

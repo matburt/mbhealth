@@ -65,7 +65,7 @@ const NotesPage: React.FC = () => {
     }
   };
 
-  {const getMetricIcon = (metricType: string) => {
+  const getMetricIcon = (metricType: string) => {
     switch (metricType) {
       case 'blood_pressure':
         return '🩸';
@@ -82,14 +82,14 @@ const NotesPage: React.FC = () => {
     }
   };
 
-  {const filteredNotes = notes.filter(note => {
+  const filteredNotes = notes.filter(note => {
     // Filter by ownership
     if (filter === 'mine' && note.user_id !== user?.id) return false;
     if (filter === 'others' && note.user_id === user?.id) return false;
     
     // Filter by search term
     if (searchTerm) {
-      {const searchLower = searchTerm.toLowerCase();
+      const searchLower = searchTerm.toLowerCase();
       return (
         note.content.toLowerCase().includes(searchLower) ||
         note.health_data.metric_type.toLowerCase().includes(searchLower) ||

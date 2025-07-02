@@ -128,7 +128,7 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
     }
   };
 
-  {const getTargetRanges = (metricType: string) => {
+  const getTargetRanges = (metricType: string) => {
     switch (metricType) {
       case 'blood_pressure':
         return { min: 90, max: 140, optimal: { systolic: 120, diastolic: 80 } };
@@ -143,13 +143,13 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
     }
   };
 
-  {const targetRanges = getTargetRanges(metricType || '');
-  {const metricColor = getMetricColor(metricType || '');
+  const targetRanges = getTargetRanges(metricType || '');
+  const metricColor = getMetricColor(metricType || '');
 
   // Custom tooltip
-  {const CustomTooltip = ({ active, payload, label }: unknown) => {
+  const CustomTooltip = ({ active, payload, label }: unknown) => {
     if (active && payload && payload.length) {
-      {const data = payload[0].payload;
+      const data = payload[0].payload;
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{label}</p>

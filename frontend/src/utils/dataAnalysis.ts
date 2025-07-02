@@ -199,9 +199,9 @@ export const filterByTimeOfDay = (data: HealthData[], timeOfDay: 'morning' | 'af
 /**
  * Find data with significant trends
  */
-export {const findTrendingData = (data: HealthData[], minConfidence = 0.6, minStrength: 'weak' | 'moderate' | 'strong' = 'moderate'): HealthData[] => {
+export const findTrendingData = (data: HealthData[], minConfidence = 0.6, minStrength: 'weak' | 'moderate' | 'strong' = 'moderate'): HealthData[] => {
   // Group by metric type
-  {const metricGroups = data.reduce((groups, item) => {
+  const metricGroups = data.reduce((groups, item) => {
     if (!groups[item.metric_type]) {
       groups[item.metric_type] = [];
     }
@@ -209,16 +209,16 @@ export {const findTrendingData = (data: HealthData[], minConfidence = 0.6, minSt
     return groups;
   }, {} as Record<string, HealthData[]>);
 
-  {const trendingData: HealthData[] = [];
+  const trendingData: HealthData[] = [];
 
   Object.values(metricGroups).forEach(metricData => {
     if (metricData.length < 5) return; // Need minimum data for trend analysis
 
-    {const trend = calculateTrend(metricData);
+    const trend = calculateTrend(metricData);
     
     // Check if trend meets criteria
-    {const strengthScore = trend.strength === 'strong' ? 3 : trend.strength === 'moderate' ? 2 : 1;
-    {const minStrengthScore = minStrength === 'strong' ? 3 : minStrength === 'moderate' ? 2 : 1;
+    const strengthScore = trend.strength === 'strong' ? 3 : trend.strength === 'moderate' ? 2 : 1;
+    const minStrengthScore = minStrength === 'strong' ? 3 : minStrength === 'moderate' ? 2 : 1;
 
     if (trend.confidence >= minConfidence && strengthScore >= minStrengthScore && trend.direction !== 'stable') {
       trendingData.push(...metricData);
@@ -231,15 +231,15 @@ export {const findTrendingData = (data: HealthData[], minConfidence = 0.6, minSt
 /**
  * Find anomalous data points
  */
-export {const findAnomalousData = (data: HealthData[], minSeverity: 'low' | 'medium' | 'high' = 'low'): HealthData[] => {
-  {const anomalies = detectAnomalies(data);
-  {const severityScore = minSeverity === 'high' ? 3 : minSeverity === 'medium' ? 2 : 1;
+export const findAnomalousData = (data: HealthData[], minSeverity: 'low' | 'medium' | 'high' = 'low'): HealthData[] => {
+  const anomalies = detectAnomalies(data);
+  const severityScore = minSeverity === 'high' ? 3 : minSeverity === 'medium' ? 2 : 1;
 
   return data.filter(item => {
-    {const anomaly = anomalies.get(item.id);
+    const anomaly = anomalies.get(item.id);
     if (!anomaly?.isAnomaly) return false;
 
-    {const itemSeverityScore = anomaly.severity === 'high' ? 3 : anomaly.severity === 'medium' ? 2 : 1;
+    const itemSeverityScore = anomaly.severity === 'high' ? 3 : anomaly.severity === 'medium' ? 2 : 1;
     return itemSeverityScore >= severityScore;
   });
 };
@@ -247,12 +247,12 @@ export {const findAnomalousData = (data: HealthData[], minSeverity: 'low' | 'med
 /**
  * Get statistics summary for data
  */
-export {const getDataStatistics = (data: HealthData[]) => {
-  {const trendingData = findTrendingData(data, 0.5, 'weak');
-  {const anomalousData = findAnomalousData(data, 'low');
-  {const morningData = filterByTimeOfDay(data, 'morning');
-  {const afternoonData = filterByTimeOfDay(data, 'afternoon');
-  {const eveningData = filterByTimeOfDay(data, 'evening');
+export const getDataStatistics = (data: HealthData[]) => {
+  const trendingData = findTrendingData(data, 0.5, 'weak');
+  const anomalousData = findAnomalousData(data, 'low');
+  const morningData = filterByTimeOfDay(data, 'morning');
+  const afternoonData = filterByTimeOfDay(data, 'afternoon');
+  const eveningData = filterByTimeOfDay(data, 'evening');
 
   return {
     total: data.length,

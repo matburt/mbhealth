@@ -35,13 +35,13 @@ const ProviderCard: React.FC<ProviderCardProps> = ({
     }
   };
 
-  {const getStatusColor = (enabled: boolean) => {
+  const getStatusColor = (enabled: boolean) => {
     return enabled 
       ? 'bg-green-100 text-green-800' 
       : 'bg-gray-100 text-gray-800';
   };
 
-  {const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
 
