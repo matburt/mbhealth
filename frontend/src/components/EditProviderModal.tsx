@@ -253,26 +253,52 @@ const EditProviderModal: React.FC<EditProviderModalProps> = ({
             </div>
 
             {/* Default Model */}
-            {availableModels.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Default Model
-                </label>
-                <select
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Default Model <span className="text-gray-500 text-sm font-normal">(Optional)</span>
+              </label>
+              
+              {availableModels.length > 0 ? (
+                <>
+                  <select
+                    name="default_model"
+                    value={formData.default_model}
+                    onChange={handleInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select a model or enter custom model name below</option>
+                    {availableModels.map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      name="default_model"
+                      value={formData.default_model}
+                      onChange={handleInputChange}
+                      placeholder="Or enter a custom model name (e.g., gpt-4, claude-3-sonnet, gemini-pro)"
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </>
+              ) : (
+                <input
+                  type="text"
                   name="default_model"
                   value={formData.default_model}
                   onChange={handleInputChange}
+                  placeholder="Enter model name (e.g., gpt-4, claude-3-sonnet, gemini-pro) - Test connection to see available models"
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select a model</option>
-                  {availableModels.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+                />
+              )}
+              
+              <p className="text-xs text-gray-500 mt-1">
+                Specify which model to use by default for this provider. If not set, the provider will use its own default model.
+              </p>
+            </div>
 
             {/* Priority */}
             <div>
