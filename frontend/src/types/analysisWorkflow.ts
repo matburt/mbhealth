@@ -21,7 +21,7 @@ export interface AnalysisStep {
         time_range?: string;
       };
       // For 'custom' - completely new data selection
-      custom_selection?: any;
+      custom_selection?: unknown;
     };
   };
   provider_preference?: string;
@@ -30,7 +30,7 @@ export interface AnalysisStep {
   condition?: {
     // Only run this step if condition is met
     type: 'result_contains' | 'anomaly_found' | 'trend_detected' | 'always';
-    config?: any;
+    config?: unknown;
   };
 }
 
@@ -80,7 +80,7 @@ export interface FollowUpSuggestion {
   priority: 'low' | 'medium' | 'high';
   suggested_analysis?: {
     analysis_type: 'trends' | 'insights' | 'recommendations' | 'anomalies';
-    data_selection: any;
+    data_selection: unknown;
     context: string;
   };
   action_items?: string[];

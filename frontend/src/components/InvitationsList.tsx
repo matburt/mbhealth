@@ -36,7 +36,7 @@ const InvitationsList: React.FC<InvitationsListProps> = ({ onInvitationHandled }
       toast.success('Invitation accepted successfully');
       fetchInvitations();
       onInvitationHandled();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to accept invitation');
     } finally {
       setProcessingId(null);
@@ -49,7 +49,7 @@ const InvitationsList: React.FC<InvitationsListProps> = ({ onInvitationHandled }
       await familiesService.declineInvitation(invitationId);
       toast.success('Invitation declined');
       fetchInvitations();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to decline invitation');
     } finally {
       setProcessingId(null);
@@ -64,7 +64,7 @@ const InvitationsList: React.FC<InvitationsListProps> = ({ onInvitationHandled }
       await familiesService.cancelInvitation(invitationId);
       toast.success('Invitation cancelled');
       fetchInvitations();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to cancel invitation');
     } finally {
       setProcessingId(null);

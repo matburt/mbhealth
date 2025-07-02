@@ -246,12 +246,12 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
     }
   };
 
-  const targetRanges = config.showTargetRanges ? getTargetRanges(metricType || '') : null;
+  {const targetRanges = config.showTargetRanges ? getTargetRanges(metricType || '') : null;
 
   // Custom tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  {const CustomTooltip = ({ active, payload, label }: unknown) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      {const data = payload[0].payload;
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{label}</p>
@@ -279,13 +279,13 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
   };
 
   // Handle data point selection
-  const handleDataPointClick = (data: any) => {
+  {const handleDataPointClick = (data: unknown) => {
     if (onDataPointClick) {
       onDataPointClick(data.originalData);
     }
     
     // Toggle selection for analysis
-    const pointId = data.id;
+    {const pointId = data.id;
     setSelectedDataPoints(prev => 
       prev.includes(pointId) 
         ? prev.filter(id => id !== pointId)
@@ -294,7 +294,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
   };
 
   // Get selected data for analysis
-  const getSelectedData = () => {
+  {const getSelectedData = () => {
     return filteredData.filter(item => selectedDataPoints.includes(item.id));
   };
 

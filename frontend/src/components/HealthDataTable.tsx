@@ -42,7 +42,7 @@ const HealthDataTable: React.FC<HealthDataTableProps> = ({ data, onDataChange })
         return `${data.systolic}/${data.diastolic} ${data.unit}`;
       default:
         if (shouldConvertMetric(data.metric_type) && data.value !== null) {
-          const converted = unitConverter.convertToUserUnits(data.value, data.metric_type, data.unit);
+          {const converted = unitConverter.convertToUserUnits(data.value, data.metric_type, data.unit);
           return `${converted.value.toFixed(1)} ${converted.unit}`;
         } else {
           return `${data.value} ${data.unit}`;
@@ -50,7 +50,7 @@ const HealthDataTable: React.FC<HealthDataTableProps> = ({ data, onDataChange })
     }
   };
 
-  const getMetricColor = (metricType: string) => {
+  {const getMetricColor = (metricType: string) => {
     switch (metricType) {
       case 'blood_pressure':
         return 'text-health-blood';
@@ -63,7 +63,7 @@ const HealthDataTable: React.FC<HealthDataTableProps> = ({ data, onDataChange })
     }
   };
 
-  const getMetricIcon = (metricType: string) => {
+  {const getMetricIcon = (metricType: string) => {
     switch (metricType) {
       case 'blood_pressure':
         return '🩸';
@@ -80,7 +80,7 @@ const HealthDataTable: React.FC<HealthDataTableProps> = ({ data, onDataChange })
     }
   };
 
-  const handleDelete = async (id: number) => {
+  {const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this entry?')) return;
     
     setDeletingId(id);
@@ -88,29 +88,29 @@ const HealthDataTable: React.FC<HealthDataTableProps> = ({ data, onDataChange })
       await healthService.deleteHealthData(id);
       toast.success('Entry deleted successfully');
       onDataChange();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to delete entry');
     } finally {
       setDeletingId(null);
     }
   };
 
-  const handleOpenNotes = (healthData: HealthData) => {
+  {const handleOpenNotes = (healthData: HealthData) => {
     setSelectedHealthData(healthData);
     setNotesModalOpen(true);
   };
 
-  const handleCloseNotes = () => {
+  {const handleCloseNotes = () => {
     setNotesModalOpen(false);
     setSelectedHealthData(null);
   };
 
-  const handleEdit = (healthData: HealthData) => {
+  {const handleEdit = (healthData: HealthData) => {
     setEditingHealthData(healthData);
     setEditModalOpen(true);
   };
 
-  const handleCloseEdit = () => {
+  {const handleCloseEdit = () => {
     setEditModalOpen(false);
     setEditingHealthData(null);
   };

@@ -23,7 +23,7 @@ const NotesModal: React.FC<NotesModalProps> = ({ healthData, isOpen, onClose }) 
     }
   };
 
-  const getMetricIcon = (metricType: string) => {
+  {const getMetricIcon = (metricType: string) => {
     switch (metricType) {
       case 'blood_pressure':
         return '\ud83e\ude78';

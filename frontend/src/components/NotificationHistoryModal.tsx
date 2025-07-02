@@ -30,7 +30,7 @@ const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> = ({ onC
         statusFilter || undefined
       );
       setHistory(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to load notification history');
     } finally {
       setLoading(false);

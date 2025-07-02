@@ -36,7 +36,7 @@ const CareTeamCard: React.FC<CareTeamCardProps> = ({
       await careTeamsService.deleteCareTeam(careTeam.id);
       toast.success('Care team deleted successfully');
       onCareTeamUpdated();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to delete care team');
     } finally {
       setIsDeleting(false);
@@ -53,7 +53,7 @@ const CareTeamCard: React.FC<CareTeamCardProps> = ({
       await careTeamsService.removeCareTeamMember(careTeam.id, memberId);
       toast.success('Member removed successfully');
       onMemberRemoved();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to remove member');
     } finally {
       setRemovingMember(null);
@@ -73,10 +73,10 @@ const CareTeamCard: React.FC<CareTeamCardProps> = ({
     }
   };
 
-  const getSpecialtyIcon = (specialty?: string) => {
+  {const getSpecialtyIcon = (specialty?: string) => {
     if (!specialty) return '🏥';
     
-    const specialtyLower = specialty.toLowerCase();
+    {const specialtyLower = specialty.toLowerCase();
     if (specialtyLower.includes('cardio')) return '❤️';
     if (specialtyLower.includes('neuro')) return '🧠';
     if (specialtyLower.includes('ortho')) return '🦴';

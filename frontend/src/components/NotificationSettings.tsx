@@ -34,7 +34,7 @@ const NotificationSettings: React.FC = () => {
       setChannels(channelsData);
       setPreferences(preferencesData);
       setStats(statsData);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to load notification settings');
       console.error('Error loading notification data:', err);
     } finally {
@@ -60,7 +60,7 @@ const NotificationSettings: React.FC = () => {
       await notificationService.quickSetup(setup);
       setShowQuickSetup(false);
       await loadData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Quick setup failed');
     }
   };

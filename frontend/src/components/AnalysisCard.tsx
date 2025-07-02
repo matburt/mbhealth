@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { aiAnalysisService } from '../services/aiAnalysis';
 import { AIAnalysisResponse } from '../types/aiAnalysis';
@@ -16,7 +15,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
-  const [progress, setProgress] = useState<any>(null);
+  const [progress, setProgress] = useState<{ current: number; total: number; message?: string; status?: string } | null>(null);
   const [currentStatus, setCurrentStatus] = useState<'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'>(analysis.status);
 
   // Poll for status updates if analysis is pending or processing
@@ -54,8 +53,11 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted
       await aiAnalysisService.deleteAnalysis(analysis.id);
       toast.success('Analysis deleted successfully');
       onAnalysisDeleted();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to delete analysis');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || 'Failed to delete analysis'
+        : 'Failed to delete analysis';
+      toast.error(errorMessage);
     } finally {
       setIsDeleting(false);
     }
@@ -70,8 +72,11 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted
       toast.success('Analysis cancelled successfully');
       setCurrentStatus('cancelled');
       onAnalysisDeleted();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to cancel analysis');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || 'Failed to cancel analysis'
+        : 'Failed to cancel analysis';
+      toast.error(errorMessage);
     } finally {
       setIsCancelling(false);
     }
@@ -94,7 +99,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted
     }
   };
 
-  const getAnalysisTypeIcon = (type: string) => {
+  {const getAnalysisTypeIcon = (type: string) => {
     switch (type) {
       case 'trends':
         return '📈';
@@ -109,7 +114,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted
     }
   };
 
-  const getProviderIcon = (provider: string) => {
+  {const getProviderIcon = (provider: string) => {
     switch (provider) {
       case 'openai':
         return '🤖';
@@ -122,7 +127,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onAnalysisDeleted
     }
   };
 
-  const formatResponse = (content: string) => {
+  {const formatResponse = (content: string) => {
     // Simple formatting for markdown-like content
     return content
       .split('\n')

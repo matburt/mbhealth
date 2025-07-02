@@ -32,7 +32,7 @@ const SignupPage: React.FC = () => {
       await signup(data.email, data.username, data.password, data.fullName);
       toast.success('Account created successfully! Please sign in.');
       navigate('/login');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Signup failed');
     } finally {
       setIsLoading(false);

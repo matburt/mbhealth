@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface TemplateParameter {
   type: 'string' | 'number' | 'select' | 'array' | 'time' | 'boolean';
   description: string;
-  default: any;
+  default: unknown;
   options?: string[];
   min?: number;
   max?: number;
@@ -12,7 +12,7 @@ interface TemplateParameter {
 interface TemplateParametersModalProps {
   templateName: string;
   parameters: Record<string, TemplateParameter>;
-  onConfirm: (customizations: Record<string, any>) => void;
+  onConfirm: (customizations: Record<string, unknown>) => void;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -24,15 +24,15 @@ const TemplateParametersModal: React.FC<TemplateParametersModalProps> = ({
   onCancel,
   loading = false
 }) => {
-  const [values, setValues] = useState<Record<string, any>>(() => {
-    const initialValues: Record<string, any> = {};
+  const [values, setValues] = useState<Record<string, unknown>>(() => {
+    const initialValues: Record<string, unknown> = {};
     Object.entries(parameters).forEach(([key, param]) => {
       initialValues[key] = param.default;
     });
     return initialValues;
   });
 
-  const handleInputChange = (key: string, value: any) => {
+  const handleInputChange = (key: string, value: unknown) => {
     setValues(prev => ({ ...prev, [key]: value }));
   };
 
@@ -91,7 +91,7 @@ const TemplateParametersModal: React.FC<TemplateParametersModalProps> = ({
                   type="checkbox"
                   checked={(values[key] || param.default || []).includes(option)}
                   onChange={(e) => {
-                    const currentArray = values[key] || param.default || [];
+                    {const currentArray = values[key] || param.default || [];
                     if (e.target.checked) {
                       handleInputChange(key, [...currentArray, option]);
                     } else {
@@ -133,7 +133,7 @@ const TemplateParametersModal: React.FC<TemplateParametersModalProps> = ({
     }
   };
 
-  const hasParameters = Object.keys(parameters).length > 0;
+  {const hasParameters = Object.keys(parameters).length > 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

@@ -58,7 +58,7 @@ const InviteCareTeamMemberModal: React.FC<InviteCareTeamMemberModalProps> = ({
       reset();
       onInviteSent?.();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to send invitation:', error);
       setError(error.response?.data?.detail || 'Failed to send invitation');
     } finally {

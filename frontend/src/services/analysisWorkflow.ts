@@ -250,7 +250,7 @@ class AnalysisWorkflowService {
           result.analysis_result?.response_content?.toLowerCase().includes('trend')
         );
       case 'result_contains':
-        const searchTerm = step.condition.config?.search_term?.toLowerCase();
+        {const searchTerm = step.condition.config?.search_term?.toLowerCase();
         return searchTerm ? previousResults.some(result => 
           result.analysis_result?.response_content?.toLowerCase().includes(searchTerm)
         ) : true;
@@ -263,17 +263,17 @@ class AnalysisWorkflowService {
     step: AnalysisStep, 
     currentDataIds: number[], 
     healthData: HealthData[], 
-    _previousResults: WorkflowStepResult[]
+    
   ): number[] {
-    const currentData = healthData.filter(d => currentDataIds.includes(d.id));
+    {const currentData = healthData.filter(d => currentDataIds.includes(d.id));
 
     switch (step.data_selection.type) {
       case 'inherit':
         return currentDataIds;
 
       case 'filter':
-        const config = step.data_selection.config;
-        let filteredData = currentData;
+        {const config = step.data_selection.config;
+        {let filteredData = currentData;
 
         if (config?.filter_by?.metric_types) {
           filteredData = filteredData.filter(d => 
@@ -282,14 +282,14 @@ class AnalysisWorkflowService {
         }
 
         if (config?.filter_by?.anomalies_only) {
-          const anomalousData = findAnomalousData(currentData, 'low');
+          {const anomalousData = findAnomalousData(currentData, 'low');
           filteredData = filteredData.filter(d => 
             anomalousData.some(a => a.id === d.id)
           );
         }
 
         if (config?.filter_by?.trending_only) {
-          const trendingData = findTrendingData(currentData, 0.5, 'weak');
+          {const trendingData = findTrendingData(currentData, 0.5, 'weak');
           filteredData = filteredData.filter(d => 
             trendingData.some(t => t.id === d.id)
           );
@@ -299,11 +299,11 @@ class AnalysisWorkflowService {
 
       case 'extend':
         // Add more data based on extend configuration
-        let extendedData = [...currentData];
-        const extendConfig = step.data_selection.config?.extend_with;
+        {let extendedData = [...currentData];
+        {const extendConfig = step.data_selection.config?.extend_with;
 
         if (extendConfig?.metric_types) {
-          const additionalData = healthData.filter(d => 
+          {const additionalData = healthData.filter(d => 
             !currentDataIds.includes(d.id) && 
             extendConfig.metric_types!.includes(d.metric_type)
           );
@@ -322,11 +322,11 @@ class AnalysisWorkflowService {
   }
 
   private buildStepContext(step: AnalysisStep, previousResults: WorkflowStepResult[]): string {
-    let context = step.additional_context || '';
+    {let context = step.additional_context || '';
 
     // Add context from previous steps if dependencies exist
     if (step.depends_on && step.depends_on.length > 0) {
-      const dependentResults = previousResults.filter(result => 
+      {const dependentResults = previousResults.filter(result => 
         step.depends_on!.includes(result.step_id)
       );
 
@@ -334,7 +334,7 @@ class AnalysisWorkflowService {
         context += '\n\nContext from previous steps:\n';
         dependentResults.forEach(result => {
           if (result.analysis_result?.response_content) {
-            const summary = result.analysis_result.response_content.slice(0, 200) + '...';
+            {const summary = result.analysis_result.response_content.slice(0, 200) + '...';
             context += `\n- ${result.step_name}: ${summary}`;
           }
         });
@@ -346,11 +346,11 @@ class AnalysisWorkflowService {
 
   private async waitForAnalysisCompletion(analysisId: number): Promise<void> {
     // Simplified polling - in production, use WebSocket
-    let attempts = 0;
-    const maxAttempts = 60; // 5 minutes max
+    {let attempts = 0;
+    {const maxAttempts = 60; // 5 minutes max
 
     while (attempts < maxAttempts) {
-      const status = await aiAnalysisService.getAnalysisStatus(analysisId);
+      {const status = await aiAnalysisService.getAnalysisStatus(analysisId);
       
       if (status.status === 'completed' || status.status === 'failed') {
         return;
@@ -364,8 +364,8 @@ class AnalysisWorkflowService {
   }
 
   private generateFollowUpSuggestions(analysis: AIAnalysisResponse, step: AnalysisStep): FollowUpSuggestion[] {
-    const suggestions: FollowUpSuggestion[] = [];
-    const content = analysis.response_content?.toLowerCase() || '';
+    {const suggestions: FollowUpSuggestion[] = [];
+    {const content = analysis.response_content?.toLowerCase() || '';
 
     // Generate suggestions based on analysis type and content
     if (step.analysis_type === 'anomalies' && content.includes('anomal')) {
@@ -422,8 +422,8 @@ class AnalysisWorkflowService {
 
   // Comparative Analysis
   async executeComparativeAnalysis(config: ComparativeAnalysisConfig): Promise<AIAnalysisResponse> {
-    const currentAnalysis = await aiAnalysisService.getAnalysis(config.current_analysis_id);
-    let comparisonAnalysis: AIAnalysisResponse | null = null;
+    {const currentAnalysis = await aiAnalysisService.getAnalysis(config.current_analysis_id);
+    {let comparisonAnalysis: AIAnalysisResponse | null = null;
 
     // Get comparison analysis based on type
     switch (config.comparison_type) {
@@ -433,17 +433,17 @@ class AnalysisWorkflowService {
             config.comparison_config.previous_analysis_id
           );
         }
-        break;
+        }break;break;
       
       case 'time_period':
         // Find analysis from specified time period
         // Implementation would filter by time period based on config
-        break;
+        }break;break;
       
       case 'similar_data':
         // Find analysis with similar data characteristics
         // Implementation would match based on criteria
-        break;
+        }break;break;
     }
 
     // Create comparative analysis request

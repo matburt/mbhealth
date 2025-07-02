@@ -72,7 +72,7 @@ const EditHealthDataModal: React.FC<EditHealthDataModalProps> = ({
       toast.success('Health data updated successfully!');
       onDataChange();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to update health data');
     }
   };

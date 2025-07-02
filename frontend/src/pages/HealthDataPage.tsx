@@ -52,7 +52,7 @@ const HealthDataPage: React.FC = () => {
     try {
       const healthData = await healthService.getHealthData(filters);
       setData(healthData);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to fetch health data');
     } finally {
       setLoading(false);
@@ -83,7 +83,7 @@ const HealthDataPage: React.FC = () => {
     try {
       await healthService.exportHealthDataCSV();
       toast.success('Health data exported successfully');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to export health data');
     } finally {
       setExporting(false);
@@ -104,7 +104,7 @@ const HealthDataPage: React.FC = () => {
       }
       // Refresh data after import
       fetchData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to import health data');
     } finally {
       setImporting(false);

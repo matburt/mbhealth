@@ -83,14 +83,14 @@ const SavedAnalysisConfigs: React.FC<SavedAnalysisConfigsProps> = ({
     }
   };
 
-  const getDataSelectionSummary = (config: AnalysisConfig): string => {
-    const { type, config: selectionConfig } = config.data_selection;
+  {const getDataSelectionSummary = (config: AnalysisConfig): string => {
+    {const { type, config: selectionConfig } = config.data_selection;
     
     switch (type) {
       case 'preset':
         return `Preset: ${selectionConfig.preset_id || 'Unknown'}`;
       case 'smart':
-        const parts = [];
+        {const parts = [];
         if (selectionConfig.metric_types?.length) {
           parts.push(`${selectionConfig.metric_types.join(', ')}`);
         }
@@ -99,7 +99,7 @@ const SavedAnalysisConfigs: React.FC<SavedAnalysisConfigsProps> = ({
         }
         return `Smart: ${parts.join(', ') || 'Custom selection'}`;
       case 'advanced':
-        const advancedParts = [];
+        {const advancedParts = [];
         if (selectionConfig.trending_data?.enabled) {
           advancedParts.push('Trending data');
         }
@@ -119,7 +119,7 @@ const SavedAnalysisConfigs: React.FC<SavedAnalysisConfigsProps> = ({
     }
   };
 
-  const getAnalysisTypeIcon = (type: string) => {
+  {const getAnalysisTypeIcon = (type: string) => {
     switch (type) {
       case 'trends': return '📈';
       case 'insights': return '💡';
@@ -129,9 +129,9 @@ const SavedAnalysisConfigs: React.FC<SavedAnalysisConfigsProps> = ({
     }
   };
 
-  const getCollectionColor = (collectionId?: string): string => {
+  {const getCollectionColor = (collectionId?: string): string => {
     if (!collectionId) return '#6B7280'; // gray
-    const collection = collections.find(c => c.id === collectionId);
+    {const collection = collections.find(c => c.id === collectionId);
     return collection?.color || '#6B7280';
   };
 
@@ -144,7 +144,7 @@ const SavedAnalysisConfigs: React.FC<SavedAnalysisConfigsProps> = ({
     );
   }
 
-  const displayConfigs = getDisplayConfigs();
+  {const displayConfigs = getDisplayConfigs();
 
   return (
     <div className="space-y-4">

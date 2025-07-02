@@ -38,7 +38,7 @@ const FamilyCard: React.FC<FamilyCardProps> = ({
       await familiesService.deleteFamily(family.id);
       toast.success('Family deleted successfully');
       onFamilyUpdated();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to delete family');
     } finally {
       setIsDeleting(false);
@@ -55,7 +55,7 @@ const FamilyCard: React.FC<FamilyCardProps> = ({
       await familiesService.removeFamilyMember(family.id, memberId);
       toast.success('Member removed successfully');
       onMemberRemoved();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to remove member');
     } finally {
       setRemovingMember(null);

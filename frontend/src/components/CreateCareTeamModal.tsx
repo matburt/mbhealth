@@ -41,7 +41,7 @@ const CreateCareTeamModal: React.FC<CreateCareTeamModalProps> = ({
       reset();
       onClose();
       onCareTeamCreated();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to create care team');
     }
   };

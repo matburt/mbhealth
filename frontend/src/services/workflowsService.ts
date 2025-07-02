@@ -3,7 +3,7 @@ import api from './api';
 export interface WorkflowCondition {
   type: string;
   field?: string;
-  value: any;
+  value: unknown;
   operator: string;
 }
 
@@ -41,7 +41,7 @@ export interface WorkflowExecution {
   execution_type: string;
   current_step: number;
   total_steps: number;
-  step_results: any[];
+  step_results: unknown[];
   created_analyses: number[];
   error_message?: string;
   started_at: string;

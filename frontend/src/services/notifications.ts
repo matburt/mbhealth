@@ -55,7 +55,7 @@ export interface NotificationPreferenceCreate {
   include_analysis_content?: boolean;
   include_summary_stats?: boolean;
   include_recommendations?: boolean;
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
 }
 
 export interface NotificationPreferenceUpdate {
@@ -69,7 +69,7 @@ export interface NotificationPreferenceUpdate {
   include_analysis_content?: boolean;
   include_summary_stats?: boolean;
   include_recommendations?: boolean;
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
 }
 
 export interface NotificationPreference {
@@ -87,7 +87,7 @@ export interface NotificationPreference {
   include_analysis_content: boolean;
   include_summary_stats: boolean;
   include_recommendations: boolean;
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -122,7 +122,7 @@ export interface NotificationHistory {
 export interface SendNotificationRequest {
   user_id: number;
   event_type: NotificationEventType;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   priority?: NotificationPriority;
   analysis_id?: number;
   schedule_id?: string;
@@ -231,7 +231,7 @@ class NotificationService {
   }
 
   async getPreferences(eventType?: NotificationEventType, channelId?: string): Promise<NotificationPreferenceWithChannel[]> {
-    const params: any = {};
+    const params: unknown = {};
     if (eventType) params.event_type = eventType;
     if (channelId) params.channel_id = channelId;
     
@@ -265,7 +265,7 @@ class NotificationService {
     eventType?: NotificationEventType,
     status?: NotificationStatus
   ): Promise<NotificationHistory[]> {
-    const params: any = {};
+    const params: unknown = {};
     if (limit) params.limit = limit;
     if (eventType) params.event_type = eventType;
     if (status) params.status = status;
@@ -412,4 +412,4 @@ class NotificationService {
   }
 }
 
-export const notificationService = new NotificationService();
+export {const notificationService = new NotificationService();

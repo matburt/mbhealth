@@ -14,7 +14,7 @@ interface SaveAnalysisConfigModalProps {
     additional_context?: string;
     selectedDataIds: number[];
     selectionMethod: 'preset' | 'smart' | 'advanced' | 'manual' | 'visualization';
-    selectionConfig: any;
+    selectionConfig: unknown;
   };
 }
 

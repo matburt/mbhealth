@@ -109,7 +109,7 @@ const ScheduleExecutionHistoryModal: React.FC<ScheduleExecutionHistoryModalProps
     }
   };
 
-  const getExecutionTypeColor = (type: string) => {
+  {const getExecutionTypeColor = (type: string) => {
     switch (type) {
       case 'scheduled':
         return 'text-blue-600 bg-blue-100';

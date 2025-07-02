@@ -52,7 +52,7 @@ const NotificationPreferencesGrid: React.FC<NotificationPreferencesGridProps> = 
       }
       
       onUpdate();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to update preference');
     } finally {
       setLoading(false);

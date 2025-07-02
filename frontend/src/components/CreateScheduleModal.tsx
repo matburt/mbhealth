@@ -60,11 +60,11 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({ onClose, onSu
     }
   };
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleDataConfigChange = (field: string, value: any) => {
+  const handleDataConfigChange = (field: string, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       data_selection_config: {
@@ -86,7 +86,7 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({ onClose, onSu
       setError(null);
       await createSchedule(formData);
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to create schedule');
     } finally {
       setLoading(false);
@@ -98,7 +98,7 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({ onClose, onSu
     setShowTemplateParams(true);
   };
 
-  const handleTemplateParametersConfirm = async (customizations: Record<string, any>) => {
+  const handleTemplateParametersConfirm = async (customizations: Record<string, unknown>) => {
     if (!selectedTemplate) return;
     
     try {
@@ -106,7 +106,7 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({ onClose, onSu
       setError(null);
       await createFromTemplate(selectedTemplate.id, customizations);
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to create schedule from template');
     } finally {
       setLoading(false);

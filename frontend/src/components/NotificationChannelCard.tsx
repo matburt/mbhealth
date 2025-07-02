@@ -32,7 +32,7 @@ const NotificationChannelCard: React.FC<NotificationChannelCardProps> = ({
       const result = await notificationService.testChannel(channel.id);
       setTestResult(result);
       onUpdate(); // Refresh to get updated test status
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Test failed');
     } finally {
       setTesting(false);
@@ -47,7 +47,7 @@ const NotificationChannelCard: React.FC<NotificationChannelCardProps> = ({
       await notificationService.updateChannel(channel.id, editForm);
       setEditing(false);
       onUpdate();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Update failed');
     } finally {
       setLoading(false);
@@ -65,7 +65,7 @@ const NotificationChannelCard: React.FC<NotificationChannelCardProps> = ({
     try {
       await notificationService.deleteChannel(channel.id);
       onDelete();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Delete failed');
     } finally {
       setLoading(false);

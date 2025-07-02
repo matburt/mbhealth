@@ -56,7 +56,7 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({
     setAvailableModels([]);
   };
 
-  const handleParameterChange = (key: string, value: any) => {
+  const handleParameterChange = (key: string, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       parameters: {
@@ -128,7 +128,7 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({
       await aiAnalysisService.createProvider(formData);
       toast.success('Provider created successfully');
       onProviderCreated();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create provider:', error);
       toast.error(error.response?.data?.detail || 'Failed to create provider');
     } finally {
