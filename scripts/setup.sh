@@ -184,6 +184,39 @@ setup_frontend() {
     print_success "Frontend setup complete"
 }
 
+# Function to cleanup existing services
+cleanup_services() {
+    print_status "Checking for existing services..."
+    
+    # Kill any existing uvicorn processes
+    if pgrep -f "uvicorn main:app" > /dev/null; then
+        print_status "Stopping existing backend services..."
+        pkill -f "uvicorn main:app" || true
+        sleep 1
+    fi
+    
+    # Kill any existing celery workers
+    if pgrep -f "celery -A app.core.celery_app" > /dev/null; then
+        print_status "Stopping existing Celery workers..."
+        pkill -f "celery -A app.core.celery_app" || true
+        sleep 1
+    fi
+    
+    # Kill any existing npm dev servers
+    if pgrep -f "npm run dev" > /dev/null; then
+        print_status "Stopping existing frontend services..."
+        pkill -f "npm run dev" || true
+        sleep 1
+    fi
+    
+    # Kill any vite processes on port 5173
+    if lsof -ti:5173 > /dev/null 2>&1; then
+        print_status "Stopping processes on port 5173..."
+        kill $(lsof -ti:5173) 2>/dev/null || true
+        sleep 1
+    fi
+}
+
 # Function to start Redis if not running
 start_redis() {
     if pgrep -x "redis-server" > /dev/null; then
@@ -209,41 +242,70 @@ start_redis() {
     fi
 }
 
+# Function to run services in parallel
+run_services() {
+    # Create a temporary file for service commands
+    local tmpfile=$(mktemp)
+    
+    # Backend service
+    echo "cd backend && exec uv run python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000" > "$tmpfile.backend"
+    
+    # Celery worker if Redis is available
+    if redis-cli ping > /dev/null 2>&1; then
+        echo "cd backend && exec uv run celery -A app.core.celery_app worker --loglevel=info" > "$tmpfile.worker"
+    fi
+    
+    # Frontend service
+    echo "cd frontend && exec npm run dev" > "$tmpfile.frontend"
+    
+    # Function to run a single service and prefix its output
+    run_service() {
+        local name=$1
+        local cmd_file=$2
+        local color=$3
+        
+        bash "$cmd_file" 2>&1 | while IFS= read -r line; do
+            echo -e "${color}[$name]${NC} $line"
+        done
+    }
+    
+    # Clean up function
+    cleanup() {
+        print_status "\nShutting down services..."
+        jobs -p | xargs -r kill 2>/dev/null || true
+        rm -f "$tmpfile"*
+        cleanup_services
+        exit 0
+    }
+    
+    # Set up signal handlers
+    trap cleanup INT TERM EXIT
+    
+    # Start services in background with output prefixing
+    run_service "BACKEND" "$tmpfile.backend" "$GREEN" &
+    
+    if [ -f "$tmpfile.worker" ]; then
+        run_service "WORKER" "$tmpfile.worker" "$BLUE" &
+    fi
+    
+    # Give backend a moment to start
+    sleep 3
+    
+    run_service "FRONTEND" "$tmpfile.frontend" "$YELLOW" &
+    
+    # Wait for all background jobs
+    wait
+}
+
 # Function to start the application
 start_application() {
     print_status "Starting MBHealth application..."
     
+    # Clean up any existing services first
+    cleanup_services
+    
     # Start Redis if available
     start_redis || true
-    
-    # Track PIDs for cleanup
-    PIDS=()
-    
-    # Start backend in background
-    print_status "Starting backend server..."
-    cd backend
-    uv run python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000 &
-    PIDS+=($!)
-    cd ..
-    
-    # Start Celery worker if Redis is available
-    if redis-cli ping > /dev/null 2>&1; then
-        print_status "Starting Celery worker for background tasks..."
-        cd backend
-        uv run celery -A app.core.celery_app worker --loglevel=info &
-        PIDS+=($!)
-        cd ..
-    fi
-    
-    # Wait a moment for backend to start
-    sleep 3
-    
-    # Start frontend
-    print_status "Starting frontend server..."
-    cd frontend
-    npm run dev &
-    PIDS+=($!)
-    cd ..
     
     print_success "MBHealth is starting up!"
     print_status "Backend: http://localhost:8000"
@@ -253,11 +315,11 @@ start_application() {
         print_status "Celery Flower (optional): Run 'cd backend && make monitor' in another terminal"
     fi
     print_status ""
-    print_status "Press Ctrl+C to stop the application"
+    print_status "Press Ctrl+C to stop all services"
+    print_status ""
     
-    # Wait for user to stop
-    trap "kill ${PIDS[@]} 2>/dev/null; exit" INT
-    wait
+    # Run services with proper cleanup
+    run_services
 }
 
 # Function to show help
