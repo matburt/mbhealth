@@ -75,7 +75,7 @@ const customRender = (
 ) => {
   return render(ui, {
     wrapper: (props) => (
-      <AllTheProviders {...props} user={user} 
+      <AllTheProviders {...props} user={user} />
     ),
     ...options,
   })
