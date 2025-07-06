@@ -1,0 +1,64 @@
+{{- if .Values.migration.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "mbhealth.fullname" . }}-db-migration
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "mbhealth.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    {{- with (include "mbhealth.annotations" .) }}
+    {{- . | nindent 4 }}
+    {{- end }}
+spec:
+  backoffLimit: {{ .Values.migration.backoffLimit }}
+  {{- if .Values.migration.activeDeadlineSeconds }}
+  activeDeadlineSeconds: {{ .Values.migration.activeDeadlineSeconds }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "mbhealth.labels" . | nindent 8 }}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "mbhealth.migration.serviceAccountName" . }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+        # Wait for database to be ready
+        - name: wait-for-db
+          image: postgres:15-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h {{ if .Values.postgresql.enabled }}{{ .Release.Name }}-postgresql{{ else }}{{ .Values.externalDatabase.host }}{{ end }} -p {{ if .Values.postgresql.enabled }}5432{{ else }}{{ .Values.externalDatabase.port }}{{ end }} -U {{ if .Values.postgresql.enabled }}{{ .Values.postgresql.auth.username }}{{ else }}{{ .Values.externalDatabase.username }}{{ end }}; do
+                echo "Waiting for database..."
+                sleep 5
+              done
+              echo "Database is ready!"
+      containers:
+        - name: migration
+          image: {{ include "mbhealth.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.migration.image.repository "tag" (.Values.migration.image.tag | default .Chart.AppVersion)) }}
+          imagePullPolicy: {{ .Values.migration.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Running database migrations..."
+              alembic upgrade head
+              echo "Migrations completed successfully!"
+          env:
+            - name: DATABASE_URL
+              value: {{ include "mbhealth.databaseUrl" . | quote }}
+          resources:
+            {{- toYaml .Values.migration.resources | nindent 12 }}
+{{- end }}

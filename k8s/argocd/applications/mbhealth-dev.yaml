@@ -1,0 +1,78 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mbhealth-dev
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: mbhealth
+    app.kubernetes.io/instance: mbhealth-dev
+    environment: development
+  # Finalizer to ensure app resources are cleaned up
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # Project this app belongs to
+  project: default
+  
+  # Source repository
+  source:
+    repoURL: https://github.com/matburt/mbhealth
+    targetRevision: HEAD  # or specific branch/tag
+    path: k8s/helm/mbhealth
+    
+    # Helm specific config
+    helm:
+      releaseName: mbhealth-dev
+      
+      # Values files to use
+      valueFiles:
+        - values.yaml
+        - values-development.yaml
+      
+      # Override values
+      values: |
+        global:
+          domain: mbhealth-dev.local
+        backend:
+          image:
+            tag: dev-latest
+        frontend:
+          image:
+            tag: dev-latest
+        worker:
+          image:
+            tag: dev-latest
+  
+  # Destination cluster and namespace
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mbhealth-dev
+  
+  # Sync policy
+  syncPolicy:
+    automated:
+      prune: true        # Delete resources not in Git
+      selfHeal: true     # Revert manual changes
+      allowEmpty: false
+    
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  # Health assessment
+  revisionHistoryLimit: 10
+  
+  # Ignore certain differences
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas  # Ignore HPA-modified replicas

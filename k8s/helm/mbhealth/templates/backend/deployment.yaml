@@ -1,0 +1,171 @@
+{{- if .Values.backend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mbhealth.fullname" . }}-backend
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "mbhealth.backend.labels" . | nindent 4 }}
+  {{- with (include "mbhealth.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "mbhealth.backend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "mbhealth.backend.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "mbhealth.backend.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.backend.securityContext | nindent 8 }}
+      initContainers:
+        # Wait for database to be ready
+        - name: wait-for-db
+          image: postgres:15-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h {{ if .Values.postgresql.enabled }}{{ .Release.Name }}-postgresql{{ else }}{{ .Values.externalDatabase.host }}{{ end }} -p {{ if .Values.postgresql.enabled }}5432{{ else }}{{ .Values.externalDatabase.port }}{{ end }} -U {{ if .Values.postgresql.enabled }}{{ .Values.postgresql.auth.username }}{{ else }}{{ .Values.externalDatabase.username }}{{ end }}; do
+                echo "Waiting for database..."
+                sleep 2
+              done
+        # Wait for Redis to be ready
+        - name: wait-for-redis
+          image: redis:7-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until redis-cli -h {{ if .Values.redis.enabled }}{{ .Release.Name }}-redis-master{{ else }}{{ .Values.externalRedis.host }}{{ end }} -p {{ if .Values.redis.enabled }}6379{{ else }}{{ .Values.externalRedis.port }}{{ end }} {{- if or (.Values.redis.enabled) (.Values.externalRedis.password) }} -a {{ if .Values.redis.enabled }}$REDIS_PASSWORD{{ else }}{{ .Values.externalRedis.password }}{{ end }}{{- end }} ping; do
+                echo "Waiting for Redis..."
+                sleep 2
+              done
+          {{- if or (.Values.redis.enabled) (.Values.externalRedis.password) }}
+          env:
+            {{- if .Values.redis.enabled }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-redis
+                  key: redis-password
+            {{- end }}
+          {{- end }}
+      containers:
+        - name: backend
+          image: {{ include "mbhealth.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.backend.image.repository "tag" (.Values.backend.image.tag | default .Chart.AppVersion)) }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.backend.service.targetPort }}
+              protocol: TCP
+          env:
+            # Database URL
+            - name: DATABASE_URL
+              value: {{ include "mbhealth.databaseUrl" . | quote }}
+            # Redis URL
+            - name: REDIS_URL
+              value: {{ include "mbhealth.redisUrl" . | quote }}
+            # Config from ConfigMap
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "mbhealth.configMapName" . }}
+                  key: ENVIRONMENT
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "mbhealth.configMapName" . }}
+                  key: LOG_LEVEL
+            - name: DEBUG
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "mbhealth.configMapName" . }}
+                  key: DEBUG
+            - name: BACKEND_CORS_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "mbhealth.configMapName" . }}
+                  key: BACKEND_CORS_ORIGINS
+            - name: ENABLE_AI_ANALYSIS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "mbhealth.configMapName" . }}
+                  key: ENABLE_AI_ANALYSIS
+            - name: ENABLE_NOTIFICATIONS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "mbhealth.configMapName" . }}
+                  key: ENABLE_NOTIFICATIONS
+            - name: ENABLE_WORKFLOWS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "mbhealth.configMapName" . }}
+                  key: ENABLE_WORKFLOWS
+            - name: DEFAULT_TIMEZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "mbhealth.configMapName" . }}
+                  key: DEFAULT_TIMEZONE
+            # Secrets
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mbhealth.secretName" . }}
+                  key: SECRET_KEY
+            {{- if .Values.secrets.encryptionKey }}
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mbhealth.secretName" . }}
+                  key: ENCRYPTION_KEY
+            {{- end }}
+            {{- with .Values.backend.extraEnvVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            # Optional: Load all API keys
+            - secretRef:
+                name: {{ include "mbhealth.apiKeysSecretName" . }}
+                optional: true
+          {{- with .Values.backend.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.backend.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          volumeMounts:
+            - name: app-logs
+              mountPath: /app/logs
+      volumes:
+        - name: app-logs
+          emptyDir: {}
+      {{- with .Values.backend.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backend.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backend.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

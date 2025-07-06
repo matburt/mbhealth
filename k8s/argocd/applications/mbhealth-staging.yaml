@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mbhealth-staging
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: mbhealth
+    app.kubernetes.io/instance: mbhealth-staging
+    environment: staging
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/matburt/mbhealth
+    targetRevision: main  # Staging uses main branch
+    path: k8s/helm/mbhealth
+    
+    helm:
+      releaseName: mbhealth-staging
+      valueFiles:
+        - values.yaml
+        - values-staging.yaml
+      
+      # Override with specific image tags
+      values: |
+        global:
+          domain: staging.mbhealth.example.com
+        backend:
+          image:
+            tag: staging-v1.2.3
+        frontend:
+          image:
+            tag: staging-v1.2.3
+        worker:
+          image:
+            tag: staging-v1.2.3
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mbhealth-staging
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+    
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

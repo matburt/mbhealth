@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mbhealth-config
+  namespace: mbhealth
+  labels:
+    app.kubernetes.io/name: mbhealth
+    app.kubernetes.io/component: config
+data:
+  # Backend configuration
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  DEBUG: "false"
+  
+  # CORS configuration
+  BACKEND_CORS_ORIGINS: "https://mbhealth.example.com"
+  
+  # Database configuration (non-sensitive)
+  DATABASE_HOST: "postgres-service"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "mbhealth"
+  
+  # Redis configuration
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  
+  # Celery configuration
+  CELERY_BROKER_URL: "redis://redis-service:6379/0"
+  CELERY_RESULT_BACKEND: "redis://redis-service:6379/0"
+  
+  # Feature flags
+  ENABLE_AI_ANALYSIS: "true"
+  ENABLE_NOTIFICATIONS: "true"
+  ENABLE_WORKFLOWS: "true"
+  
+  # Application URLs
+  FRONTEND_URL: "https://mbhealth.example.com"
+  BACKEND_URL: "https://mbhealth.example.com/api"
+  
+  # Timezone
+  DEFAULT_TIMEZONE: "America/New_York"
+  
+  # WebSocket configuration
+  WEBSOCKET_URL: "wss://mbhealth.example.com/ws"
+---
+# Frontend configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mbhealth-frontend-config
+  namespace: mbhealth
+  labels:
+    app.kubernetes.io/name: mbhealth
+    app.kubernetes.io/component: frontend
+data:
+  # Nginx configuration for runtime environment injection
+  nginx-env-config.sh: |
+    #!/bin/sh
+    # This script runs before nginx starts to inject runtime environment variables
+    
+    # Create runtime config that will be loaded by the React app
+    cat > /usr/share/nginx/html/config.js << EOF
+    window._env_ = {
+      VITE_API_URL: "${VITE_API_URL:-/api/v1}",
+      VITE_WS_URL: "${VITE_WS_URL:-/ws}",
+      VITE_APP_NAME: "${VITE_APP_NAME:-MBHealth}",
+      VITE_LOG_LEVEL: "${VITE_LOG_LEVEL:-warn}"
+    };
+    EOF

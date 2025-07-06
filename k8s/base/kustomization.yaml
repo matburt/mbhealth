@@ -1,0 +1,53 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: mbhealth
+
+resources:
+  # Common resources
+  - common/namespace.yaml
+  - common/configmap.yaml
+  - common/secret.yaml
+  - common/ingress.yaml
+  - common/network-policies.yaml
+  
+  # Database
+  - database/postgres-statefulset.yaml
+  
+  # Redis
+  - redis/redis-statefulset.yaml
+  
+  # Backend API
+  - backend/deployment.yaml
+  - backend/hpa.yaml
+  - backend/pdb.yaml
+  
+  # Worker
+  - worker/deployment.yaml
+  
+  # Frontend
+  - frontend/deployment.yaml
+  
+  # Migration job (commented out - run manually)
+  # - common/migration-job.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/version: "1.0.0"
+
+images:
+  - name: mbhealth/backend
+    newTag: latest
+  - name: mbhealth/worker
+    newTag: latest
+  - name: mbhealth/frontend
+    newTag: latest
+
+configMapGenerator:
+  - name: mbhealth-version
+    literals:
+      - version=1.0.0
+      - build_date={{ .Date }}
+
+generatorOptions:
+  disableNameSuffixHash: true

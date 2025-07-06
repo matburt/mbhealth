@@ -1,0 +1,175 @@
+{{- if .Values.networkPolicy.enabled }}
+# Default deny all ingress traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "mbhealth.fullname" . }}-default-deny-ingress
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "mbhealth.labels" . | nindent 4 }}
+    app.kubernetes.io/component: network-policy
+  {{- with (include "mbhealth.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+{{- if .Values.frontend.enabled }}
+# Allow frontend to receive traffic from ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "mbhealth.fullname" . }}-allow-frontend-ingress
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "mbhealth.frontend.labels" . | nindent 4 }}
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "mbhealth.frontend.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    {{- if .Values.networkPolicy.ingress.fromIngress }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: {{ .Values.networkPolicy.ingress.ingressNamespace }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.frontend.service.targetPort }}
+    {{- end }}
+    {{- with .Values.networkPolicy.ingress.customRules }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+---
+{{- end }}
+{{- if .Values.backend.enabled }}
+# Allow backend to receive traffic from ingress and frontend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "mbhealth.fullname" . }}-allow-backend-ingress
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "mbhealth.backend.labels" . | nindent 4 }}
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "mbhealth.backend.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    {{- if .Values.networkPolicy.ingress.fromIngress }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: {{ .Values.networkPolicy.ingress.ingressNamespace }}
+        {{- if .Values.frontend.enabled }}
+        - podSelector:
+            matchLabels:
+              {{- include "mbhealth.frontend.selectorLabels" . | nindent 14 }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.backend.service.targetPort }}
+    {{- end }}
+    {{- with .Values.networkPolicy.ingress.customRules }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+---
+{{- end }}
+{{- if .Values.postgresql.enabled }}
+# Allow database connections from backend, worker, and migration jobs
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "mbhealth.fullname" . }}-allow-postgres-ingress
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "mbhealth.labels" . | nindent 4 }}
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        {{- if .Values.backend.enabled }}
+        - podSelector:
+            matchLabels:
+              {{- include "mbhealth.backend.selectorLabels" . | nindent 14 }}
+        {{- end }}
+        {{- if .Values.worker.enabled }}
+        - podSelector:
+            matchLabels:
+              {{- include "mbhealth.worker.selectorLabels" . | nindent 14 }}
+        {{- end }}
+        {{- if .Values.migration.enabled }}
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: migration
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+{{- end }}
+{{- if .Values.redis.enabled }}
+# Allow Redis connections from backend and worker
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "mbhealth.fullname" . }}-allow-redis-ingress
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "mbhealth.labels" . | nindent 4 }}
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: redis
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        {{- if .Values.backend.enabled }}
+        - podSelector:
+            matchLabels:
+              {{- include "mbhealth.backend.selectorLabels" . | nindent 14 }}
+        {{- end }}
+        {{- if .Values.worker.enabled }}
+        - podSelector:
+            matchLabels:
+              {{- include "mbhealth.worker.selectorLabels" . | nindent 14 }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: 6379
+---
+{{- end }}
+# Allow egress for all pods (needed for external API calls)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "mbhealth.fullname" . }}-allow-all-egress
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "mbhealth.labels" . | nindent 4 }}
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - {}  # Allow all egress traffic
+{{- end }}

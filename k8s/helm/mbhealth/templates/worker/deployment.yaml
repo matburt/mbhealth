@@ -1,0 +1,135 @@
+{{- if .Values.worker.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mbhealth.fullname" . }}-worker
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "mbhealth.worker.labels" . | nindent 4 }}
+  {{- with (include "mbhealth.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "mbhealth.worker.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        {{- include "mbhealth.worker.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "mbhealth.worker.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.worker.securityContext | nindent 8 }}
+      initContainers:
+        # Wait for Redis to be ready
+        - name: wait-for-redis
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ if .Values.redis.enabled }}{{ .Release.Name }}-redis-master{{ else }}{{ .Values.externalRedis.host }}{{ end }} {{ if .Values.redis.enabled }}6379{{ else }}{{ .Values.externalRedis.port }}{{ end }}; do
+                echo "Waiting for Redis..."
+                sleep 2
+              done
+      containers:
+        - name: worker
+          image: {{ include "mbhealth.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.worker.image.repository "tag" (.Values.worker.image.tag | default .Chart.AppVersion)) }}
+          imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          args:
+            - "--loglevel=info"
+            - "--concurrency={{ .Values.worker.concurrency }}"
+            - "--max-tasks-per-child={{ .Values.worker.maxTasksPerChild }}"
+            - "--max-memory-per-child={{ .Values.worker.maxMemoryPerChild }}"
+          env:
+            # Database URL
+            - name: DATABASE_URL
+              value: {{ include "mbhealth.databaseUrl" . | quote }}
+            # Redis URL
+            - name: REDIS_URL
+              value: {{ include "mbhealth.redisUrl" . | quote }}
+            # Celery configuration
+            - name: CELERY_BROKER_URL
+              value: {{ include "mbhealth.redisUrl" . | quote }}
+            - name: CELERY_RESULT_BACKEND
+              value: {{ include "mbhealth.redisUrl" . | quote }}
+            - name: C_FORCE_ROOT
+              value: "false"
+            # Config from ConfigMap
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "mbhealth.configMapName" . }}
+                  key: ENVIRONMENT
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "mbhealth.configMapName" . }}
+                  key: LOG_LEVEL
+            # Secrets
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mbhealth.secretName" . }}
+                  key: SECRET_KEY
+            {{- if .Values.secrets.encryptionKey }}
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mbhealth.secretName" . }}
+                  key: ENCRYPTION_KEY
+            {{- end }}
+          envFrom:
+            # Optional: Load all API keys
+            - secretRef:
+                name: {{ include "mbhealth.apiKeysSecretName" . }}
+                optional: true
+          livenessProbe:
+            exec:
+              command:
+                - celery
+                - -A
+                - app.core.celery_app
+                - inspect
+                - ping
+            initialDelaySeconds: 30
+            periodSeconds: 60
+            timeoutSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+          volumeMounts:
+            - name: app-logs
+              mountPath: /app/logs
+      volumes:
+        - name: app-logs
+          emptyDir: {}
+      {{- with .Values.worker.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

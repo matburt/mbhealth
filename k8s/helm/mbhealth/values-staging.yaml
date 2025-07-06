@@ -1,0 +1,194 @@
+# Staging environment values for mbhealth
+# Production-like configuration with some relaxed settings
+
+global:
+  environment: staging
+  domain: staging.mbhealth.example.com
+
+# Backend configuration for staging
+backend:
+  replicaCount: 2
+  
+  image:
+    tag: "staging-latest"
+    pullPolicy: IfNotPresent
+  
+  # Production-like resources but smaller
+  resources:
+    limits:
+      cpu: 750m
+      memory: 768Mi
+    requests:
+      cpu: 200m
+      memory: 384Mi
+  
+  # Enable autoscaling with lower limits
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  # Enable PDB
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+# Worker configuration for staging
+worker:
+  replicaCount: 1
+  
+  image:
+    tag: "staging-latest"
+    pullPolicy: IfNotPresent
+  
+  # Production-like resources but smaller
+  resources:
+    limits:
+      cpu: 750m
+      memory: 768Mi
+    requests:
+      cpu: 150m
+      memory: 384Mi
+  
+  # Enable autoscaling with lower limits
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 85
+  
+  # Enable PDB
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+# Frontend configuration for staging
+frontend:
+  replicaCount: 2
+  
+  image:
+    tag: "staging-latest"
+    pullPolicy: IfNotPresent
+  
+  # Enable PDB
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  
+  # Staging frontend config
+  config:
+    apiUrl: "/api/v1"
+    wsUrl: "/ws"
+    appName: "MBHealth (Staging)"
+    logLevel: "info"
+
+# Staging ingress with TLS
+ingress:
+  enabled: true
+  className: nginx
+  
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+  
+  # Enable TLS with cert-manager
+  tls:
+    enabled: true
+    secretName: mbhealth-staging-tls
+    issuer:
+      enabled: true
+      name: letsencrypt-staging
+  
+  hosts:
+    - host: staging.mbhealth.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /ws
+          pathType: Prefix
+          service: backend
+        - path: /docs
+          pathType: Prefix
+          service: backend
+        - path: /redoc
+          pathType: Prefix
+          service: backend
+        - path: /openapi.json
+          pathType: Exact
+          service: backend
+        - path: /
+          pathType: Prefix
+          service: frontend
+
+# Enable network policies for staging
+networkPolicy:
+  enabled: true
+
+# Application configuration for staging
+config:
+  environment: staging
+  logLevel: INFO
+  debug: false
+  corsOrigins: "https://staging.mbhealth.example.com"
+  frontendUrl: "https://staging.mbhealth.example.com"
+  backendUrl: "https://staging.mbhealth.example.com/api"
+  websocketUrl: "wss://staging.mbhealth.example.com/ws"
+
+# Staging secrets (should use external secret management)
+secrets:
+  create: true
+  secretKey: "staging-secret-key-change-me"
+  encryptionKey: ""
+
+# PostgreSQL configuration for staging
+postgresql:
+  enabled: true
+  
+  auth:
+    postgresPassword: "staging_postgres"
+    username: "mbhealth"
+    password: "staging_password"
+    database: "mbhealth"
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+    
+    resources:
+      limits:
+        cpu: 750m
+        memory: 768Mi
+      requests:
+        cpu: 200m
+        memory: 192Mi
+
+# Redis configuration for staging
+redis:
+  enabled: true
+  
+  auth:
+    enabled: true
+    password: "staging_redis"
+  
+  master:
+    persistence:
+      enabled: true
+      size: 2Gi
+    
+    resources:
+      limits:
+        cpu: 300m
+        memory: 384Mi
+      requests:
+        cpu: 75m
+        memory: 96Mi

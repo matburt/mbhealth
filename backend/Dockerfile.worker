@@ -1,0 +1,63 @@
+# Multi-stage Dockerfile for Celery worker
+# Shares base layers with main backend for efficiency
+FROM python:3.11-slim as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Install uv for faster dependency installation
+RUN pip install uv
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install production dependencies
+RUN uv sync --frozen --no-dev
+
+# Copy application code
+COPY . .
+
+# Production stage for Celery worker
+FROM python:3.11-slim as production
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+WORKDIR /app
+
+# Copy virtual environment and application
+COPY --from=builder /build/.venv /app/.venv
+COPY --from=builder /build/app ./app
+COPY --from=builder /build/alembic ./alembic
+COPY --from=builder /build/alembic.ini ./alembic.ini
+
+# Set environment
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV C_FORCE_ROOT=false
+
+# Create necessary directories
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app
+
+# Health check for Celery worker
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD celery -A app.core.celery_app inspect ping -d celery@$HOSTNAME || exit 1
+
+USER appuser
+
+# Celery worker command with proper signal handling
+ENTRYPOINT ["celery", "-A", "app.core.celery_app", "worker"]
+CMD ["--loglevel=info", "--concurrency=2", "--max-tasks-per-child=1000"]

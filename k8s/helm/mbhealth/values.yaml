@@ -1,0 +1,418 @@
+# Default values for mbhealth
+# This is a YAML-formatted file.
+
+# Global configuration
+global:
+  # Environment name
+  environment: production
+  
+  # Domain configuration
+  domain: mbhealth.example.com
+  
+  # Image registry
+  imageRegistry: docker.io
+  imagePullSecrets: []
+  
+  # Storage class for persistent volumes
+  storageClass: ""
+
+# Common labels applied to all resources
+commonLabels: {}
+
+# Common annotations applied to all resources
+commonAnnotations: {}
+
+# Application configuration
+app:
+  name: mbhealth
+  version: "1.0.0"
+
+# Backend API configuration
+backend:
+  enabled: true
+  replicaCount: 3
+  
+  image:
+    repository: mbhealth/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+    annotations: {}
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  
+  # Horizontal Pod Autoscaler
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  # Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+  
+  # Liveness and readiness probes
+  livenessProbe:
+    httpGet:
+      path: /api/v1/health/live
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  readinessProbe:
+    httpGet:
+      path: /api/v1/health/ready
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+  
+  # Node selector and affinity
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  
+  # Additional environment variables
+  extraEnvVars: []
+
+# Celery Worker configuration
+worker:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: mbhealth/worker
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  # Worker configuration
+  concurrency: 4
+  maxTasksPerChild: 1000
+  maxMemoryPerChild: 200000  # 200MB
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+  
+  # Horizontal Pod Autoscaler
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 85
+  
+  # Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+  
+  # Node selector and affinity
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Frontend configuration
+frontend:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: mbhealth/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+    annotations: {}
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  
+  # Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  
+  # Liveness and readiness probes
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 101  # nginx user
+    runAsGroup: 101
+    fsGroup: 101
+  
+  # Frontend runtime configuration
+  config:
+    apiUrl: "/api/v1"
+    wsUrl: "/ws"
+    appName: "MBHealth"
+    logLevel: "warn"
+
+# Database migration job
+migration:
+  enabled: true
+  
+  image:
+    repository: mbhealth/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  # Job configuration
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  
+  # Resource limits
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+  
+  # TLS configuration
+  tls:
+    enabled: true
+    secretName: mbhealth-tls
+    # Certificate issuer (cert-manager)
+    issuer:
+      enabled: false
+      name: letsencrypt-prod
+  
+  # Host configuration
+  hosts:
+    - host: mbhealth.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /ws
+          pathType: Prefix
+          service: backend
+        - path: /docs
+          pathType: Prefix
+          service: backend
+        - path: /redoc
+          pathType: Prefix
+          service: backend
+        - path: /openapi.json
+          pathType: Exact
+          service: backend
+        - path: /
+          pathType: Prefix
+          service: frontend
+
+# Network Policies
+networkPolicy:
+  enabled: true
+  
+  # Policy configuration
+  policyTypes:
+    - Ingress
+  
+  # Ingress rules
+  ingress:
+    # Allow from ingress controller
+    fromIngress: true
+    ingressNamespace: ingress-nginx
+    
+    # Custom ingress rules
+    customRules: []
+
+# Service Account configuration
+serviceAccount:
+  # Create service accounts
+  create: true
+  
+  # Annotations for service accounts
+  annotations: {}
+  
+  # Names for service accounts (auto-generated if empty)
+  backend: ""
+  worker: ""
+  frontend: ""
+  migration: ""
+
+# Application configuration (ConfigMap)
+config:
+  # Backend configuration
+  environment: production
+  logLevel: INFO
+  debug: false
+  
+  # CORS origins
+  corsOrigins: "https://mbhealth.example.com"
+  
+  # Feature flags
+  features:
+    aiAnalysis: true
+    notifications: true
+    workflows: true
+  
+  # Timezone
+  defaultTimezone: "America/New_York"
+  
+  # URLs
+  frontendUrl: "https://mbhealth.example.com"
+  backendUrl: "https://mbhealth.example.com/api"
+  websocketUrl: "wss://mbhealth.example.com/ws"
+
+# Secrets configuration
+secrets:
+  # Create secrets
+  create: true
+  
+  # Secret values (use external secret management in production)
+  secretKey: "change-this-to-a-random-secret-key-at-least-32-chars"
+  encryptionKey: ""
+  
+  # API keys (optional)
+  apiKeys:
+    openai: ""
+    anthropic: ""
+    googleAI: ""
+    openrouter: ""
+
+# PostgreSQL configuration (Bitnami chart)
+postgresql:
+  enabled: true
+  
+  auth:
+    postgresPassword: "mbhealth_postgres"
+    username: "mbhealth"
+    password: "mbhealth_password"
+    database: "mbhealth"
+  
+  architecture: standalone
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+    
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+# Redis configuration (Bitnami chart)
+redis:
+  enabled: true
+  
+  auth:
+    enabled: true
+    password: "mbhealth_redis"
+  
+  architecture: standalone
+  
+  master:
+    persistence:
+      enabled: true
+      size: 2Gi
+    
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+# External database configuration (when postgresql.enabled=false)
+externalDatabase:
+  host: ""
+  port: 5432
+  username: "mbhealth"
+  password: ""
+  database: "mbhealth"
+  existingSecret: ""
+  existingSecretPasswordKey: ""
+
+# External Redis configuration (when redis.enabled=false)
+externalRedis:
+  host: ""
+  port: 6379
+  password: ""
+  database: 0
+  existingSecret: ""
+  existingSecretPasswordKey: ""

@@ -1,0 +1,177 @@
+# Development environment values for mbhealth
+# Override values for development deployment
+
+global:
+  environment: development
+  domain: mbhealth-dev.local
+
+# Backend configuration for development
+backend:
+  replicaCount: 1
+  
+  image:
+    tag: "dev-latest"
+    pullPolicy: Always
+  
+  # Reduced resources for development
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  # Disable autoscaling in development
+  autoscaling:
+    enabled: false
+  
+  # Disable PDB for development
+  podDisruptionBudget:
+    enabled: false
+
+# Worker configuration for development
+worker:
+  replicaCount: 1
+  
+  image:
+    tag: "dev-latest"
+    pullPolicy: Always
+  
+  # Reduced resources for development
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  # Disable autoscaling in development
+  autoscaling:
+    enabled: false
+  
+  # Disable PDB for development
+  podDisruptionBudget:
+    enabled: false
+
+# Frontend configuration for development
+frontend:
+  replicaCount: 1
+  
+  image:
+    tag: "dev-latest"
+    pullPolicy: Always
+  
+  # Disable PDB for development
+  podDisruptionBudget:
+    enabled: false
+  
+  # Development frontend config
+  config:
+    apiUrl: "/api/v1"
+    wsUrl: "/ws"
+    appName: "MBHealth (Dev)"
+    logLevel: "debug"
+
+# Development ingress (no TLS)
+ingress:
+  enabled: true
+  className: nginx
+  
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+  
+  # No TLS in development
+  tls:
+    enabled: false
+  
+  hosts:
+    - host: mbhealth-dev.local
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /ws
+          pathType: Prefix
+          service: backend
+        - path: /docs
+          pathType: Prefix
+          service: backend
+        - path: /redoc
+          pathType: Prefix
+          service: backend
+        - path: /openapi.json
+          pathType: Exact
+          service: backend
+        - path: /
+          pathType: Prefix
+          service: frontend
+
+# Disable network policies for easier development
+networkPolicy:
+  enabled: false
+
+# Application configuration for development
+config:
+  environment: development
+  logLevel: DEBUG
+  debug: true
+  corsOrigins: "http://mbhealth-dev.local,http://localhost:3000,http://localhost:5173"
+  frontendUrl: "http://mbhealth-dev.local"
+  backendUrl: "http://mbhealth-dev.local/api"
+  websocketUrl: "ws://mbhealth-dev.local/ws"
+
+# Development secrets (not for production!)
+secrets:
+  create: true
+  secretKey: "dev-secret-key-not-for-production"
+  encryptionKey: ""
+
+# PostgreSQL configuration for development
+postgresql:
+  enabled: true
+  
+  auth:
+    postgresPassword: "dev_postgres"
+    username: "mbhealth"
+    password: "dev_password"
+    database: "mbhealth"
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 5Gi  # Smaller storage for dev
+    
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+# Redis configuration for development
+redis:
+  enabled: true
+  
+  auth:
+    enabled: true
+    password: "dev_redis"
+  
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi  # Smaller storage for dev
+    
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi

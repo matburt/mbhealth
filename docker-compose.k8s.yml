@@ -1,0 +1,105 @@
+# Docker Compose configuration for testing Kubernetes-ready images
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: mbhealth
+      POSTGRES_PASSWORD: mbhealth_dev
+      POSTGRES_DB: mbhealth
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mbhealth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and Celery
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.optimized
+      target: production
+    environment:
+      DATABASE_URL: postgresql://mbhealth:mbhealth_dev@postgres:5432/mbhealth
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: dev-secret-key-change-in-production
+      ENVIRONMENT: development
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+
+  # Celery Worker
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+      target: production
+    environment:
+      DATABASE_URL: postgresql://mbhealth:mbhealth_dev@postgres:5432/mbhealth
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: dev-secret-key-change-in-production
+      ENVIRONMENT: development
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.optimized
+      target: production
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: http://backend:8000
+
+  # Celery Flower for monitoring (optional)
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.optimized
+      target: production
+    command: ["celery", "-A", "app.core.celery_app", "flower", "--port=5555"]
+    environment:
+      DATABASE_URL: postgresql://mbhealth:mbhealth_dev@postgres:5432/mbhealth
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: dev-secret-key-change-in-production
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - worker
+
+volumes:
+  postgres_data:
+  redis_data:

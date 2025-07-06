@@ -1,0 +1,250 @@
+# Production environment values for mbhealth
+# High availability, security, and performance focused configuration
+
+global:
+  environment: production
+  domain: mbhealth.example.com
+
+# Backend configuration for production
+backend:
+  replicaCount: 3
+  
+  image:
+    tag: "v1.0.0"  # Use specific version tags in production
+    pullPolicy: IfNotPresent
+  
+  # Production resources
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  
+  # Enable autoscaling
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  # Enable PDB for high availability
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+  
+  # Production-grade probes
+  livenessProbe:
+    httpGet:
+      path: /api/v1/health/live
+      port: http
+    initialDelaySeconds: 45
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  readinessProbe:
+    httpGet:
+      path: /api/v1/health/ready
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  
+  # Anti-affinity for high availability
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: mbhealth
+                app.kubernetes.io/component: backend
+            topologyKey: kubernetes.io/hostname
+
+# Worker configuration for production
+worker:
+  replicaCount: 2
+  
+  image:
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+  
+  # Production worker settings
+  concurrency: 4
+  maxTasksPerChild: 1000
+  maxMemoryPerChild: 200000
+  
+  # Production resources
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+  
+  # Enable autoscaling
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 85
+  
+  # Enable PDB
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  
+  # Anti-affinity for worker distribution
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: mbhealth
+                app.kubernetes.io/component: worker
+            topologyKey: kubernetes.io/hostname
+
+# Frontend configuration for production
+frontend:
+  replicaCount: 2
+  
+  image:
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+  
+  # Enable PDB
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  
+  # Production frontend config
+  config:
+    apiUrl: "/api/v1"
+    wsUrl: "/ws"
+    appName: "MBHealth"
+    logLevel: "warn"
+  
+  # Anti-affinity for frontend distribution
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: mbhealth
+                app.kubernetes.io/component: frontend
+            topologyKey: kubernetes.io/hostname
+
+# Production ingress with TLS and security headers
+ingress:
+  enabled: true
+  className: nginx
+  
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+    # Rate limiting
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-rps: "10"
+  
+  # Enable TLS with cert-manager
+  tls:
+    enabled: true
+    secretName: mbhealth-production-tls
+    issuer:
+      enabled: true
+      name: letsencrypt-prod
+  
+  hosts:
+    - host: mbhealth.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /ws
+          pathType: Prefix
+          service: backend
+        - path: /docs
+          pathType: Prefix
+          service: backend
+        - path: /redoc
+          pathType: Prefix
+          service: backend
+        - path: /openapi.json
+          pathType: Exact
+          service: backend
+        - path: /
+          pathType: Prefix
+          service: frontend
+
+# Enable all network policies for production security
+networkPolicy:
+  enabled: true
+
+# Production application configuration
+config:
+  environment: production
+  logLevel: INFO
+  debug: false
+  corsOrigins: "https://mbhealth.example.com"
+  frontendUrl: "https://mbhealth.example.com"
+  backendUrl: "https://mbhealth.example.com/api"
+  websocketUrl: "wss://mbhealth.example.com/ws"
+
+# Production secrets - USE EXTERNAL SECRET MANAGEMENT
+secrets:
+  create: false  # Use external secrets in production
+
+# External database configuration (recommended for production)
+postgresql:
+  enabled: false  # Use managed database service
+
+externalDatabase:
+  host: "prod-db.mbhealth.example.com"
+  port: 5432
+  username: "mbhealth"
+  password: ""  # Set via external secret
+  database: "mbhealth"
+  existingSecret: "mbhealth-database-secret"
+  existingSecretPasswordKey: "password"
+
+# External Redis configuration (recommended for production)
+redis:
+  enabled: false  # Use managed Redis service
+
+externalRedis:
+  host: "prod-redis.mbhealth.example.com"
+  port: 6379
+  password: ""  # Set via external secret
+  database: 0
+  existingSecret: "mbhealth-redis-secret"
+  existingSecretPasswordKey: "password"
+
+# Production migration configuration
+migration:
+  enabled: true
+  backoffLimit: 5
+  activeDeadlineSeconds: 900  # 15 minutes timeout
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
