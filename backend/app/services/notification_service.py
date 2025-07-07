@@ -5,6 +5,7 @@ Comprehensive notification service using Apprise for multi-platform notification
 Handles notification delivery, templating, rate limiting, and queuing.
 """
 
+import asyncio
 import json
 import logging
 from datetime import datetime, timedelta
