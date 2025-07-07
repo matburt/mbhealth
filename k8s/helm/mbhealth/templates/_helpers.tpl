@@ -179,7 +179,7 @@ Create Redis URL
 Create image name
 */}}
 {{- define "mbhealth.image" -}}
-{{- $registry := .registry | default .Values.global.imageRegistry }}
+{{- $registry := .registry }}
 {{- if $registry }}
 {{- printf "%s/%s:%s" $registry .repository .tag }}
 {{- else }}
