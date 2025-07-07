@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { aiAnalysisService } from '../services/aiAnalysis';
 import { healthService } from '../services/health';
+import { userService } from '../services/user';
 import { HealthData } from '../types/health';
+import { useAuth } from '../contexts/AuthContext';
 
 interface QuickQuestionBoxProps {
   onAnalysisCreated?: () => void;
 }
 
 const QuickQuestionBox: React.FC<QuickQuestionBoxProps> = ({ onAnalysisCreated }) => {
+  const { user } = useAuth();
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<string | null>(null);
@@ -33,18 +36,63 @@ const QuickQuestionBox: React.FC<QuickQuestionBoxProps> = ({ onAnalysisCreated }
     
     let contextualPrompt = `User Question: ${userQuestion}\n\n`;
     
+    // Add user's AI context profile if available
+    if (user?.ai_context_profile) {
+      contextualPrompt += `User's Health Profile & Context:\n${user.ai_context_profile}\n\n`;
+    }
+    
+    // Add today's health measurements
     if (todaysData.length > 0) {
-      contextualPrompt += `Today's Health Measurements:\n`;
+      contextualPrompt += `Today's Health Measurements (${new Date().toLocaleDateString()}):\n`;
       todaysData.forEach(data => {
         const timestamp = new Date(data.timestamp).toLocaleTimeString();
         contextualPrompt += `- ${data.metric_type}: ${data.value} ${data.unit} (recorded at ${timestamp})\n`;
+        if (data.notes) {
+          contextualPrompt += `  Notes: ${data.notes}\n`;
+        }
       });
       contextualPrompt += `\n`;
     } else {
-      contextualPrompt += `No health measurements recorded today.\n\n`;
+      contextualPrompt += `No health measurements recorded today (${new Date().toLocaleDateString()}).\n\n`;
     }
     
-    contextualPrompt += `Please provide a helpful and informative response to the user's question. If the question is about today's measurements and there are none, kindly mention that no data was recorded today and provide general guidance if appropriate.`;
+    // Add recent patterns context
+    try {
+      const recentData = await healthService.getHealthData({
+        start_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        end_date: new Date().toISOString().split('T')[0],
+        limit: 20
+      });
+      
+      if (recentData.length > 0) {
+        contextualPrompt += `Recent Health Data Context (past 7 days):\n`;
+        const metricSummary = recentData.reduce((acc, data) => {
+          if (!acc[data.metric_type]) {
+            acc[data.metric_type] = [];
+          }
+          acc[data.metric_type].push(data);
+          return acc;
+        }, {} as Record<string, HealthData[]>);
+        
+        Object.entries(metricSummary).forEach(([metric, data]) => {
+          const avgValue = data.reduce((sum, d) => sum + d.value, 0) / data.length;
+          contextualPrompt += `- ${metric}: ${data.length} readings, average ${avgValue.toFixed(1)} ${data[0].unit}\n`;
+        });
+        contextualPrompt += `\n`;
+      }
+    } catch (error) {
+      console.warn('Failed to get recent health data for context');
+    }
+    
+    // Add user preferences context
+    if (user) {
+      contextualPrompt += `User Preferences:\n`;
+      contextualPrompt += `- Timezone: ${user.timezone || 'Not set'}\n`;
+      contextualPrompt += `- Weight unit: ${user.weight_unit || 'kg'}\n`;
+      contextualPrompt += `- Temperature unit: ${user.temperature_unit || 'c'}\n\n`;
+    }
+    
+    contextualPrompt += `Please provide a helpful, personalized, and informative response to the user's question. Use the health profile context, recent patterns, and current measurements to give relevant advice. If the question is about today's measurements and there are none, mention this and provide general guidance based on their health profile and recent patterns.`;
     
     return contextualPrompt;
   };
@@ -65,9 +113,12 @@ const QuickQuestionBox: React.FC<QuickQuestionBoxProps> = ({ onAnalysisCreated }
       const todaysData = await getTodaysHealthData();
       const contextualPrompt = await buildContextualPrompt(question);
       
+      // For quick questions, include today's data if available, otherwise send empty array
+      const healthDataIds = todaysData.map(d => d.id);
+      
       // Create analysis using the existing API
       const analysisData = {
-        health_data_ids: todaysData.map(d => d.id),
+        health_data_ids: healthDataIds, // Can be empty array for general questions
         analysis_type: 'insights' as const,
         provider: 'auto', // Let the system choose the best provider
         additional_context: contextualPrompt

@@ -319,7 +319,9 @@ class AIAnalysisService:
                 )
             ).all()
 
-            if not health_data:
+            # Allow analysis without health data for general questions
+            if not health_data and analysis.health_data_ids:
+                # Only fail if health data IDs were provided but not found
                 logger.error(f"No health data found for analysis {analysis.id} with IDs: {analysis.health_data_ids}")
                 analysis.status = "failed"
                 analysis.error_message = "No health data found for the selected entries"

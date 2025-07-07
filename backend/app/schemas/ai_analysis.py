@@ -48,7 +48,7 @@ class AIProviderWithoutKey(AIProviderInDBBase):
 
 # AI Analysis Schemas
 class AIAnalysisBase(BaseModel):
-    health_data_ids: list[int]
+    health_data_ids: list[int] = []  # Allow empty list for general questions
     analysis_type: str  # trends, insights, recommendations, anomalies
     provider: str  # This can be provider name or provider ID
     additional_context: str | None = None
