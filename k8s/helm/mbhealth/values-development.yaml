@@ -10,6 +10,7 @@ backend:
   replicaCount: 1
   
   image:
+    repository: "ghcr.io/matburt/mbhealth/backend"
     tag: "dev-latest"
     pullPolicy: Always
   
@@ -35,6 +36,7 @@ worker:
   replicaCount: 1
   
   image:
+    repository: "ghcr.io/matburt/mbhealth/backend"
     tag: "dev-latest"
     pullPolicy: Always
   
@@ -58,6 +60,7 @@ worker:
 # Migration configuration for development
 migration:
   image:
+    repository: "ghcr.io/matburt/mbhealth/backend"
     tag: "dev-latest"
     pullPolicy: Always
   
@@ -70,6 +73,7 @@ frontend:
   replicaCount: 1
   
   image:
+    repository: "ghcr.io/matburt/mbhealth/frontend"
     tag: "dev-latest"
     pullPolicy: Always
   
