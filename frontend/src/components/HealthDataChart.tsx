@@ -13,7 +13,8 @@ import {
   Legend,
   ResponsiveContainer,
   ScatterChart,
-  Scatter
+  Scatter,
+  ReferenceArea
 } from 'recharts';
 import { subDays } from 'date-fns';
 import { HealthData } from '../types/health';
@@ -131,9 +132,18 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
   const getTargetRanges = (metricType: string) => {
     switch (metricType) {
       case 'blood_pressure':
-        return { min: 90, max: 140, optimal: { systolic: 120, diastolic: 80 } };
+        return { 
+          systolic: { min: 90, max: 119, optimal: 120 }, 
+          diastolic: { min: 60, max: 79, optimal: 80 },
+          // Legacy format for display compatibility
+          min: 90, max: 140, optimal: { systolic: 120, diastolic: 80 }
+        };
       case 'blood_sugar':
-        return { min: 70, max: 140, optimal: 100 };
+        return { 
+          normal: { min: 70, max: 99 },
+          // Legacy format for display compatibility  
+          min: 70, max: 140, optimal: 100
+        };
       case 'heart_rate':
         return { min: 60, max: 100, optimal: 80 };
       case 'temperature':
@@ -147,7 +157,7 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
   const metricColor = getMetricColor(metricType || '');
 
   // Custom tooltip
-  const CustomTooltip = ({ active, payload, label }: unknown) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
@@ -249,6 +259,40 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
+              
+              {/* Clinical Range Indicators */}
+              {targetRanges && metricType === 'blood_pressure' && 'systolic' in targetRanges && 'diastolic' in targetRanges && (
+                <>
+                  <ReferenceArea
+                    y1={(targetRanges as any).systolic.min}
+                    y2={(targetRanges as any).systolic.max}
+                    fill="#10b981"
+                    fillOpacity={0.1}
+                    stroke="#10b981"
+                    strokeOpacity={0.3}
+                  />
+                  <ReferenceArea
+                    y1={(targetRanges as any).diastolic.min}
+                    y2={(targetRanges as any).diastolic.max}
+                    fill="#10b981"
+                    fillOpacity={0.1}
+                    stroke="#10b981"
+                    strokeOpacity={0.3}
+                  />
+                </>
+              )}
+              
+              {targetRanges && metricType === 'blood_sugar' && 'normal' in targetRanges && (
+                <ReferenceArea
+                  y1={(targetRanges as any).normal.min}
+                  y2={(targetRanges as any).normal.max}
+                  fill="#10b981"
+                  fillOpacity={0.15}
+                  stroke="#10b981"
+                  strokeOpacity={0.4}
+                />
+              )}
+              
               {metricType === 'blood_pressure' ? (
                 <>
                   <Line 
@@ -305,6 +349,40 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
+              
+              {/* Clinical Range Indicators */}
+              {targetRanges && metricType === 'blood_pressure' && 'systolic' in targetRanges && 'diastolic' in targetRanges && (
+                <>
+                  <ReferenceArea
+                    y1={(targetRanges as any).systolic.min}
+                    y2={(targetRanges as any).systolic.max}
+                    fill="#10b981"
+                    fillOpacity={0.1}
+                    stroke="#10b981"
+                    strokeOpacity={0.3}
+                  />
+                  <ReferenceArea
+                    y1={(targetRanges as any).diastolic.min}
+                    y2={(targetRanges as any).diastolic.max}
+                    fill="#10b981"
+                    fillOpacity={0.1}
+                    stroke="#10b981"
+                    strokeOpacity={0.3}
+                  />
+                </>
+              )}
+              
+              {targetRanges && metricType === 'blood_sugar' && 'normal' in targetRanges && (
+                <ReferenceArea
+                  y1={(targetRanges as any).normal.min}
+                  y2={(targetRanges as any).normal.max}
+                  fill="#10b981"
+                  fillOpacity={0.15}
+                  stroke="#10b981"
+                  strokeOpacity={0.4}
+                />
+              )}
+              
               <Bar 
                 dataKey="value" 
                 fill={metricColor}
@@ -325,6 +403,40 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
+              
+              {/* Clinical Range Indicators */}
+              {targetRanges && metricType === 'blood_pressure' && 'systolic' in targetRanges && 'diastolic' in targetRanges && (
+                <>
+                  <ReferenceArea
+                    y1={(targetRanges as any).systolic.min}
+                    y2={(targetRanges as any).systolic.max}
+                    fill="#10b981"
+                    fillOpacity={0.1}
+                    stroke="#10b981"
+                    strokeOpacity={0.3}
+                  />
+                  <ReferenceArea
+                    y1={(targetRanges as any).diastolic.min}
+                    y2={(targetRanges as any).diastolic.max}
+                    fill="#10b981"
+                    fillOpacity={0.1}
+                    stroke="#10b981"
+                    strokeOpacity={0.3}
+                  />
+                </>
+              )}
+              
+              {targetRanges && metricType === 'blood_sugar' && 'normal' in targetRanges && (
+                <ReferenceArea
+                  y1={(targetRanges as any).normal.min}
+                  y2={(targetRanges as any).normal.max}
+                  fill="#10b981"
+                  fillOpacity={0.15}
+                  stroke="#10b981"
+                  strokeOpacity={0.4}
+                />
+              )}
+              
               <Area 
                 type="monotone" 
                 dataKey="value" 
@@ -348,6 +460,40 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
+              
+              {/* Clinical Range Indicators */}
+              {targetRanges && metricType === 'blood_pressure' && 'systolic' in targetRanges && 'diastolic' in targetRanges && (
+                <>
+                  <ReferenceArea
+                    y1={(targetRanges as any).systolic.min}
+                    y2={(targetRanges as any).systolic.max}
+                    fill="#10b981"
+                    fillOpacity={0.1}
+                    stroke="#10b981"
+                    strokeOpacity={0.3}
+                  />
+                  <ReferenceArea
+                    y1={(targetRanges as any).diastolic.min}
+                    y2={(targetRanges as any).diastolic.max}
+                    fill="#10b981"
+                    fillOpacity={0.1}
+                    stroke="#10b981"
+                    strokeOpacity={0.3}
+                  />
+                </>
+              )}
+              
+              {targetRanges && metricType === 'blood_sugar' && 'normal' in targetRanges && (
+                <ReferenceArea
+                  y1={(targetRanges as any).normal.min}
+                  y2={(targetRanges as any).normal.max}
+                  fill="#10b981"
+                  fillOpacity={0.15}
+                  stroke="#10b981"
+                  strokeOpacity={0.4}
+                />
+              )}
+              
               <Scatter 
                 dataKey="value" 
                 fill={metricColor}
@@ -373,8 +519,8 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
               <p className="text-gray-600">Optimal</p>
               <p className="font-medium">
                 {targetRanges.optimal && typeof targetRanges.optimal === 'object'
-                  ? `${targetRanges.optimal.systolic}/${targetRanges.optimal.diastolic}`
-                  : targetRanges.optimal
+                  ? `${(targetRanges.optimal as any).systolic}/${(targetRanges.optimal as any).diastolic}`
+                  : String(targetRanges.optimal)
                 } {filteredData[0]?.unit}
               </p>
             </div>
