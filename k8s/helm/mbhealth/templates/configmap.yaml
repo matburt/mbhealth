@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mbhealth.configMapName" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "mbhealth.labels" . | nindent 4 }}
+    app.kubernetes.io/component: config
+  {{- with (include "mbhealth.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+data:
+  # Backend configuration
+  ENVIRONMENT: {{ .Values.config.environment | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  DEBUG: {{ .Values.config.debug | quote }}
+  
+  # CORS configuration
+  BACKEND_CORS_ORIGINS: {{ .Values.config.corsOrigins | quote }}
+  
+  # Feature flags
+  ENABLE_AI_ANALYSIS: {{ .Values.config.features.aiAnalysis | quote }}
+  ENABLE_NOTIFICATIONS: {{ .Values.config.features.notifications | quote }}
+  ENABLE_WORKFLOWS: {{ .Values.config.features.workflows | quote }}
+  
+  # Application URLs
+  FRONTEND_URL: {{ .Values.config.frontendUrl | quote }}
+  BACKEND_URL: {{ .Values.config.backendUrl | quote }}
+  
+  # Timezone
+  DEFAULT_TIMEZONE: {{ .Values.config.defaultTimezone | quote }}
+  
+  # WebSocket configuration
+  WEBSOCKET_URL: {{ .Values.config.websocketUrl | quote }}

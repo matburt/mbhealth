@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mbhealth-production
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: mbhealth
+    app.kubernetes.io/instance: mbhealth-production
+    environment: production
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: mbhealth-production  # Separate project for production
+  
+  source:
+    repoURL: https://github.com/matburt/mbhealth
+    targetRevision: v1.2.3  # Production uses specific tags only
+    path: k8s/helm/mbhealth
+    
+    helm:
+      releaseName: mbhealth-production
+      valueFiles:
+        - values.yaml
+        - values-production.yaml
+      
+      # Production values (minimal overrides)
+      values: |
+        global:
+          domain: mbhealth.example.com
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mbhealth-production
+  
+  syncPolicy:
+    # Manual sync for production (no automated sync)
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+    
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
+  
+  # Production-specific health checks
+  revisionHistoryLimit: 20

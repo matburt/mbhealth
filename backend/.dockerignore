@@ -1,0 +1,90 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.ruff_cache/
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project specific
+*.db
+*.sqlite
+*.sqlite3
+health_data.db
+logs/
+*.log
+.env
+.env.*
+!.env.example
+
+# Testing
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+test-results/
+coverage.xml
+*.cover
+
+# Documentation
+docs/_build/
+site/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Misc
+README.md
+LICENSE
+CHANGELOG.md
+Makefile
+*.md
+!alembic/README

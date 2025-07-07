@@ -1,0 +1,63 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: mbhealth-production
+  namespace: argocd
+spec:
+  description: "MBHealth Production Project"
+  
+  # Source repositories
+  sourceRepos:
+    - 'https://github.com/matburt/mbhealth'
+    - 'https://charts.bitnami.com/bitnami'  # For dependencies
+  
+  # Destination clusters and namespaces
+  destinations:
+    - namespace: mbhealth-production
+      server: https://kubernetes.default.svc
+    - namespace: mbhealth-staging
+      server: https://kubernetes.default.svc
+  
+  # Allowed Kubernetes resources
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: 'networking.k8s.io'
+      kind: NetworkPolicy
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRole
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRoleBinding
+  
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  
+  # Roles for different access levels
+  roles:
+    # Developers can view and sync dev/staging
+    - name: developer
+      description: "Developer access to dev and staging"
+      policies:
+        - p, proj:mbhealth-production:developer, applications, get, mbhealth-production/*, allow
+        - p, proj:mbhealth-production:developer, applications, sync, mbhealth-production/mbhealth-dev, allow
+        - p, proj:mbhealth-production:developer, applications, sync, mbhealth-production/mbhealth-staging, allow
+      groups:
+        - mbhealth-developers
+    
+    # DevOps can manage all environments
+    - name: devops
+      description: "DevOps full access"
+      policies:
+        - p, proj:mbhealth-production:devops, applications, *, mbhealth-production/*, allow
+        - p, proj:mbhealth-production:devops, repositories, *, *, allow
+      groups:
+        - mbhealth-devops
+    
+    # Read-only access for monitoring
+    - name: readonly
+      description: "Read-only access"
+      policies:
+        - p, proj:mbhealth-production:readonly, applications, get, mbhealth-production/*, allow
+      groups:
+        - mbhealth-readonly

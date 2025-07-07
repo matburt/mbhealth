@@ -1,0 +1,59 @@
+{{- if .Values.ingress.enabled -}}
+{{- $fullName := include "mbhealth.fullname" . -}}
+{{- $backendSvc := printf "%s-backend" $fullName -}}
+{{- $frontendSvc := printf "%s-frontend" $fullName -}}
+{{- if and .Values.ingress.className (not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class")) }}
+  {{- $_ := set .Values.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-ingress
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "mbhealth.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ingress
+  annotations:
+    {{- if .Values.ingress.tls.enabled }}
+    {{- if .Values.ingress.tls.issuer.enabled }}
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.tls.issuer.name | quote }}
+    {{- end }}
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    {{- end }}
+    nginx.ingress.kubernetes.io/server-snippet: |
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+      add_header Content-Security-Policy "default-src 'self' https: wss:; img-src 'self' https: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';" always;
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    {{- range .Values.ingress.hosts }}
+    - hosts:
+        - {{ .host | quote }}
+      secretName: {{ $.Values.ingress.tls.secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ if eq .service "backend" }}{{ $backendSvc }}{{ else if eq .service "frontend" }}{{ $frontendSvc }}{{ else }}{{ .service }}{{ end }}
+                port:
+                  number: {{ if eq .service "backend" }}{{ $.Values.backend.service.port }}{{ else if eq .service "frontend" }}{{ $.Values.frontend.service.port }}{{ else }}80{{ end }}
+          {{- end }}
+    {{- end }}
+{{- end }}

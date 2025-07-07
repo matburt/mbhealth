@@ -1,0 +1,44 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mbhealth-backend-pdb
+  namespace: mbhealth
+  labels:
+    app.kubernetes.io/name: mbhealth-backend
+    app.kubernetes.io/component: backend
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mbhealth-backend
+      app.kubernetes.io/component: backend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mbhealth-worker-pdb
+  namespace: mbhealth
+  labels:
+    app.kubernetes.io/name: mbhealth-worker
+    app.kubernetes.io/component: worker
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mbhealth-worker
+      app.kubernetes.io/component: worker
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mbhealth-frontend-pdb
+  namespace: mbhealth
+  labels:
+    app.kubernetes.io/name: mbhealth-frontend
+    app.kubernetes.io/component: frontend
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mbhealth-frontend
+      app.kubernetes.io/component: frontend

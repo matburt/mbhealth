@@ -1,0 +1,75 @@
+1. Get the application URL by running these commands:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls.enabled }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.frontend.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "mbhealth.fullname" . }}-frontend)
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.frontend.service.type }}
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+           You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "mbhealth.fullname" . }}-frontend'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "mbhealth.fullname" . }}-frontend --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.frontend.service.port }}
+{{- else if contains "ClusterIP" .Values.frontend.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "{{ include "mbhealth.frontend.selectorLabels" . }}" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+{{- end }}
+
+2. Check the status of your deployment:
+  kubectl get all -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }}
+
+3. View application logs:
+  # Backend logs
+  kubectl logs -f deployment/{{ include "mbhealth.fullname" . }}-backend -n {{ .Release.Namespace }}
+  
+  # Worker logs
+  kubectl logs -f deployment/{{ include "mbhealth.fullname" . }}-worker -n {{ .Release.Namespace }}
+  
+  # Frontend logs
+  kubectl logs -f deployment/{{ include "mbhealth.fullname" . }}-frontend -n {{ .Release.Namespace }}
+
+4. Access the API documentation:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  API Docs: http{{ if $.Values.ingress.tls.enabled }}s{{ end }}://{{ $host.host }}/docs
+  ReDoc: http{{ if $.Values.ingress.tls.enabled }}s{{ end }}://{{ $host.host }}/redoc
+{{- end }}
+{{- else }}
+  Use port-forward to access the backend service and visit http://localhost:8000/docs
+{{- end }}
+
+5. Database migration status:
+  kubectl get jobs -l app.kubernetes.io/component=migration -n {{ .Release.Namespace }}
+
+{{- if .Values.postgresql.enabled }}
+6. Connect to PostgreSQL database:
+  export POSTGRES_PASSWORD=$(kubectl get secret --namespace {{ .Release.Namespace }} {{ .Release.Name }}-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
+  kubectl run {{ .Release.Name }}-postgresql-client --rm --tty -i --restart='Never' --namespace {{ .Release.Namespace }} --image docker.io/bitnami/postgresql:15 --env="PGPASSWORD=$POSTGRES_PASSWORD" \
+      --command -- psql --host {{ .Release.Name }}-postgresql --username {{ .Values.postgresql.auth.username }} --dbname {{ .Values.postgresql.auth.database }} --port 5432
+{{- end }}
+
+{{- if .Values.redis.enabled }}
+7. Connect to Redis:
+  export REDIS_PASSWORD=$(kubectl get secret --namespace {{ .Release.Namespace }} {{ .Release.Name }}-redis -o jsonpath="{.data.redis-password}" | base64 -d)
+  kubectl run {{ .Release.Name }}-redis-client --rm --tty -i --restart='Never' \
+      --env REDIS_PASSWORD=$REDIS_PASSWORD \
+      --image docker.io/bitnami/redis:7 --namespace {{ .Release.Namespace }} -- redis-cli -h {{ .Release.Name }}-redis-master -a $REDIS_PASSWORD
+{{- end }}
+
+{{- if not .Values.secrets.create }}
+WARNING: You have disabled secret creation. Make sure to create the required secrets manually:
+- {{ include "mbhealth.secretName" . }}
+{{- if or .Values.secrets.apiKeys.openai .Values.secrets.apiKeys.anthropic .Values.secrets.apiKeys.googleAI .Values.secrets.apiKeys.openrouter }}
+- {{ include "mbhealth.apiKeysSecretName" . }}
+{{- end }}
+{{- end }}
+
+{{- if and .Values.ingress.enabled .Values.ingress.tls.enabled (not .Values.ingress.tls.issuer.enabled) }}
+WARNING: TLS is enabled but no certificate issuer is configured. Make sure to provision TLS certificates manually.
+{{- end }}

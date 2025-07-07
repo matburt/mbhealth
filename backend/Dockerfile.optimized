@@ -1,0 +1,86 @@
+# Multi-stage Dockerfile for optimized production builds
+# Build stage: Install dependencies and build application
+FROM python:3.11-slim as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /build
+
+# Install uv for faster dependency installation
+RUN pip install uv
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install production dependencies
+RUN uv sync --frozen --no-dev
+
+# Copy application code
+COPY . .
+
+# Production stage: Minimal runtime image
+FROM python:3.11-slim as production
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy virtual environment from builder
+COPY --from=builder /build/.venv /app/.venv
+
+# Copy application code
+COPY --from=builder /build/app ./app
+COPY --from=builder /build/alembic ./alembic
+COPY --from=builder /build/alembic.ini ./alembic.ini
+COPY --from=builder /build/main.py ./main.py
+
+# Set Python path to use virtual environment
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+# Create directory for logs with proper permissions
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app
+
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health/ready || exit 1
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Use exec form to ensure proper signal handling
+ENTRYPOINT ["python", "-m", "uvicorn"]
+CMD ["main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# Development stage: Includes dev dependencies
+FROM builder as development
+
+# Install development dependencies
+RUN uv sync --frozen
+
+# Copy all source code
+COPY . .
+
+# Development uses root for flexibility
+EXPOSE 8000
+
+# Hot-reload enabled for development
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

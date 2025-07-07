@@ -1,0 +1,18 @@
+{{- if and .Values.backend.enabled .Values.backend.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "mbhealth.fullname" . }}-backend-pdb
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "mbhealth.backend.labels" . | nindent 4 }}
+  {{- with (include "mbhealth.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  minAvailable: {{ .Values.backend.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "mbhealth.backend.selectorLabels" . | nindent 6 }}
+{{- end }}

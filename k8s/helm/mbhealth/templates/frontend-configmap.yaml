@@ -1,0 +1,29 @@
+{{- if .Values.frontend.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mbhealth.frontendConfigMapName" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "mbhealth.frontend.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend-config
+  {{- with (include "mbhealth.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+data:
+  # Nginx configuration for runtime environment injection
+  nginx-env-config.sh: |
+    #!/bin/sh
+    # This script runs before nginx starts to inject runtime environment variables
+    
+    # Create runtime config that will be loaded by the React app
+    cat > /usr/share/nginx/html/config.js << EOF
+    window._env_ = {
+      VITE_API_URL: "${VITE_API_URL:-{{ .Values.frontend.config.apiUrl }}}",
+      VITE_WS_URL: "${VITE_WS_URL:-{{ .Values.frontend.config.wsUrl }}}",
+      VITE_APP_NAME: "${VITE_APP_NAME:-{{ .Values.frontend.config.appName }}}",
+      VITE_LOG_LEVEL: "${VITE_LOG_LEVEL:-{{ .Values.frontend.config.logLevel }}}"
+    };
+    EOF
+{{- end }}

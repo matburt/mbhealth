@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mbhealth
+  labels:
+    app.kubernetes.io/name: mbhealth
+    app.kubernetes.io/part-of: mbhealth
+---
+# Resource quota for the namespace (optional, adjust as needed)
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: mbhealth-quota
+  namespace: mbhealth
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: "20Gi"
+    limits.cpu: "20"
+    limits.memory: "40Gi"
+    persistentvolumeclaims: "10"
+    services: "10"
+    configmaps: "10"
+    secrets: "10"
