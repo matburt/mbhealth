@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate, createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import RouteErrorBoundary from './components/RouteErrorBoundary';
