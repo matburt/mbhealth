@@ -1,0 +1,164 @@
+/* Mobile-specific optimizations */
+
+/* Improve touch targets - minimum 44x44px as per Apple HIG */
+@media (max-width: 768px) {
+  /* Buttons and clickable elements */
+  button,
+  a,
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better spacing for mobile */
+  .space-y-4 > * + * {
+    margin-top: 1rem;
+  }
+
+  /* Larger text inputs on mobile */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  textarea,
+  select {
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Improve table scrolling on mobile */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Disable hover effects on touch devices */
+  @media (hover: none) {
+    button:hover,
+    a:hover {
+      opacity: 1;
+    }
+  }
+
+  /* Better modal positioning on mobile */
+  .fixed.inset-0 {
+    overscroll-behavior: contain;
+  }
+
+  /* Improve form layout on mobile */
+  form > * + * {
+    margin-top: 1rem;
+  }
+
+  /* Bottom navigation friendly padding */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  /* Pull-to-refresh zone */
+  .overscroll-y-contain {
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* Prevent text selection on interactive elements */
+button,
+a,
+[role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent horizontal scroll */
+body {
+  overflow-x: hidden;
+}
+
+/* Loading states for better perceived performance */
+.skeleton {
+  animation: skeleton-loading 1s linear infinite alternate;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-color: hsl(200, 20%, 80%);
+  }
+  100% {
+    background-color: hsl(200, 20%, 95%);
+  }
+}
+
+/* iOS-specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* iOS viewport fix */
+  body {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Android-specific fixes */
+@media screen and (max-width: 768px) {
+  /* Prevent zoom on form focus */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* Landscape mode optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+  /* Reduce vertical spacing in landscape */
+  .py-4 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  /* Hide less important elements in landscape */
+  .landscape-hide {
+    display: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  button,
+  a {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* PWA Install prompt animation */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}

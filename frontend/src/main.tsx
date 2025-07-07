@@ -7,6 +7,20 @@ import { TimezoneProvider } from './contexts/TimezoneContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import App from './App.tsx'
 import './index.css'
+import { registerSW } from 'virtual:pwa-register'
+
+// Register PWA service worker
+const updateSW = registerSW({
+  onNeedRefresh() {
+    // Show a prompt to the user or automatically reload
+    if (confirm('New content available. Reload?')) {
+      updateSW(true)
+    }
+  },
+  onOfflineReady() {
+    console.log('App ready to work offline')
+  },
+})
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
