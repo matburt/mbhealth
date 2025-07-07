@@ -4,6 +4,8 @@ import { aiAnalysisService } from '../services/aiAnalysis';
 import { AIAnalysisResponse } from '../types/aiAnalysis';
 import CreateAnalysisModal from './CreateAnalysisModal';
 import AnalysisCard from './AnalysisCard';
+import QuickQuestionBox from './QuickQuestionBox';
+import FoodAnalysisBox from './FoodAnalysisBox';
 
 const MainAnalysisInterface: React.FC = () => {
   const [analyses, setAnalyses] = useState<AIAnalysisResponse[]>([]);
@@ -133,6 +135,12 @@ const MainAnalysisInterface: React.FC = () => {
         >
           New Analysis
         </button>
+      </div>
+
+      {/* Quick Analysis Boxes */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <QuickQuestionBox onAnalysisCreated={handleAnalysisCreated} />
+        <FoodAnalysisBox onAnalysisCreated={handleAnalysisCreated} />
       </div>
 
       {/* Stats */}
