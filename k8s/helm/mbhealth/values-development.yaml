@@ -55,6 +55,16 @@ worker:
   podDisruptionBudget:
     enabled: false
 
+# Migration configuration for development
+migration:
+  image:
+    tag: "dev-latest"
+    pullPolicy: Always
+  
+  # Longer timeout for development (30 minutes)
+  activeDeadlineSeconds: 1800
+  backoffLimit: 5
+
 # Frontend configuration for development
 frontend:
   replicaCount: 1
