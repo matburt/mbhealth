@@ -205,9 +205,6 @@ const FoodAnalysisBox: React.FC<FoodAnalysisBoxProps> = ({ onAnalysisCreated }) 
     setError(null);
   };
 
-  const handleQuickFill = (food: string) => {
-    setFoodDescription(food);
-  };
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
@@ -232,43 +229,11 @@ Examples:
 • Greek yogurt with berries and granola
 • McDonald's Big Mac meal with fries and Coke
 • Homemade chicken salad with olive oil dressing"
-            className="input-field h-24 resize-none"
+            className="input-field h-32 resize-none"
             disabled={isLoading}
           />
         </div>
 
-        {/* Quick fill buttons */}
-        <div className="flex flex-wrap gap-2">
-          <span className="text-sm text-gray-600 mr-2">Quick examples:</span>
-          <button
-            type="button"
-            onClick={() => handleQuickFill('Large pepperoni pizza')}
-            className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-          >
-            Pizza
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFill('Greek yogurt with berries')}
-            className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-          >
-            Yogurt & Berries
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFill('McDonald\'s Big Mac meal')}
-            className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-          >
-            Fast Food
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFill('Grilled chicken salad')}
-            className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-          >
-            Salad
-          </button>
-        </div>
 
         <div className="flex gap-2">
           <button

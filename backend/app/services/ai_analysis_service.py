@@ -227,15 +227,17 @@ class AIAnalysisService:
             user = self.db.query(User).filter(User.id == user_id).first()
             user_context = user.ai_context_profile if user and user.ai_context_profile else None
 
-            # Check if this is a food analysis request
+            # Check if this is a custom prompt request (food analysis or quick question)
             is_food_analysis = (analysis_data.additional_context and 
                                analysis_data.additional_context.startswith("You are a nutrition specialist. Focus solely on analyzing the food/meal"))
+            is_quick_question = (analysis_data.additional_context and 
+                               analysis_data.additional_context.startswith("You are a health advisor. Focus on answering the user's specific question."))
             
-            if is_food_analysis:
-                # For food analysis, use only the additional context as the system prompt
+            if is_food_analysis or is_quick_question:
+                # For custom prompts, use only the additional context as the system prompt
                 # This avoids the default health insights specialist prompt
                 system_prompt = analysis_data.additional_context
-                logger.info("Food analysis detected, using custom nutrition prompt")
+                logger.info(f"Custom prompt detected ({'food analysis' if is_food_analysis else 'quick question'}), using custom prompt")
             else:
                 # Generate normal request prompt based on analysis type
                 system_prompt = self._generate_analysis_prompt(analysis_data.analysis_type)

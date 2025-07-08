@@ -40,7 +40,8 @@ const QuickQuestionBox: React.FC<QuickQuestionBoxProps> = ({ onAnalysisCreated }
   const buildContextualPrompt = async (userQuestion: string): Promise<string> => {
     const todaysData = await getTodaysHealthData();
     
-    let contextualPrompt = `User Question: ${userQuestion}\n\n`;
+    let contextualPrompt = `You are a health advisor. Focus on answering the user's specific question. Do not provide a general health data analysis unless specifically asked. Provide direct, helpful answers based on the context provided.\n\n`;
+    contextualPrompt += `User Question: ${userQuestion}\n\n`;
     
     // Add user's AI context profile if available
     if (user?.ai_context_profile) {
@@ -236,7 +237,7 @@ Examples:
 • Should I be concerned about today's blood pressure reading?
 • What might be causing my elevated glucose this morning?
 • Is this reading pattern normal for me?"
-            className="input-field h-24 resize-none"
+            className="input-field h-32 resize-none"
             disabled={isLoading}
           />
         </div>
