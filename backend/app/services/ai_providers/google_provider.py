@@ -82,8 +82,11 @@ class GoogleProvider(BaseAIProvider):
         temperature = kwargs.get("temperature", self.parameters.get("temperature", 0.7))
         max_tokens = kwargs.get("max_tokens", self.parameters.get("max_tokens", 8192))  # Increased from 2000
 
-        # Combine prompt and data
-        full_content = f"{prompt}\n\nPlease analyze this health data:\n\n{health_data_str}"
+        # Combine prompt and data, handling empty health data
+        if health_data_str.strip():
+            full_content = f"{prompt}\n\nPlease analyze this health data:\n\n{health_data_str}"
+        else:
+            full_content = f"{prompt}\n\nPlease provide a helpful response to the question based on the context provided."
 
         # Different API structure for different models
         if model.startswith("gemini"):

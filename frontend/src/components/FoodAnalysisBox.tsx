@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { aiAnalysisService } from '../services/aiAnalysis';
 import { healthService } from '../services/health';
-import { userService } from '../services/user';
 import { HealthData } from '../types/health';
 import { useAuth } from '../contexts/AuthContext';
+import { createUnitConverter } from '../utils/units';
 
 interface FoodAnalysisBoxProps {
   onAnalysisCreated?: () => void;
@@ -19,12 +19,16 @@ const FoodAnalysisBox: React.FC<FoodAnalysisBoxProps> = ({ onAnalysisCreated }) 
 
   const getTodaysHealthData = async (): Promise<HealthData[]> => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      // Create start and end of today in ISO format
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+      
       const healthData = await healthService.getHealthData({
-        start_date: today,
-        end_date: today
+        start_date: startOfDay,
+        end_date: endOfDay
       });
-      return healthData;
+      return healthData || [];
     } catch (error) {
       console.error('Failed to fetch today\'s health data:', error);
       return [];
@@ -33,12 +37,12 @@ const FoodAnalysisBox: React.FC<FoodAnalysisBoxProps> = ({ onAnalysisCreated }) 
 
   const getRecentHealthData = async (): Promise<HealthData[]> => {
     try {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const endDate = new Date().toISOString();
       
       const healthData = await healthService.getHealthData({
-        start_date: sevenDaysAgo.toISOString().split('T')[0],
-        end_date: new Date().toISOString().split('T')[0]
+        start_date: startDate,
+        end_date: endDate
       });
       return healthData;
     } catch (error) {
@@ -51,88 +55,69 @@ const FoodAnalysisBox: React.FC<FoodAnalysisBoxProps> = ({ onAnalysisCreated }) 
     const todaysData = await getTodaysHealthData();
     const recentData = await getRecentHealthData();
     
-    let prompt = `Please analyze this food/meal for someone monitoring their health:\n\n`;
+    let prompt = `You are a nutrition specialist. Focus solely on analyzing the food/meal described below. Do not analyze health data trends or provide health insights - only provide nutritional information about the food itself.\n\n`;
+    prompt += `Please provide a nutritional analysis of this food/meal:\n\n`;
     prompt += `Food/Meal: ${food}\n\n`;
     
-    // Add user's AI context profile if available
-    if (user?.ai_context_profile) {
-      prompt += `User's Health Profile & Context:\n${user.ai_context_profile}\n\n`;
-    }
-    
-    // Add today's measurements context
+    // Add today's health measurements with user's preferred units
     if (todaysData.length > 0) {
       prompt += `Today's Health Measurements (${new Date().toLocaleDateString()}):\n`;
+      const unitConverter = user ? createUnitConverter(user) : null;
+      
       todaysData.forEach(data => {
-        const timestamp = new Date(data.timestamp).toLocaleTimeString();
-        prompt += `- ${data.metric_type}: ${data.value} ${data.unit} (recorded at ${timestamp})\n`;
+        const timestamp = new Date(data.recorded_at).toLocaleTimeString();
+        let displayValue = data.value;
+        let displayUnit = data.unit;
+        
+        // Convert to user's preferred units if converter is available
+        if (unitConverter) {
+          const converted = unitConverter.convertToUserUnits(data.value, data.metric_type, data.unit);
+          displayValue = Math.round(converted.value * 10) / 10; // Round to 1 decimal
+          displayUnit = converted.unit;
+        }
+        
+        prompt += `- ${data.metric_type}: ${displayValue} ${displayUnit} (recorded at ${timestamp})\n`;
         if (data.notes) {
           prompt += `  Notes: ${data.notes}\n`;
         }
       });
       prompt += `\n`;
-    } else {
-      prompt += `No health measurements recorded today (${new Date().toLocaleDateString()}).\n\n`;
     }
     
-    // Add recent health data patterns
-    if (recentData.length > 0) {
-      prompt += `Recent Health Data Context (past 7 days):\n`;
-      const metricSummary = recentData.reduce((acc, data) => {
-        if (!acc[data.metric_type]) {
-          acc[data.metric_type] = [];
-        }
-        acc[data.metric_type].push(data);
-        return acc;
-      }, {} as Record<string, HealthData[]>);
-      
-      Object.entries(metricSummary).forEach(([metric, data]) => {
-        const avgValue = data.reduce((sum, d) => sum + d.value, 0) / data.length;
-        const latestValue = data[data.length - 1].value;
-        prompt += `- ${metric}: ${data.length} readings, average ${avgValue.toFixed(1)} ${data[0].unit}, latest ${latestValue} ${data[0].unit}\n`;
-      });
-      prompt += `\n`;
-      
-      // Add condition-specific considerations
+    // Add user's health focus areas based on what they're monitoring
+    if (recentData && recentData.length > 0) {
       const hasBloodPressureData = recentData.some(d => d.metric_type === 'blood_pressure_systolic' || d.metric_type === 'blood_pressure_diastolic');
       const hasGlucoseData = recentData.some(d => d.metric_type === 'blood_glucose');
       const hasWeightData = recentData.some(d => d.metric_type === 'weight');
       
       if (hasBloodPressureData || hasGlucoseData || hasWeightData) {
-        prompt += `Health Monitoring Focus Areas:\n`;
+        prompt += `Please pay special attention to these health aspects:\n`;
         
         if (hasBloodPressureData) {
-          prompt += `- Blood pressure management (consider sodium, potassium, heart-healthy aspects)\n`;
+          prompt += `- Heart health: sodium content, potassium, saturated fat\n`;
         }
         
         if (hasGlucoseData) {
-          prompt += `- Blood glucose control (consider carbohydrates, glycemic index, fiber content)\n`;
+          prompt += `- Blood sugar impact: carbohydrates, glycemic index, fiber content\n`;
         }
         
         if (hasWeightData) {
-          prompt += `- Weight management (consider calories, portion sizes, satiety)\n`;
+          prompt += `- Weight management: calories, portion sizes, satiety factors\n`;
         }
         
         prompt += `\n`;
       }
     }
     
-    // Add user preferences context
-    if (user) {
-      prompt += `User Preferences:\n`;
-      prompt += `- Weight unit preference: ${user.weight_unit || 'kg'}\n`;
-      prompt += `- Temperature unit preference: ${user.temperature_unit || 'c'}\n`;
-      prompt += `- Timezone: ${user.timezone || 'Not set'}\n\n`;
-    }
+    prompt += `Please provide a focused food analysis including:\n`;
+    prompt += `1. Nutritional breakdown (calories, carbs, protein, fat, fiber, key vitamins/minerals)\n`;
+    prompt += `2. Health benefits and concerns specific to this food\n`;
+    prompt += `3. How this food might impact the health conditions being monitored\n`;
+    prompt += `4. Recommended portion size and timing\n`;
+    prompt += `5. Simple preparation tips to make it healthier\n`;
+    prompt += `6. Similar but healthier alternatives if applicable\n\n`;
     
-    prompt += `Please provide a comprehensive food analysis including:\n`;
-    prompt += `1. Nutritional overview (calories, macronutrients, key vitamins/minerals)\n`;
-    prompt += `2. Health implications based on the user's health profile and recent patterns\n`;
-    prompt += `3. Specific recommendations considering their monitored conditions\n`;
-    prompt += `4. Timing considerations (when to eat this relative to measurements)\n`;
-    prompt += `5. Healthier alternatives or modifications if applicable\n`;
-    prompt += `6. Portion size recommendations based on their health goals\n\n`;
-    
-    prompt += `Please be helpful, personalized, and encouraging. Focus on practical, actionable advice that considers their specific health monitoring patterns and profile.`;
+    prompt += `Focus on the food itself and practical nutrition advice. Keep the response concise and actionable.`;
     
     return prompt;
   };
@@ -153,12 +138,11 @@ const FoodAnalysisBox: React.FC<FoodAnalysisBoxProps> = ({ onAnalysisCreated }) 
       const todaysData = await getTodaysHealthData();
       const contextualPrompt = await buildFoodAnalysisPrompt(foodDescription);
       
-      // For food analysis, include today's data if available, otherwise send empty array
+      // Include today's health data IDs if available
       const healthDataIds = todaysData.map(d => d.id);
       
-      // Create analysis using the existing API
       const analysisData = {
-        health_data_ids: healthDataIds, // Can be empty array for general questions  
+        health_data_ids: healthDataIds, // Include today's data for context
         analysis_type: 'insights' as const,
         provider: 'auto', // Let the system choose the best provider
         additional_context: contextualPrompt
@@ -227,7 +211,7 @@ const FoodAnalysisBox: React.FC<FoodAnalysisBoxProps> = ({ onAnalysisCreated }) 
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Food Analysis</h3>
-          <p className="text-sm text-gray-600">Get nutritional insights for your health conditions</p>
+          <p className="text-sm text-gray-600">Get nutritional breakdown and health impact of foods</p>
         </div>
       </div>
 

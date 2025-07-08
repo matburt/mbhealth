@@ -227,16 +227,28 @@ class AIAnalysisService:
             user = self.db.query(User).filter(User.id == user_id).first()
             user_context = user.ai_context_profile if user and user.ai_context_profile else None
 
-            # Generate request prompt based on analysis type
-            system_prompt = self._generate_analysis_prompt(analysis_data.analysis_type)
+            # Check if this is a food analysis request
+            is_food_analysis = (analysis_data.additional_context and 
+                               analysis_data.additional_context.startswith("You are a nutrition specialist. Focus solely on analyzing the food/meal"))
+            
+            if is_food_analysis:
+                # For food analysis, use only the additional context as the system prompt
+                # This avoids the default health insights specialist prompt
+                system_prompt = analysis_data.additional_context
+                logger.info("Food analysis detected, using custom nutrition prompt")
+            else:
+                # Generate normal request prompt based on analysis type
+                system_prompt = self._generate_analysis_prompt(analysis_data.analysis_type)
 
-            # Add user context profile if available
-            if user_context:
-                system_prompt += f"\n\nUser context: {user_context}"
+                # Add user context profile if available
+                if user_context:
+                    system_prompt += f"\n\nUser context: {user_context}"
 
-            # Add additional context if provided
-            if analysis_data.additional_context:
-                system_prompt += f"\n\nAdditional context from user: {analysis_data.additional_context}"
+                # Add additional context if provided
+                if analysis_data.additional_context:
+                    logger.info(f"Adding additional context, length: {len(analysis_data.additional_context)}")
+                    logger.info(f"Additional context preview: {analysis_data.additional_context[:200]}...")
+                    system_prompt += f"\n\nAdditional context from user: {analysis_data.additional_context}"
 
             # Create analysis record
             db_analysis = AIAnalysis(

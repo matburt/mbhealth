@@ -102,8 +102,11 @@ class AnthropicProvider(BaseAIProvider):
         temperature = kwargs.get("temperature", self.parameters.get("temperature", 0.7))
         max_tokens = kwargs.get("max_tokens", self.parameters.get("max_tokens", 2000))
 
-        # Combine system prompt and user data
-        full_prompt = f"{prompt}\n\nPlease analyze this health data:\n\n{health_data_str}"
+        # Combine system prompt and user data, handling empty health data
+        if health_data_str.strip():
+            full_prompt = f"{prompt}\n\nPlease analyze this health data:\n\n{health_data_str}"
+        else:
+            full_prompt = f"{prompt}\n\nPlease provide a helpful response to the question based on the context provided."
 
         payload = {
             "model": model,

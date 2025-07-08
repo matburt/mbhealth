@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { aiAnalysisService } from '../services/aiAnalysis';
 import { healthService } from '../services/health';
-import { userService } from '../services/user';
 import { HealthData } from '../types/health';
 import { useAuth } from '../contexts/AuthContext';
+import { createUnitConverter } from '../utils/units';
 
 interface QuickQuestionBoxProps {
   onAnalysisCreated?: () => void;
@@ -19,12 +19,16 @@ const QuickQuestionBox: React.FC<QuickQuestionBoxProps> = ({ onAnalysisCreated }
 
   const getTodaysHealthData = async (): Promise<HealthData[]> => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      // Create start and end of today in ISO format
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+      
       const healthData = await healthService.getHealthData({
-        start_date: today,
-        end_date: today
+        start_date: startOfDay,
+        end_date: endOfDay
       });
-      return healthData;
+      return healthData || [];
     } catch (error) {
       console.error('Failed to fetch today\'s health data:', error);
       return [];
@@ -41,12 +45,24 @@ const QuickQuestionBox: React.FC<QuickQuestionBoxProps> = ({ onAnalysisCreated }
       contextualPrompt += `User's Health Profile & Context:\n${user.ai_context_profile}\n\n`;
     }
     
-    // Add today's health measurements
+    // Add today's health measurements with user's preferred units
     if (todaysData.length > 0) {
       contextualPrompt += `Today's Health Measurements (${new Date().toLocaleDateString()}):\n`;
+      const unitConverter = user ? createUnitConverter(user) : null;
+      
       todaysData.forEach(data => {
-        const timestamp = new Date(data.timestamp).toLocaleTimeString();
-        contextualPrompt += `- ${data.metric_type}: ${data.value} ${data.unit} (recorded at ${timestamp})\n`;
+        const timestamp = new Date(data.recorded_at).toLocaleTimeString();
+        let displayValue = data.value;
+        let displayUnit = data.unit;
+        
+        // Convert to user's preferred units if converter is available
+        if (unitConverter) {
+          const converted = unitConverter.convertToUserUnits(data.value, data.metric_type, data.unit);
+          displayValue = Math.round(converted.value * 10) / 10; // Round to 1 decimal
+          displayUnit = converted.unit;
+        }
+        
+        contextualPrompt += `- ${data.metric_type}: ${displayValue} ${displayUnit} (recorded at ${timestamp})\n`;
         if (data.notes) {
           contextualPrompt += `  Notes: ${data.notes}\n`;
         }
@@ -58,14 +74,18 @@ const QuickQuestionBox: React.FC<QuickQuestionBoxProps> = ({ onAnalysisCreated }
     
     // Add recent patterns context
     try {
+      const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const endDate = new Date().toISOString();
+      
       const recentData = await healthService.getHealthData({
-        start_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        end_date: new Date().toISOString().split('T')[0],
+        start_date: startDate,
+        end_date: endDate,
         limit: 20
       });
       
-      if (recentData.length > 0) {
+      if (recentData && recentData.length > 0) {
         contextualPrompt += `Recent Health Data Context (past 7 days):\n`;
+        const unitConverter = user ? createUnitConverter(user) : null;
         const metricSummary = recentData.reduce((acc, data) => {
           if (!acc[data.metric_type]) {
             acc[data.metric_type] = [];
@@ -75,13 +95,25 @@ const QuickQuestionBox: React.FC<QuickQuestionBoxProps> = ({ onAnalysisCreated }
         }, {} as Record<string, HealthData[]>);
         
         Object.entries(metricSummary).forEach(([metric, data]) => {
-          const avgValue = data.reduce((sum, d) => sum + d.value, 0) / data.length;
-          contextualPrompt += `- ${metric}: ${data.length} readings, average ${avgValue.toFixed(1)} ${data[0].unit}\n`;
+          // Convert values to user's preferred units if converter is available
+          let avgValue = data.reduce((sum, d) => sum + d.value, 0) / data.length;
+          let unit = data[0].unit;
+          
+          if (unitConverter) {
+            const converted = unitConverter.convertToUserUnits(avgValue, metric, unit);
+            avgValue = converted.value;
+            unit = converted.unit;
+          }
+          
+          contextualPrompt += `- ${metric}: ${data.length} readings, average ${avgValue.toFixed(1)} ${unit}\n`;
         });
         contextualPrompt += `\n`;
+      } else {
+        contextualPrompt += `No recent health data available (past 7 days).\n\n`;
       }
     } catch (error) {
-      console.warn('Failed to get recent health data for context');
+      console.error('Failed to get recent health data for context:', error);
+      contextualPrompt += `Unable to fetch recent health data for context.\n\n`;
     }
     
     // Add user preferences context
@@ -93,6 +125,7 @@ const QuickQuestionBox: React.FC<QuickQuestionBoxProps> = ({ onAnalysisCreated }
     }
     
     contextualPrompt += `Please provide a helpful, personalized, and informative response to the user's question. Use the health profile context, recent patterns, and current measurements to give relevant advice. If the question is about today's measurements and there are none, mention this and provide general guidance based on their health profile and recent patterns.`;
+    
     
     return contextualPrompt;
   };

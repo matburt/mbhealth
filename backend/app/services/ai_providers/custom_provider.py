@@ -122,11 +122,17 @@ class CustomProvider(BaseAIProvider):
         temperature = kwargs.get("temperature", self.parameters.get("temperature", 0.7))
         max_tokens = kwargs.get("max_tokens", self.parameters.get("max_tokens", 2000))
 
+        # Handle the case where there's no specific health data (for general questions)
+        if health_data_str.strip():
+            user_message = f"Please analyze this health data:\n\n{health_data_str}"
+        else:
+            user_message = "Please provide a helpful response to my question based on the context provided."
+        
         payload = {
             "model": model,
             "messages": [
                 {"role": "system", "content": prompt},
-                {"role": "user", "content": f"Please analyze this health data:\n\n{health_data_str}"}
+                {"role": "user", "content": user_message}
             ],
             "temperature": temperature,
             "max_tokens": max_tokens
