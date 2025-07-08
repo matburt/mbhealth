@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { aiAnalysisService } from '../services/aiAnalysis';
 import { healthService } from '../services/health';
@@ -12,6 +13,7 @@ interface QuickQuestionBoxProps {
 
 const QuickQuestionBox: React.FC<QuickQuestionBoxProps> = ({ onAnalysisCreated }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<string | null>(null);
@@ -171,6 +173,10 @@ const QuickQuestionBox: React.FC<QuickQuestionBoxProps> = ({ onAnalysisCreated }
             if (status.status === 'completed') {
               setResponse(status.response_content);
               onAnalysisCreated?.();
+              // Navigate to the AI Analysis page with the analysis ID
+              setTimeout(() => {
+                navigate(`/ai-analysis?analysis=${result.id}`);
+              }, 1500); // Give user time to see the success message
               break;
             } else if (status.status === 'failed') {
               setError(status.error_message || 'Analysis failed');
@@ -286,6 +292,9 @@ Examples:
             <div className="flex-1">
               <h4 className="font-medium text-green-800 mb-2">AI Response:</h4>
               <div className="text-green-700 whitespace-pre-wrap">{response}</div>
+              <div className="mt-3 pt-3 border-t border-green-200">
+                <p className="text-sm text-green-600 italic">Redirecting to full analysis view...</p>
+              </div>
             </div>
           </div>
         </div>
