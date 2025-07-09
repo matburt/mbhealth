@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { createUnitConverter, shouldConvertMetric } from '../utils/units';
 import UnifiedHealthChart from '../components/UnifiedHealthChart';
 import ChartConfigurationPanel from '../components/ChartConfigurationPanel';
+import EnhancedBloodPressureInsights from '../components/EnhancedBloodPressureInsights';
 import { useChartConfiguration } from '../hooks/useChartConfiguration';
 import CreateAnalysisModal from '../components/CreateAnalysisModal';
 import PDFExportModal from '../components/PDFExportModal';
@@ -339,23 +340,29 @@ const DataVisualizationPage: React.FC = () => {
         />
 
         {/* Insights Panel */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mt-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Insights</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{stats?.totalReadings || 0}</div>
-              <div className="text-sm text-gray-600">Readings</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{formatStatValue(stats?.avg)}</div>
-              <div className="text-sm text-gray-600">Average</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{stats?.trend === 'up' ? '↑' : stats?.trend === 'down' ? '↓' : 'N/A'}</div>
-              <div className="text-sm text-gray-600">Trend</div>
+        {selectedMetric === 'blood_pressure' ? (
+          <div className="mt-6">
+            <EnhancedBloodPressureInsights data={filteredData} />
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Insights</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{stats?.totalReadings || 0}</div>
+                <div className="text-sm text-gray-600">Readings</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{formatStatValue(stats?.avg)}</div>
+                <div className="text-sm text-gray-600">Average</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">{stats?.trend === 'up' ? '↑' : stats?.trend === 'down' ? '↓' : 'N/A'}</div>
+                <div className="text-sm text-gray-600">Trend</div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Additional Analytics */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">

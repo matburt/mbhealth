@@ -24,14 +24,12 @@ A comprehensive health data tracking application with Python FastAPI backend and
 - **Chart Configuration**: User-friendly panels for real-time chart customization
 - **Export Capabilities**: Data export in multiple formats with high-contrast print mode
 - **Professional PDF Reports**: Generate medical-grade PDF reports with charts, statistics, and clinical notes
-- **Enhanced Blood Pressure Insights**: Comprehensive blood pressure analytics with:
-  - **Clinical Categorization**: Automatic classification according to medical guidelines (Normal, Elevated, Stage 1/2 Hypertension, Hypertensive Crisis)
-  - **Comprehensive Analytics**: Average BP, pulse pressure calculation, variability analysis, and total readings with anomaly detection
-  - **Advanced Trend Analysis**: Linear regression-based trend analysis with confidence levels and strength assessment for both systolic and diastolic pressures
-  - **Time-of-Day Patterns**: Morning, afternoon, and evening blood pressure pattern analysis with comparative visualization
-  - **Visual Analytics**: Category distribution pie charts and time-of-day bar charts for better understanding
-  - **Health Insights**: Personalized clinical recommendations based on pulse pressure, variability, trends, and risk assessment
-  - **Risk Assessment**: Color-coded categories with clinical descriptions and recommendations for each blood pressure stage
+- **Enhanced Blood Pressure Analytics**: Comprehensive cardiovascular health insights with:
+  - **Clinical Categorization**: AHA/ACC guideline-based classification (Normal, Elevated, Stage 1/2 Hypertension, Crisis) with color-coded risk assessment
+  - **Advanced Metrics**: Pulse pressure calculation, blood pressure variability analysis, anomaly detection, and statistical trend analysis
+  - **Circadian Patterns**: Time-of-day analysis (morning, afternoon, evening) with visual pattern recognition
+  - **Intelligent Insights**: Personalized health recommendations, risk alerts, and trend notifications based on clinical thresholds
+  - **Visual Dashboard**: Interactive pie charts for category distribution and bar charts for temporal patterns
 
 ### Enhanced AI Analysis Features
 - **Multi-Provider AI Support**: OpenAI, Anthropic Claude, Google Generative AI, and custom providers with intelligent auto-selection

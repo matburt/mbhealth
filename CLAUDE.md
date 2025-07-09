@@ -94,11 +94,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `src/components/`: Reusable UI components
 - `src/components/AnalysisCard.tsx`: Real-time analysis status display with progress tracking
 - `src/components/CreateProviderModal.tsx`: AI provider configuration interface
+- `src/components/EnhancedBloodPressureInsights.tsx`: Advanced blood pressure analytics with clinical categorization
+- `src/components/QuickQuestionBox.tsx`: Instant AI health question interface with contextual prompts
+- `src/components/FoodAnalysisBox.tsx`: Specialized nutritional analysis with health condition awareness
+- `src/components/MainAnalysisInterface.tsx`: Central AI analysis hub with quick boxes integration
+- `src/components/AnalysisHelpGuide.tsx`: Comprehensive interactive help system for AI features
+- `src/components/AnalysisPresets.tsx`: Pre-configured analysis templates for common health scenarios
+- `src/components/SavedAnalysisConfigs.tsx`: Management interface for reusable analysis configurations
 - `src/pages/`: Page-level components
 - `src/pages/AIProvidersPage.tsx`: AI provider management interface
+- `src/pages/DataVisualizationPage.tsx`: Advanced health data visualization with enhanced insights
 - `src/services/`: API service layer organized by domain
 - `src/types/`: TypeScript type definitions matching backend schemas
 - `src/types/aiAnalysis.ts`: AI analysis and provider type definitions
+- `src/utils/formatters.ts`: Centralized value formatting utilities for consistent display
+- `src/utils/bloodPressure.ts`: Blood pressure categorization and clinical analysis utilities
 
 ### Database Structure
 - **SQLite** for development (file: `backend/health_data.db`)
