@@ -334,6 +334,92 @@ start_application() {
     run_services
 }
 
+# Function to build and preview PWA
+preview_application() {
+    print_status "Building and previewing MBHealth PWA..."
+    
+    # Clean up any existing services first
+    cleanup_services
+    
+    # Build the frontend for production
+    print_status "Building frontend for production..."
+    cd frontend
+    npm run build
+    if [ $? -ne 0 ]; then
+        print_error "Frontend build failed"
+        exit 1
+    fi
+    cd ..
+    
+    # Start Redis if available (for backend)
+    start_redis || true
+    
+    # Create a temporary file for service commands
+    local tmpfile=$(mktemp)
+    
+    # Backend service (same as development)
+    echo "cd backend && exec uv run python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000" > "$tmpfile.backend"
+    
+    # Celery worker if Redis is available
+    if redis-cli ping > /dev/null 2>&1; then
+        echo "cd backend && exec uv run celery -A app.core.celery_app worker --loglevel=info" > "$tmpfile.worker"
+    fi
+    
+    # Frontend preview service (instead of dev)
+    echo "cd frontend && exec npm run preview" > "$tmpfile.frontend"
+    
+    # Function to run a single service and prefix its output
+    run_service() {
+        local name=$1
+        local cmd_file=$2
+        local color=$3
+        
+        bash "$cmd_file" 2>&1 | while IFS= read -r line; do
+            echo -e "${color}[$name]${NC} $line"
+        done
+    }
+    
+    # Clean up function
+    cleanup() {
+        print_status "\nShutting down services..."
+        jobs -p | xargs -r kill 2>/dev/null || true
+        rm -f "$tmpfile"*
+        cleanup_services
+        exit 0
+    }
+    
+    # Set up signal handlers
+    trap cleanup INT TERM EXIT
+    
+    print_success "MBHealth PWA preview is starting up!"
+    print_status "Backend: http://localhost:8000"
+    print_status "Frontend (PWA): http://localhost:4173"
+    print_status "API Docs: http://localhost:8000/docs"
+    print_status ""
+    print_warning "This is a production build with PWA features enabled:"
+    print_status "  - Service Worker active for offline support"
+    print_status "  - App installation prompt available"
+    print_status "  - Production optimizations applied"
+    print_status ""
+    print_status "Press Ctrl+C to stop all services"
+    print_status ""
+    
+    # Start services in background with output prefixing
+    run_service "BACKEND" "$tmpfile.backend" "$GREEN" &
+    
+    if [ -f "$tmpfile.worker" ]; then
+        run_service "WORKER" "$tmpfile.worker" "$BLUE" &
+    fi
+    
+    # Give backend a moment to start
+    sleep 3
+    
+    run_service "PREVIEW" "$tmpfile.frontend" "$YELLOW" &
+    
+    # Wait for all background jobs
+    wait
+}
+
 # Function to show help
 show_help() {
     echo "MBHealth Setup Script"
@@ -343,12 +429,14 @@ show_help() {
     echo "Options:"
     echo "  setup     Set up the development environment"
     echo "  start     Start the application (backend, frontend, worker)"
+    echo "  preview   Build and preview the PWA (production mode with service worker)"
     echo "  check     Check system requirements"
     echo "  help      Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0 setup    # Set up the development environment"
-    echo "  $0 start    # Start the application"
+    echo "  $0 start    # Start the application in development mode"
+    echo "  $0 preview  # Build and preview the PWA with service worker enabled"
     echo "  $0 check    # Check if all requirements are met"
 }
 
@@ -376,6 +464,11 @@ main() {
         "start")
             print_status "Starting MBHealth..."
             start_application
+            ;;
+            
+        "preview")
+            print_status "Starting MBHealth PWA preview..."
+            preview_application
             ;;
             
         "check")

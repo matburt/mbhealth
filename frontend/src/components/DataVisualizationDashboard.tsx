@@ -19,7 +19,8 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  Radar
+  Radar,
+  ReferenceArea
 } from 'recharts';
 import { subDays } from 'date-fns';
 import { HealthData } from '../types/health';
@@ -184,24 +185,23 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
   };
 
   // Custom tooltip
-  const CustomTooltip = ({ active, payload, label }: unknown) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
     if (active && payload && payload.length) {
-      const data = payload[0]?.payload;
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{label}</p>
-          {payload.map((entry: unknown, index: number) => {
+          {payload.map((entry: any, index: number) => {
             // Handle blood pressure special formatting
             if (entry.dataKey === 'systolic' || entry.dataKey === 'diastolic') {
               return (
                 <p key={index} className="text-sm text-gray-600">
-                  {entry.name}: <span className="font-medium">{entry.value} {data?.unit || 'mmHg'}</span>
+                  {entry.name}: <span className="font-medium">{entry.value} {entry.payload?.unit || 'mmHg'}</span>
                 </p>
               );
             }
             return (
               <p key={index} className="text-sm text-gray-600">
-                {entry.name}: <span className="font-medium">{formatHealthValue(entry.value)} {data?.unit || ''}</span>
+                {entry.name}: <span className="font-medium">{formatHealthValue(entry.value)} {entry.payload?.unit || ''}</span>
               </p>
             );
           })}
@@ -360,6 +360,47 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
                     <YAxis stroke="#6b7280" fontSize={12} />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend />
+                    
+                    {/* Clinical Range Indicators */}
+                    {(() => {
+                      const targetRanges = getTargetRanges(metricType);
+                      if (targetRanges && metricType === 'blood_pressure') {
+                        return (
+                          <>
+                            <ReferenceArea
+                              y1={targetRanges.systolic.min}
+                              y2={targetRanges.systolic.max}
+                              fill="#10b981"
+                              fillOpacity={0.1}
+                              stroke="#10b981"
+                              strokeOpacity={0.3}
+                            />
+                            <ReferenceArea
+                              y1={targetRanges.diastolic.min}
+                              y2={targetRanges.diastolic.max}
+                              fill="#10b981"
+                              fillOpacity={0.1}
+                              stroke="#10b981"
+                              strokeOpacity={0.3}
+                            />
+                          </>
+                        );
+                      }
+                      if (targetRanges && metricType === 'blood_sugar' && 'normal' in targetRanges) {
+                        return (
+                          <ReferenceArea
+                            y1={(targetRanges as any).normal.min}
+                            y2={(targetRanges as any).normal.max}
+                            fill="#10b981"
+                            fillOpacity={0.15}
+                            stroke="#10b981"
+                            strokeOpacity={0.4}
+                          />
+                        );
+                      }
+                      return null;
+                    })()}
+                    
                     {metricType === 'blood_pressure' ? (
                       <>
                         <Line
@@ -714,6 +755,23 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
         score: Math.max(0, Math.min(100, score))
       };
     });
+  };
+
+  // Get target ranges for clinical indicators
+  const getTargetRanges = (metricType: string) => {
+    switch (metricType) {
+      case 'blood_pressure':
+        return { 
+          systolic: { min: 90, max: 119 }, 
+          diastolic: { min: 60, max: 79 }
+        };
+      case 'blood_sugar':
+        return { 
+          normal: { min: 70, max: 99 }
+        };
+      default:
+        return null;
+    }
   };
 
   return (
