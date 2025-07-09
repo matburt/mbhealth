@@ -20,6 +20,8 @@ import {
 import { subDays } from 'date-fns';
 import { HealthData } from '../types/health';
 import { useTimezone } from '../contexts/TimezoneContext';
+import { useAuth } from '../contexts/AuthContext';
+import { createUnitConverter, shouldConvertMetric } from '../utils/units';
 
 export type LineType = 'monotone' | 'linear' | 'step' | 'stepBefore' | 'stepAfter';
 export type ChartType = 'line' | 'bar' | 'area' | 'scatter';
@@ -134,6 +136,11 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
   onCreateAnalysis
 }) => {
   const { formatDateTime } = useTimezone();
+  const { user } = useAuth();
+  
+  // Create unit converter based on user preferences
+  const unitConverter = useMemo(() => user ? createUnitConverter(user) : null, [user]);
+  
   // Merge configuration with defaults and style presets
   const config: ChartConfiguration = useMemo(() => {
     const styleConfig = configuration.style ? stylePresets[configuration.style] : {};
@@ -150,6 +157,11 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
   }, [configuration]);
 
   const [selectedDataPoints, setSelectedDataPoints] = useState<number[]>([]);
+
+  // Y-axis tick formatter to limit decimal places
+  const yAxisTickFormatter = (value: number) => {
+    return value.toFixed(1);
+  };
 
   // Filter data by metric type and time range
   const filteredData = useMemo(() => {
@@ -173,9 +185,18 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
   // Transform data for charts
   const chartData = useMemo(() => {
     return filteredData.map((item, index) => {
-      const value = item.metric_type === 'blood_pressure' 
+      let value = item.metric_type === 'blood_pressure' 
         ? ((item.systolic || 0) + (item.diastolic || 0)) / 2 
         : item.value;
+      
+      let unit = item.unit;
+      
+      // Apply unit conversion if available
+      if (unitConverter && shouldConvertMetric(item.metric_type) && item.value !== null) {
+        const converted = unitConverter.convertToUserUnits(item.value, item.metric_type, item.unit);
+        value = converted.value;
+        unit = converted.unit;
+      }
       
       return {
         index,
@@ -185,13 +206,13 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
         value: value,
         systolic: item.systolic,
         diastolic: item.diastolic,
-        unit: item.unit,
+        unit: unit,
         metricType: item.metric_type,
         notes: item.notes,
         originalData: item
       };
     });
-  }, [filteredData]);
+  }, [filteredData, formatDateTime, unitConverter]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -398,6 +419,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
                 stroke={config.colors.text}
                 fontSize={12}
                 domain={['dataMin - 10', 'dataMax + 10']}
+                tickFormatter={yAxisTickFormatter}
               />
               <Tooltip content={<CustomTooltip />} />
               {config.showLegend && <Legend />}
@@ -499,7 +521,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
             <BarChart data={chartData}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={config.colors.grid} />}
               <XAxis dataKey="date" stroke={config.colors.text} fontSize={12} />
-              <YAxis stroke={config.colors.text} fontSize={12} />
+              <YAxis stroke={config.colors.text} fontSize={12} tickFormatter={yAxisTickFormatter} />
               <Tooltip content={<CustomTooltip />} />
               {config.showLegend && <Legend />}
               
@@ -549,7 +571,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
             <AreaChart data={chartData}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={config.colors.grid} />}
               <XAxis dataKey="date" stroke={config.colors.text} fontSize={12} />
-              <YAxis stroke={config.colors.text} fontSize={12} />
+              <YAxis stroke={config.colors.text} fontSize={12} tickFormatter={yAxisTickFormatter} />
               <Tooltip content={<CustomTooltip />} />
               {config.showLegend && <Legend />}
               
@@ -625,7 +647,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
             <ScatterChart data={chartData}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={config.colors.grid} />}
               <XAxis dataKey="date" stroke={config.colors.text} fontSize={12} />
-              <YAxis stroke={config.colors.text} fontSize={12} />
+              <YAxis stroke={config.colors.text} fontSize={12} tickFormatter={yAxisTickFormatter} />
               <Tooltip content={<CustomTooltip />} />
               {config.showLegend && <Legend />}
               

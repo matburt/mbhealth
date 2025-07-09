@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { formatHealthValue, formatStatValue } from '../utils/formatters';
+import { useAuth } from '../contexts/AuthContext';
+import { createUnitConverter, shouldConvertMetric } from '../utils/units';
 import UnifiedHealthChart from '../components/UnifiedHealthChart';
 import ChartConfigurationPanel from '../components/ChartConfigurationPanel';
 import { useChartConfiguration } from '../hooks/useChartConfiguration';
@@ -17,6 +19,7 @@ const metricTypes = ['blood_pressure', 'blood_sugar', 'weight', 'heart_rate', 't
 
 const DataVisualizationPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [healthData, setHealthData] = useState<HealthData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMetric, setSelectedMetric] = useState<string>(metricTypes[0]);
@@ -27,6 +30,9 @@ const DataVisualizationPage: React.FC = () => {
   const [generatingQuickAnalysis, setGeneratingQuickAnalysis] = useState(false);
   const [showChartConfig, setShowChartConfig] = useState(false);
   const [showPDFExportModal, setShowPDFExportModal] = useState(false);
+  
+  // Create unit converter based on user preferences
+  const unitConverter = React.useMemo(() => user ? createUnitConverter(user) : null, [user]);
   
   // Chart configuration
   const {
@@ -78,13 +84,21 @@ const DataVisualizationPage: React.FC = () => {
   const stats = React.useMemo(() => {
     if (filteredData.length === 0) return null;
     
-    const values = filteredData.map(d => d.value).filter(v => v !== undefined);
-    if (values.length === 0) return null;
+    // Convert values to user units before calculating statistics
+    const convertedValues = filteredData.map(d => {
+      if (d.value !== undefined && unitConverter && shouldConvertMetric(d.metric_type)) {
+        const converted = unitConverter.convertToUserUnits(d.value, d.metric_type, d.unit);
+        return converted.value;
+      }
+      return d.value;
+    }).filter(v => v !== undefined);
     
-    const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const recent = values.slice(-5);
+    if (convertedValues.length === 0) return null;
+    
+    const avg = convertedValues.reduce((sum, val) => sum + val, 0) / convertedValues.length;
+    const min = Math.min(...convertedValues);
+    const max = Math.max(...convertedValues);
+    const recent = convertedValues.slice(-5);
     const recentAvg = recent.reduce((sum, val) => sum + val, 0) / recent.length;
     
     return { 
@@ -95,7 +109,7 @@ const DataVisualizationPage: React.FC = () => {
       trend: recentAvg > avg ? 'up' : 'down',
       totalReadings: filteredData.length
     };
-  }, [filteredData]);
+  }, [filteredData, unitConverter]);
 
   // Get available metric types from actual data
   const availableMetrics = React.useMemo(() => {
