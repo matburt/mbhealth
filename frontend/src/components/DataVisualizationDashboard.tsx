@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { formatHealthValue } from '../utils/formatters';
+import EnhancedBloodPressureInsights from './EnhancedBloodPressureInsights';
 import {
   LineChart,
   Line,
@@ -214,15 +215,18 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
   // Overview tab content
   const renderOverview = () => (
     <div className="space-y-6">
-      {/* Summary Cards */}
+      {/* Enhanced Blood Pressure Insights */}
+      {dataByMetric.blood_pressure && dataByMetric.blood_pressure.length > 0 && (
+        <EnhancedBloodPressureInsights data={filteredData} />
+      )}
+      
+      {/* Summary Cards for Non-Blood Pressure Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {Object.entries(summaryStats).map(([metricType, stats]) => {
+          // Skip blood pressure metrics since they're handled by the enhanced component
+          if (metricType.includes('blood_pressure')) return null;
+          
           let displayName = metricType.replace('_', ' ');
-          if (metricType === 'blood_pressure_systolic') {
-            displayName = 'Systolic BP';
-          } else if (metricType === 'blood_pressure_diastolic') {
-            displayName = 'Diastolic BP';
-          }
           
           return (
             <div key={metricType} className="bg-white rounded-lg p-4 border border-gray-200">
