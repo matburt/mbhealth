@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { formatHealthValue } from '../utils/formatters';
 import {
   LineChart,
   Line,
@@ -200,7 +201,7 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
             }
             return (
               <p key={index} className="text-sm text-gray-600">
-                {entry.name}: <span className="font-medium">{Number(entry.value).toFixed(1)} {data?.unit || ''}</span>
+                {entry.name}: <span className="font-medium">{formatHealthValue(entry.value)} {data?.unit || ''}</span>
               </p>
             );
           })}
