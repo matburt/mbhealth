@@ -159,43 +159,51 @@ const DataVisualizationPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Data Visualization</h1>
               <p className="mt-2 text-gray-600">
                 Advanced analytics and insights from your health data
               </p>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-3 items-center">
               <button
                 onClick={() => setShowPDFExportModal(true)}
                 disabled={filteredData.length === 0}
-                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+                className="bg-red-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center text-sm sm:text-base whitespace-nowrap h-10"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                <svg className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2-2z" />
                 </svg>
-                Export PDF
+                <span className="hidden sm:inline">Export PDF</span>
+                <span className="sm:hidden">PDF</span>
               </button>
               <button
                 onClick={() => setShowAnalysisModal(true)}
                 disabled={filteredData.length === 0}
-                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm sm:text-base whitespace-nowrap h-10"
               >
-                Custom Analysis
+                <span className="hidden sm:inline">Custom Analysis</span>
+                <span className="sm:hidden">Custom</span>
               </button>
               <button
                 onClick={generateQuickAnalysis}
                 disabled={filteredData.length === 0 || generatingQuickAnalysis}
-                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="bg-purple-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm sm:text-base whitespace-nowrap h-10"
               >
-                {generatingQuickAnalysis ? 'Creating...' : 'Quick Analysis'}
+                <span className="hidden sm:inline">
+                  {generatingQuickAnalysis ? 'Creating...' : 'Quick Analysis'}
+                </span>
+                <span className="sm:hidden">
+                  {generatingQuickAnalysis ? '...' : 'Quick'}
+                </span>
               </button>
               <button
                 onClick={() => navigate('/health-data')}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm sm:text-base whitespace-nowrap h-10"
               >
-                Back to Health Data
+                <span className="hidden sm:inline">Back to Health Data</span>
+                <span className="sm:hidden">Back</span>
               </button>
             </div>
           </div>
