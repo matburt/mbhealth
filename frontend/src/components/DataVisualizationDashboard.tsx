@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { formatHealthValue } from '../utils/formatters';
 import {
   LineChart,
   Line,
@@ -186,17 +187,24 @@ const DataVisualizationDashboard: React.FC<DataVisualizationDashboardProps> = ({
   // Custom tooltip
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
     if (active && payload && payload.length) {
-      const data = payload[0];
-      const dataKey = data.dataKey;
-      const name = data.name;
-      const value = data.value;
-      
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{label}</p>
-          <p className="text-sm text-gray-600">
-            {name}: <span className="font-medium">{value}</span>
-          </p>
+          {payload.map((entry: any, index: number) => {
+            // Handle blood pressure special formatting
+            if (entry.dataKey === 'systolic' || entry.dataKey === 'diastolic') {
+              return (
+                <p key={index} className="text-sm text-gray-600">
+                  {entry.name}: <span className="font-medium">{entry.value} {entry.payload?.unit || 'mmHg'}</span>
+                </p>
+              );
+            }
+            return (
+              <p key={index} className="text-sm text-gray-600">
+                {entry.name}: <span className="font-medium">{formatHealthValue(entry.value)} {entry.payload?.unit || ''}</span>
+              </p>
+            );
+          })}
         </div>
       );
     }

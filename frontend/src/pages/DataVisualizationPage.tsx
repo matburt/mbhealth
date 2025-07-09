@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { formatHealthValue, formatStatValue } from '../utils/formatters';
 import UnifiedHealthChart from '../components/UnifiedHealthChart';
 import ChartConfigurationPanel from '../components/ChartConfigurationPanel';
 import { useChartConfiguration } from '../hooks/useChartConfiguration';
@@ -332,7 +333,7 @@ const DataVisualizationPage: React.FC = () => {
               <div className="text-sm text-gray-600">Readings</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{stats?.avg?.toFixed(2) || 'N/A'}</div>
+              <div className="text-2xl font-bold text-green-600">{formatStatValue(stats?.avg)}</div>
               <div className="text-sm text-gray-600">Average</div>
             </div>
             <div className="text-center">
@@ -398,7 +399,7 @@ const DataVisualizationPage: React.FC = () => {
                         <p className="text-sm font-semibold text-gray-900">
                           {entry.metric_type === 'blood_pressure' && entry.systolic && entry.diastolic
                             ? `${entry.systolic}/${entry.diastolic}`
-                            : `${entry.value}`
+                            : formatHealthValue(entry.value)
                           } {entry.unit}
                         </p>
                       </div>

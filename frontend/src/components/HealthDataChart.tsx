@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { formatHealthValue } from '../utils/formatters';
 import {
   LineChart,
   Line,
@@ -174,7 +175,7 @@ const HealthDataChart: React.FC<HealthDataChartProps> = ({
             </div>
           ) : (
             <p className="text-sm text-gray-600">
-              Value: <span className="font-medium">{data.value} {data.unit}</span>
+              Value: <span className="font-medium">{formatHealthValue(data.value)} {data.unit}</span>
             </p>
           )}
           {data.notes && (
