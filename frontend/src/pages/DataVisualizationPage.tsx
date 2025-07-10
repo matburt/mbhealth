@@ -185,6 +185,7 @@ const DataVisualizationPage: React.FC = () => {
               <button
                 onClick={() => setShowPDFExportModal(true)}
                 disabled={filteredData.length === 0}
+                aria-label="Export data visualization to PDF"
                 className="bg-red-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center text-sm sm:text-base whitespace-nowrap h-10"
               >
                 <svg className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,6 +197,7 @@ const DataVisualizationPage: React.FC = () => {
               <button
                 onClick={() => setShowAnalysisModal(true)}
                 disabled={filteredData.length === 0}
+                aria-label="Create custom AI analysis of health data"
                 className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm sm:text-base whitespace-nowrap h-10"
               >
                 <span className="hidden sm:inline">Custom Analysis</span>
@@ -204,6 +206,7 @@ const DataVisualizationPage: React.FC = () => {
               <button
                 onClick={generateQuickAnalysis}
                 disabled={filteredData.length === 0 || generatingQuickAnalysis}
+                aria-label="Generate quick AI analysis of filtered health data"
                 className="bg-purple-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm sm:text-base whitespace-nowrap h-10"
               >
                 <span className="hidden sm:inline">
@@ -215,6 +218,7 @@ const DataVisualizationPage: React.FC = () => {
               </button>
               <button
                 onClick={() => navigate('/health-data')}
+                aria-label="Navigate back to health data entry page"
                 className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm sm:text-base whitespace-nowrap h-10"
               >
                 <span className="hidden sm:inline">Back to Health Data</span>
@@ -298,6 +302,7 @@ const DataVisualizationPage: React.FC = () => {
                 {filteredData.length > 0 && (
                   <button
                     onClick={() => setShowAnalysisModal(true)}
+                    aria-label="Open AI analysis modal for filtered data"
                     className="text-green-600 hover:text-green-700 text-xs font-medium"
                   >
                     → Analyze this data
@@ -314,6 +319,7 @@ const DataVisualizationPage: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">Chart Configuration</h3>
             <button
               onClick={() => setShowChartConfig(!showChartConfig)}
+              aria-label={`${showChartConfig ? 'Hide' : 'Show'} chart configuration options`}
               className="text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
               {showChartConfig ? 'Hide' : 'Show'} Chart Options
