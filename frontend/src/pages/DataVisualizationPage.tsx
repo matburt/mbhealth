@@ -334,7 +334,7 @@ const DataVisualizationPage: React.FC = () => {
           }}
           title={`${selectedMetric.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Visualization`}
           subtitle={`Advanced analytics and insights • ${filteredData.length} data points`}
-          onCreateAnalysis={(_selectedData) => {
+          onCreateAnalysis={() => {
             setShowAnalysisModal(true);
           }}
         />
