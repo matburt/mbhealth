@@ -7,6 +7,7 @@ import { createUnitConverter, shouldConvertMetric } from '../utils/units';
 import UnifiedHealthChart from '../components/UnifiedHealthChart';
 import ChartConfigurationPanel from '../components/ChartConfigurationPanel';
 import EnhancedBloodPressureInsights from '../components/EnhancedBloodPressureInsights';
+import EnhancedBloodSugarInsights from '../components/EnhancedBloodSugarInsights';
 import { useChartConfiguration } from '../hooks/useChartConfiguration';
 import CreateAnalysisModal from '../components/CreateAnalysisModal';
 import PDFExportModal from '../components/PDFExportModal';
@@ -357,6 +358,10 @@ const DataVisualizationPage: React.FC = () => {
         {selectedMetric === 'blood_pressure' ? (
           <div className="mt-6">
             <EnhancedBloodPressureInsights data={filteredData} />
+          </div>
+        ) : selectedMetric === 'blood_sugar' ? (
+          <div className="mt-6">
+            <EnhancedBloodSugarInsights data={filteredData} />
           </div>
         ) : (
           <div className="bg-white rounded-lg border border-gray-200 p-6 mt-6">
