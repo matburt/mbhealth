@@ -16,7 +16,11 @@ interface QuickAddFormData {
   recorded_at: string;
 }
 
-const QuickAddForm: React.FC = () => {
+interface QuickAddFormProps {
+  onDataAdded?: () => void;
+}
+
+const QuickAddForm: React.FC<QuickAddFormProps> = ({ onDataAdded }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { getCurrentDateTimeLocal, convertToUTC } = useTimezone();
@@ -102,6 +106,7 @@ const QuickAddForm: React.FC = () => {
         recorded_at: getCurrentDateTimeLocal(), // Reset to current time in user's timezone
       });
       setIsOpen(false);
+      onDataAdded?.(); // Refresh parent data
     } catch (error: unknown) {
       toast.error(error.response?.data?.detail || 'Failed to add health data');
     } finally {

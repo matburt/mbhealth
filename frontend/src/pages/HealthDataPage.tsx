@@ -9,6 +9,7 @@ import UnifiedHealthChart from '../components/UnifiedHealthChart';
 import ChartConfigurationPanel from '../components/ChartConfigurationPanel';
 import { useChartConfiguration } from '../hooks/useChartConfiguration';
 import QuickAddForm from '../components/QuickAddForm';
+import MultiMetricForm from '../components/MultiMetricForm';
 
 const HealthDataPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -176,9 +177,14 @@ const HealthDataPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick Add Form */}
-      <div className="max-w-md">
-        <QuickAddForm />
+      {/* Data Entry Forms */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
+        <div>
+          <QuickAddForm onDataAdded={handleDataChange} />
+        </div>
+        <div>
+          <MultiMetricForm onDataAdded={handleDataChange} />
+        </div>
       </div>
 
       {/* Filters */}
