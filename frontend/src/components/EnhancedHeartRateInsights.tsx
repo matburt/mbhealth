@@ -337,6 +337,51 @@ const EnhancedHeartRateInsights: React.FC<EnhancedHeartRateInsightsProps> = ({ d
         </div>
       </div>
 
+      {/* Trend Analysis */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="font-semibold text-gray-900 mb-3">Heart Rate Trend Analysis</h4>
+          <div className="flex items-center space-x-3">
+            <div className="text-2xl">{getTrendIcon(analytics.trend.direction)}</div>
+            <div>
+              <p className={`font-medium ${getTrendColor(analytics.trend.direction)}`}>
+                {analytics.trend.direction} ({analytics.trend.strength})
+              </p>
+              <p className="text-sm text-gray-600">
+                Confidence: {(analytics.trend.confidence * 100).toFixed(0)}%
+              </p>
+              <p className="text-xs text-gray-500">
+                Slope: {analytics.trend.slope.toFixed(2)} bpm per reading
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="font-semibold text-gray-900 mb-3">Heart Rate Summary</h4>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Range</span>
+              <span className="font-medium text-gray-900">{analytics.min.toFixed(0)} - {analytics.max.toFixed(0)} bpm</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Resting HR</span>
+              <span className={`font-medium ${restingHRCategory.color}`}>{analytics.restingHR.toFixed(0)} bpm</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">HRV</span>
+              <span className={`font-medium ${hrvCategory.color}`}>{analytics.hrv.toFixed(1)} bpm</span>
+            </div>
+            {analytics.avgRecoveryRate > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Avg Recovery</span>
+                <span className="font-medium text-green-600">{analytics.avgRecoveryRate.toFixed(1)} bpm</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Heart Rate Progression Chart */}
       <div className="mb-6">
         <h4 className="font-semibold text-gray-900 mb-3">Heart Rate Progression</h4>

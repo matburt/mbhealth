@@ -311,6 +311,49 @@ const EnhancedWeightInsights: React.FC<EnhancedWeightInsightsProps> = ({ data })
         </div>
       </div>
 
+      {/* Trend Analysis */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="font-semibold text-gray-900 mb-3">Weight Trend Analysis</h4>
+          <div className="flex items-center space-x-3">
+            <div className="text-2xl">{getTrendIcon(analytics.trend.direction)}</div>
+            <div>
+              <p className={`font-medium ${getTrendColor(analytics.trend.direction)}`}>
+                {analytics.trend.direction} ({analytics.trend.strength})
+              </p>
+              <p className="text-sm text-gray-600">
+                Confidence: {(analytics.trend.confidence * 100).toFixed(0)}%
+              </p>
+              <p className="text-xs text-gray-500">
+                Slope: {analytics.trend.slope.toFixed(2)} {analytics.unit} per reading
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="font-semibold text-gray-900 mb-3">Weight Change Summary</h4>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Total Change</span>
+              <span className={`font-medium ${analytics.weightChange.total >= 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                {analytics.weightChange.total >= 0 ? '+' : ''}{analytics.weightChange.total.toFixed(1)} {analytics.unit}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Recent (30 days)</span>
+              <span className={`font-medium ${analytics.weightChange.recent30Days >= 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                {analytics.weightChange.recent30Days >= 0 ? '+' : ''}{analytics.weightChange.recent30Days.toFixed(1)} {analytics.unit}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Variability (CV)</span>
+              <span className="font-medium text-gray-900">{analytics.coefficientOfVariation.toFixed(1)}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Weight Progression Chart */}
       <div className="mb-6">
         <h4 className="font-semibold text-gray-900 mb-3">Weight Progression</h4>
