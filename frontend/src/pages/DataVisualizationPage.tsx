@@ -8,6 +8,8 @@ import UnifiedHealthChart from '../components/UnifiedHealthChart';
 import ChartConfigurationPanel from '../components/ChartConfigurationPanel';
 import EnhancedBloodPressureInsights from '../components/EnhancedBloodPressureInsights';
 import EnhancedBloodSugarInsights from '../components/EnhancedBloodSugarInsights';
+import EnhancedWeightInsights from '../components/EnhancedWeightInsights';
+import EnhancedHeartRateInsights from '../components/EnhancedHeartRateInsights';
 import { useChartConfiguration } from '../hooks/useChartConfiguration';
 import CreateAnalysisModal from '../components/CreateAnalysisModal';
 import PDFExportModal from '../components/PDFExportModal';
@@ -362,6 +364,14 @@ const DataVisualizationPage: React.FC = () => {
         ) : selectedMetric === 'blood_sugar' ? (
           <div className="mt-6">
             <EnhancedBloodSugarInsights data={filteredData} />
+          </div>
+        ) : selectedMetric === 'weight' ? (
+          <div className="mt-6">
+            <EnhancedWeightInsights data={filteredData} />
+          </div>
+        ) : selectedMetric === 'heart_rate' ? (
+          <div className="mt-6">
+            <EnhancedHeartRateInsights data={filteredData} />
           </div>
         ) : (
           <div className="bg-white rounded-lg border border-gray-200 p-6 mt-6">
