@@ -25,7 +25,7 @@ const defaultProps = {
 
 describe('FamilyCard', () => {
   it('renders family information correctly', () => {
-    render(<FamilyCard {...defaultProps} />)
+    render(<FamilyCard {...defaultProps} />, { user: mockUser })
     
     expect(screen.getByText('Test Family')).toBeInTheDocument()
     expect(screen.getByText('A test family')).toBeInTheDocument()
@@ -33,7 +33,7 @@ describe('FamilyCard', () => {
   })
 
   it('shows invite member button', () => {
-    render(<FamilyCard {...defaultProps} />)
+    render(<FamilyCard {...defaultProps} />, { user: mockUser })
     
     const inviteButton = screen.getByText('Invite Member')
     expect(inviteButton).toBeInTheDocument()
@@ -41,7 +41,7 @@ describe('FamilyCard', () => {
 
   it('calls onInviteMember when invite button is clicked', () => {
     const onInviteMember = vi.fn()
-    render(<FamilyCard {...defaultProps} onInviteMember={onInviteMember} />)
+    render(<FamilyCard {...defaultProps} onInviteMember={onInviteMember} />, { user: mockUser })
     
     const inviteButton = screen.getByText('Invite Member')
     fireEvent.click(inviteButton)
@@ -62,13 +62,13 @@ describe('FamilyCard', () => {
       }
     ]
     
-    render(<FamilyCard {...defaultProps} members={multipleMembers} />)
+    render(<FamilyCard {...defaultProps} members={multipleMembers} />, { user: mockUser })
     
     expect(screen.getByText('2 members')).toBeInTheDocument()
   })
 
   it('expands to show member details when view details is clicked', () => {
-    render(<FamilyCard {...defaultProps} />)
+    render(<FamilyCard {...defaultProps} />, { user: mockUser })
     
     const viewDetailsButton = screen.getByText('View Details')
     fireEvent.click(viewDetailsButton)
@@ -82,13 +82,13 @@ describe('FamilyCard', () => {
     // Set family.created_by to match the current user (admin)
     const adminFamily = { ...mockFamily, created_by: mockUser.id }
     
-    render(<FamilyCard {...defaultProps} family={adminFamily} />)
+    render(<FamilyCard {...defaultProps} family={adminFamily} />, { user: mockUser })
     
     expect(screen.getByText('Delete')).toBeInTheDocument()
   })
 
   it('does not show remove button for current user', () => {
-    render(<FamilyCard {...defaultProps} />)
+    render(<FamilyCard {...defaultProps} />, { user: mockUser })
     
     // Expand to see member details
     const viewDetailsButton = screen.getByText('View Details')
