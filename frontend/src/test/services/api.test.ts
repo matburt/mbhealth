@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import axios from 'axios'
 
 // Mock axios before importing the api service
 vi.mock('axios', () => ({

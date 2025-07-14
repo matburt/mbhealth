@@ -12,6 +12,17 @@ interface RetryConfig {
 interface RetryableAxiosConfig extends AxiosRequestConfig {
   __retryCount?: number;
   __requestStartTime?: number;
+  __customRetryConfig?: RetryConfig;
+}
+
+// Extended AxiosError with additional context
+interface ExtendedAxiosError extends AxiosError {
+  timestamp?: string;
+  requestConfig?: {
+    url: string;
+    method: string;
+    timeout: number;
+  };
 }
 
 // Default retry configuration
@@ -110,7 +121,7 @@ api.interceptors.response.use(
   (response) => {
     // Log successful requests in development
     if (process.env.NODE_ENV === 'development') {
-      const startTime = (response.config as any).__requestStartTime;
+      const startTime = (response.config as RetryableAxiosConfig).__requestStartTime;
       const duration = startTime ? Date.now() - startTime : 'unknown';
       console.debug(`API Success [${response.status}] ${response.config.method?.toUpperCase()} ${response.config.url} (${duration}ms)`);
     }
@@ -119,7 +130,7 @@ api.interceptors.response.use(
   },
   async (error: AxiosError) => {
     // Log error details
-    const startTime = (error.config as any)?.__requestStartTime;
+    const startTime = (error.config as RetryableAxiosConfig)?.__requestStartTime;
     const duration = startTime ? Date.now() - startTime : 'unknown';
     
     console.error(`API Error [${error.response?.status || 'Network'}] ${error.config?.method?.toUpperCase()} ${error.config?.url} (${duration}ms):`, {
@@ -159,14 +170,14 @@ api.interceptors.response.use(
 );
 
 // Enhanced API wrapper with additional error context
-export const apiRequest = async <T = any>(
+export const apiRequest = async <T = unknown>(
   config: AxiosRequestConfig,
   customRetryConfig?: Partial<RetryConfig>
 ): Promise<T> => {
   try {
     // Merge custom retry config with defaults
     if (customRetryConfig) {
-      (config as any).__customRetryConfig = {
+      (config as RetryableAxiosConfig).__customRetryConfig = {
         ...DEFAULT_RETRY_CONFIG,
         ...customRetryConfig
       };
@@ -177,8 +188,8 @@ export const apiRequest = async <T = any>(
   } catch (error) {
     // Add additional context to the error
     if (error instanceof AxiosError) {
-      (error as any).timestamp = new Date().toISOString();
-      (error as any).requestConfig = {
+      (error as ExtendedAxiosError).timestamp = new Date().toISOString();
+      (error as ExtendedAxiosError).requestConfig = {
         method: config.method,
         url: config.url,
         timeout: config.timeout
@@ -189,30 +200,30 @@ export const apiRequest = async <T = any>(
 };
 
 // Convenience methods with retry support
-export const apiGet = <T = any>(
+export const apiGet = <T = unknown>(
   url: string, 
   config?: AxiosRequestConfig,
   retryConfig?: Partial<RetryConfig>
 ): Promise<T> => 
   apiRequest<T>({ ...config, method: 'GET', url }, retryConfig);
 
-export const apiPost = <T = any>(
+export const apiPost = <T = unknown>(
   url: string, 
-  data?: any, 
+  data?: unknown, 
   config?: AxiosRequestConfig,
   retryConfig?: Partial<RetryConfig>
 ): Promise<T> => 
   apiRequest<T>({ ...config, method: 'POST', url, data }, retryConfig);
 
-export const apiPut = <T = any>(
+export const apiPut = <T = unknown>(
   url: string, 
-  data?: any, 
+  data?: unknown, 
   config?: AxiosRequestConfig,
   retryConfig?: Partial<RetryConfig>
 ): Promise<T> => 
   apiRequest<T>({ ...config, method: 'PUT', url, data }, retryConfig);
 
-export const apiDelete = <T = any>(
+export const apiDelete = <T = unknown>(
   url: string, 
   config?: AxiosRequestConfig,
   retryConfig?: Partial<RetryConfig>
