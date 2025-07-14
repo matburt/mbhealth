@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import axios from 'axios'
 
 // Mock axios before importing the api service
 vi.mock('axios', () => ({
@@ -6,7 +7,7 @@ vi.mock('axios', () => ({
     create: vi.fn(() => ({
       defaults: {
         baseURL: 'http://localhost:8000/api/v1',
-        timeout: 10000
+        timeout: 30000
       },
       interceptors: {
         request: { use: vi.fn() },
@@ -15,6 +16,9 @@ vi.mock('axios', () => ({
     }))
   }
 }))
+
+// Import api after mocking axios
+import api from '../../services/api'
 
 describe('API Service', () => {
   beforeEach(() => {
@@ -29,6 +33,7 @@ describe('API Service', () => {
       localStorage.setItem('access_token', token)
 
       // Create a new axios instance to trigger the interceptor
+      // @ts-expect-error - axios is mocked
       const axiosInstance = axios.create()
       
       // Mock the request interceptor behavior
@@ -103,20 +108,18 @@ describe('API Service', () => {
         return Promise.reject(error)
       })
 
-      expect(() => responseInterceptor(networkError)).rejects.toThrow('Network Error')
+      await expect(responseInterceptor(networkError)).rejects.toThrow('Network Error')
     })
   })
 
   describe('Base URL Configuration', () => {
     it('uses correct base URL for API requests', () => {
-      // Import after mocking
-      const { apiService } = require('../../services/api')
-      expect(apiService.defaults.baseURL).toBe('http://localhost:8000/api/v1')
+      // The api is imported at the top and mocked
+      expect(api.defaults.baseURL).toBe('http://localhost:8000/api/v1')
     })
 
     it('sets correct timeout', () => {
-      const { apiService } = require('../../services/api')
-      expect(apiService.defaults.timeout).toBe(10000)
+      expect(api.defaults.timeout).toBe(30000)
     })
   })
 })

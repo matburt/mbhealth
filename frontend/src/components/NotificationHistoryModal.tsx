@@ -68,7 +68,7 @@ const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> = ({ onC
               </label>
               <select
                 value={eventTypeFilter}
-                onChange={(e) => setEventTypeFilter(e.target.value as any)}
+                onChange={(e) => setEventTypeFilter(e.target.value as NotificationEventType | '')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Events</option>
@@ -89,7 +89,7 @@ const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> = ({ onC
               </label>
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
+                onChange={(e) => setStatusFilter(e.target.value as NotificationStatus | '')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Statuses</option>

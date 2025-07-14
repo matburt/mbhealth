@@ -7,15 +7,15 @@ interface EnhancedHeartRateInsightsProps {
   data: HealthData[];
 }
 
-interface HeartRateZone {
-  zone: string;
-  range: string;
-  color: string;
-  count: number;
-  description: string;
-  intensity: 'very-low' | 'low' | 'moderate' | 'high' | 'very-high';
-  percentage: number;
-}
+// interface HeartRateZone {
+//   zone: string;
+//   range: string;
+//   color: string;
+//   count: number;
+//   description: string;
+//   intensity: 'very-low' | 'low' | 'moderate' | 'high' | 'very-high';
+//   percentage: number;
+// }
 
 const EnhancedHeartRateInsights: React.FC<EnhancedHeartRateInsightsProps> = ({ data }) => {
   // Filter heart rate data

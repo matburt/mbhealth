@@ -46,7 +46,7 @@ interface MultiMetricFormProps {
   presetMetrics?: string[];
 }
 
-const MultiMetricForm: React.FC<MultiMetricFormProps> = ({ onDataAdded, presetMetrics }) => {
+const MultiMetricForm: React.FC<MultiMetricFormProps> = ({ onDataAdded }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { getCurrentDateTimeLocal, convertToUTC } = useTimezone();
@@ -165,7 +165,7 @@ const MultiMetricForm: React.FC<MultiMetricFormProps> = ({ onDataAdded, presetMe
       // Weight
       if (data.weight_enabled && data.weight) {
         let storageValue = parseFloat(data.weight);
-        let storageUnit = 'kg';
+        const storageUnit = 'kg';
         
         if (unitConverter) {
           storageValue = unitConverter.convertFromUserUnits(storageValue, 'weight', 'kg');
@@ -194,7 +194,7 @@ const MultiMetricForm: React.FC<MultiMetricFormProps> = ({ onDataAdded, presetMe
       // Temperature
       if (data.temp_enabled && data.temperature) {
         let storageValue = parseFloat(data.temperature);
-        let storageUnit = 'c';
+        const storageUnit = 'c';
         
         if (unitConverter) {
           storageValue = unitConverter.convertFromUserUnits(storageValue, 'temperature', 'c');

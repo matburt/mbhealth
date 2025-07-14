@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '../utils/test-utils'
 import DashboardStats from '../../components/DashboardStats'
 import { healthService } from '../../services/health'
-import { useAuth } from '../../contexts/AuthContext'
 
 // Mock the health service
 vi.mock('../../services/health', () => ({
@@ -21,11 +20,6 @@ vi.mock('react-router-dom', async () => {
     ),
   }
 })
-
-// Mock the AuthContext
-vi.mock('../../contexts/AuthContext', () => ({
-  useAuth: vi.fn()
-}))
 
 const mockWeightData = [
   {
@@ -89,16 +83,6 @@ describe('DashboardStats', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    
-    // Default mock for useAuth
-    vi.mocked(useAuth).mockReturnValue({
-      user: defaultUser,
-      loading: false,
-      login: vi.fn(),
-      signup: vi.fn(),
-      logout: vi.fn(),
-      updateUser: vi.fn(),
-    })
     
     // Default mock implementation
     vi.mocked(healthService.getHealthDataByType).mockImplementation((metricType: string) => {

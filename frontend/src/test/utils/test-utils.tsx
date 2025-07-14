@@ -1,9 +1,11 @@
-import React, { ReactElement, createContext } from 'react'
+import React, { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
+import { AuthContext } from '../../contexts/AuthContext'
+import { User } from '../../types/auth'
 
 // Mock user for testing
-const mockUser = {
+const mockUser: User = {
   id: 1,
   email: 'test@example.com',
   username: 'testuser',
@@ -20,51 +22,31 @@ const mockUser = {
 }
 
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
-  
-  user?: typeof mockUser | null
+  user?: User | null
 }
-
-// Create a mock AuthContext
-const MockAuthContext = createContext<{
-  user: typeof mockUser | null;
-  loading: boolean;
-  login: () => Promise<void>;
-  signup: () => Promise<void>;
-  logout: () => void;
-  updateUser: () => void;
-}>({
-  user: mockUser,
-  loading: false,
-  login: async () => {},
-  signup: async () => {},
-  logout: () => {},
-  updateUser: () => {},
-})
 
 const AllTheProviders = ({ 
   children, 
   user = mockUser,
-  
 }: { 
   children: React.ReactNode
-  user?: typeof mockUser | null
-  
+  user?: User | null
 }) => {
   // Mock AuthContext value
   const authContextValue = {
     user,
     loading: false,
-    login: async () => {},
-    signup: async () => {},
+    login: async () => Promise.resolve(),
+    signup: async () => Promise.resolve(),
     logout: () => {},
     updateUser: () => {},
   }
 
   return (
     <BrowserRouter>
-      <MockAuthContext.Provider value={authContextValue}>
+      <AuthContext.Provider value={authContextValue}>
         {children}
-      </MockAuthContext.Provider>
+      </AuthContext.Provider>
     </BrowserRouter>
   )
 }
