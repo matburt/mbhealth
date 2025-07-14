@@ -23,7 +23,7 @@ interface AnalysisStatus {
   status: string;
   progress?: number;
   error?: string;
-  result?: any;
+  result?: unknown;
 }
 
 interface QueueStatus {

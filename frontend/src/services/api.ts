@@ -8,6 +8,12 @@ interface RetryConfig {
   retryCondition?: (error: AxiosError) => boolean;
 }
 
+// Extend axios config for retry functionality
+interface RetryableAxiosConfig extends AxiosRequestConfig {
+  __retryCount?: number;
+  __requestStartTime?: number;
+}
+
 // Default retry configuration
 const DEFAULT_RETRY_CONFIG: RetryConfig = {
   retries: 3,
@@ -47,7 +53,7 @@ const retryRequest = async (
   }
 
   // Get current retry attempt from config
-  const currentRetry = (error.config as any)?.__retryCount || 0;
+  const currentRetry = (error.config as RetryableAxiosConfig)?.__retryCount || 0;
   
   // If we've exceeded max retries, reject
   if (currentRetry >= retries) {
@@ -61,7 +67,7 @@ const retryRequest = async (
   }
 
   // Increment retry count
-  (error.config as any).__retryCount = currentRetry + 1;
+  (error.config as RetryableAxiosConfig).__retryCount = currentRetry + 1;
 
   // Calculate delay with exponential backoff and jitter
   const delay = retryDelay * Math.pow(2, currentRetry) + Math.random() * 1000;
@@ -89,7 +95,7 @@ api.interceptors.request.use(
     }
     
     // Add timestamp for request tracking
-    (config as any).__requestStartTime = Date.now();
+    (config as RetryableAxiosConfig).__requestStartTime = Date.now();
     
     return config;
   },
