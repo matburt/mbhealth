@@ -32,6 +32,13 @@ interface MetricInfo {
   unit: string;
 }
 
+interface ExportTemplate {
+  id: string;
+  name: string;
+  description: string;
+  includes: string[];
+}
+
 const PDFExportModal: React.FC<PDFExportModalProps> = ({
   isOpen,
   onClose,
@@ -41,7 +48,7 @@ const PDFExportModal: React.FC<PDFExportModalProps> = ({
   const [availableMetrics, setAvailableMetrics] = useState<MetricInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<ExportTemplate[]>([]);
 
   const {
     register,

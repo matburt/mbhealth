@@ -89,7 +89,7 @@ const SavedAnalysisConfigs: React.FC<SavedAnalysisConfigsProps> = ({
     switch (type) {
       case 'preset':
         return `Preset: ${selectionConfig.preset_id || 'Unknown'}`;
-      case 'smart':
+      case 'smart': {
         const parts = [];
         if (selectionConfig.metric_types?.length) {
           parts.push(`${selectionConfig.metric_types.join(', ')}`);
@@ -98,7 +98,8 @@ const SavedAnalysisConfigs: React.FC<SavedAnalysisConfigsProps> = ({
           parts.push(`${selectionConfig.time_range}`);
         }
         return `Smart: ${parts.join(', ') || 'Custom selection'}`;
-      case 'advanced':
+      }
+      case 'advanced': {
         const advancedParts = [];
         if (selectionConfig.trending_data?.enabled) {
           advancedParts.push('Trending data');
@@ -110,6 +111,7 @@ const SavedAnalysisConfigs: React.FC<SavedAnalysisConfigsProps> = ({
           advancedParts.push(`${selectionConfig.time_of_day} readings`);
         }
         return `Advanced: ${advancedParts.join(', ') || 'Custom filters'}`;
+      }
       case 'visualization':
         return `From visualization: ${selectionConfig.filters?.metric_type || 'Mixed data'}`;
       case 'manual':
@@ -160,7 +162,7 @@ const SavedAnalysisConfigs: React.FC<SavedAnalysisConfigsProps> = ({
             <button
               key={tab.id}
               onClick={() => {
-                setActiveTab(tab.id as any);
+                setActiveTab(tab.id as 'all' | 'favorites' | 'popular' | 'collections');
                 setSelectedCollection(null);
               }}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
