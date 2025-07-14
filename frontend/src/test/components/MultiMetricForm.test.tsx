@@ -35,43 +35,6 @@ vi.mock('../../utils/units', () => ({
   })
 }))
 
-const mockUser = {
-  id: 1,
-  email: 'test@example.com',
-  username: 'testuser',
-  full_name: 'Test User',
-  timezone: 'America/New_York',
-  weight_unit: 'lbs' as const,
-  temperature_unit: 'f' as const,
-  height_unit: 'ft' as const,
-  is_active: true,
-  is_superuser: false,
-  ai_context_profile: '',
-  created_at: '2024-01-01T00:00:00Z',
-  updated_at: '2024-01-01T00:00:00Z'
-}
-
-const mockTimezone = {
-  getCurrentDateTimeLocal: vi.fn(() => '2024-01-01T10:00'),
-  convertToUTC: vi.fn((dateTime) => `${dateTime}:00Z`)
-}
-
-const mockUnitConverter = {
-  getUserUnitForMetric: vi.fn((metric) => {
-    const userUnits = { weight: 'lbs', temperature: 'f' }
-    return userUnits[metric] || 'metric'
-  }),
-  convertFromUserUnits: vi.fn((value, metric, targetUnit) => {
-    if (metric === 'weight' && targetUnit === 'kg') {
-      return value * 0.453592 // lbs to kg
-    }
-    if (metric === 'temperature' && targetUnit === 'c') {
-      return (value - 32) * 5/9 // F to C
-    }
-    return value
-  })
-}
-
 describe('MultiMetricForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()

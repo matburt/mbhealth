@@ -257,7 +257,7 @@ const DataVisualizationPage: React.FC = () => {
               </label>
               <select
                 value={selectedTimeRange}
-                onChange={(e) => setSelectedTimeRange(e.target.value as any)}
+                onChange={(e) => setSelectedTimeRange(e.target.value as '7d' | '30d' | '90d' | '1y' | 'all')}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
               >
                 <option value="7d">Last 7 days</option>

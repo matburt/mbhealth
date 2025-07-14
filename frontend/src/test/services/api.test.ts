@@ -32,9 +32,7 @@ describe('API Service', () => {
       const token = 'test-token'
       localStorage.setItem('access_token', token)
 
-      // Create a new axios instance to trigger the interceptor
-      // @ts-expect-error - axios is mocked
-      const axiosInstance = axios.create()
+      // Test the interceptor behavior without creating instance
       
       // Mock the request interceptor behavior
       const config = { headers: {} }

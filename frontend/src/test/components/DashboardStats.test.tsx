@@ -62,24 +62,9 @@ const mockBloodPressureData = [
   }
 ]
 
-const mockEmptyData: any[] = []
+const mockEmptyData: never[] = []
 
 describe('DashboardStats', () => {
-  const defaultUser = {
-    id: 1,
-    email: 'test@example.com',
-    username: 'testuser',
-    full_name: 'Test User',
-    timezone: 'America/New_York',
-    weight_unit: 'lbs' as const,
-    temperature_unit: 'f' as const,
-    height_unit: 'ft' as const,
-    is_active: true,
-    is_superuser: false,
-    ai_context_profile: '',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
-  }
 
   beforeEach(() => {
     vi.clearAllMocks()

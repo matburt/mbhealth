@@ -8,6 +8,30 @@ import {
   ProviderTestRequest,
   ProviderTestResponse
 } from '../types/aiAnalysis';
+import { HealthData } from '../types/health';
+
+interface SupportedProviderTypes {
+  [key: string]: {
+    name: string;
+    description: string;
+    required_config: string[];
+  };
+}
+
+interface AnalysisStatus {
+  id: number;
+  status: string;
+  progress?: number;
+  error?: string;
+  result?: any;
+}
+
+interface QueueStatus {
+  pending: number;
+  processing: number;
+  failed: number;
+  completed: number;
+}
 
 export const aiAnalysisService = {
   async getAnalysisHistory(): Promise<AIAnalysisResponse[]> {
@@ -29,8 +53,8 @@ export const aiAnalysisService = {
     await api.delete(`/ai-analysis/${id}`);
   },
 
-  async getHealthDataForAnalysis(): Promise<any[]> {
-    const response = await api.get<any[]>('/health-data/');
+  async getHealthDataForAnalysis(): Promise<HealthData[]> {
+    const response = await api.get<HealthData[]>('/health-data/');
     return response.data;
   },
 
@@ -70,13 +94,13 @@ export const aiAnalysisService = {
     return response.data;
   },
 
-  async getSupportedProviderTypes(): Promise<any> {
+  async getSupportedProviderTypes(): Promise<SupportedProviderTypes> {
     const response = await api.get('/ai-analysis/providers/types/supported');
     return response.data;
   },
 
   // Analysis Status and Jobs
-  async getAnalysisStatus(id: number): Promise<any> {
+  async getAnalysisStatus(id: number): Promise<AnalysisStatus> {
     const response = await api.get(`/ai-analysis/${id}/status`);
     return response.data;
   },
@@ -85,7 +109,7 @@ export const aiAnalysisService = {
     await api.post(`/ai-analysis/${id}/cancel`);
   },
 
-  async getQueueStatus(): Promise<any> {
+  async getQueueStatus(): Promise<QueueStatus> {
     const response = await api.get('/ai-analysis/queue/status');
     return response.data;
   }

@@ -49,7 +49,7 @@ class TimezoneService {
   /**
    * Convert UTC datetime to user's local timezone
    */
-  convertUTCToLocal(utcDatetime: string, _timezone: string = 'America/New_York'): Date {
+  convertUTCToLocal(utcDatetime: string): Date {
     const date = new Date(utcDatetime + 'Z'); // Ensure it's treated as UTC
     return date;
   }

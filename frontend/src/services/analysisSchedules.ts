@@ -1,5 +1,12 @@
 import api from './api';
 
+interface AnalysisHistoryItem {
+  id: number;
+  action: string;
+  created_at: string;
+  [key: string]: unknown; // Allow additional properties
+}
+
 export interface AnalysisSchedule {
   id: string;
   user_id: number;
@@ -222,7 +229,7 @@ export const createFromTemplate = async (
 export const getUserAnalysisHistory = async (
   limit: number = 100,
   actionFilter?: string
-): Promise<any[]> => {
+): Promise<AnalysisHistoryItem[]> => {
   const params = new URLSearchParams({ limit: limit.toString() });
   if (actionFilter) params.append('action_filter', actionFilter);
   
@@ -230,12 +237,12 @@ export const getUserAnalysisHistory = async (
   return response.data;
 };
 
-export const getAnalysisHistory = async (analysisId: number): Promise<any[]> => {
+export const getAnalysisHistory = async (analysisId: number): Promise<AnalysisHistoryItem[]> => {
   const response = await api.get(`/analysis-schedules/history/analysis/${analysisId}`);
   return response.data;
 };
 
-export const getRecentActivity = async (days: number = 7): Promise<any[]> => {
+export const getRecentActivity = async (days: number = 7): Promise<AnalysisHistoryItem[]> => {
   const response = await api.get(`/analysis-schedules/history/recent?days=${days}`);
   return response.data;
 };
