@@ -63,4 +63,4 @@ def decrypt_data(encrypted_data: str) -> str:
         decrypted_data = fernet.decrypt(decoded_data)
         return decrypted_data.decode()
     except Exception as e:
-        raise ValueError(f"Failed to decrypt data: {str(e)}")
+        raise ValueError(f"Failed to decrypt data: {str(e)}") from e

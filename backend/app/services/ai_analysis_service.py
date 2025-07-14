@@ -9,12 +9,7 @@ from sqlalchemy import and_, desc
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.exceptions import (
-    log_exception_context,
-    DatabaseException,
-    safe_database_operation
-)
-from app.services.retry_service import retry_service
+from app.core.exceptions import log_exception_context, safe_database_operation
 from app.models.ai_analysis import AIAnalysis, AIProvider
 from app.models.health_data import HealthData
 from app.schemas.ai_analysis import (
@@ -23,7 +18,10 @@ from app.schemas.ai_analysis import (
     AIProviderUpdate,
 )
 from app.services.ai_providers import AIProviderError, BaseAIProvider, ProviderFactory
+from app.services.retry_service import retry_service
 from app.utils.timezone import format_datetime_for_user, utc_to_user_timezone
+
+logger = logging.getLogger(__name__)
 
 
 class AIAnalysisService:
@@ -53,7 +51,7 @@ class AIAnalysisService:
         try:
             return self._encryption_key.encrypt(api_key.encode()).decode()
         except Exception as e:
-            raise ValueError(f"Failed to encrypt API key: {str(e)}")
+            raise ValueError(f"Failed to encrypt API key: {str(e)}") from e
 
     def _decrypt_api_key(self, encrypted_key: str) -> str:
         """Decrypt an API key from storage"""
@@ -97,7 +95,7 @@ class AIAnalysisService:
         """Get all AI providers for a user"""
         query = self.db.query(AIProvider).filter(AIProvider.user_id == user_id)
         if enabled_only:
-            query = query.filter(AIProvider.enabled == True)
+            query = query.filter(AIProvider.enabled)
         return query.order_by(desc(AIProvider.priority), AIProvider.name).all()
 
     def get_provider(self, user_id: int, provider_id: str) -> AIProvider | None:
@@ -205,7 +203,7 @@ class AIAnalysisService:
                         provider = self.db.query(AIProvider).filter(
                             AIProvider.user_id == user_id,
                             AIProvider.name == analysis_data.provider,
-                            AIProvider.enabled == True
+                            AIProvider.enabled
                         ).first()
 
                         if provider:
@@ -228,11 +226,11 @@ class AIAnalysisService:
             user_context = user.ai_context_profile if user and user.ai_context_profile else None
 
             # Check if this is a custom prompt request (food analysis or quick question)
-            is_food_analysis = (analysis_data.additional_context and 
+            is_food_analysis = (analysis_data.additional_context and
                                analysis_data.additional_context.startswith("You are a nutrition specialist. Focus solely on analyzing the food/meal"))
-            is_quick_question = (analysis_data.additional_context and 
+            is_quick_question = (analysis_data.additional_context and
                                analysis_data.additional_context.startswith("You are a health advisor. Focus on answering the user's specific question."))
-            
+
             if is_food_analysis or is_quick_question:
                 # For custom prompts, use only the additional context as the system prompt
                 # This avoids the default health insights specialist prompt
@@ -351,9 +349,8 @@ class AIAnalysisService:
             health_data_list = []
             for d in health_data:
                 # Convert UTC timestamp to user's timezone
-                user_time = None
                 if d.recorded_at:
-                    user_time = utc_to_user_timezone(d.recorded_at, user_timezone)
+                    utc_to_user_timezone(d.recorded_at, user_timezone)
                     # Format as readable string in user's timezone with day of week for better context
                     user_time_str = format_datetime_for_user(d.recorded_at, user_timezone, '%A, %B %d, %Y at %I:%M %p')
                 else:
@@ -430,7 +427,7 @@ class AIAnalysisService:
 
             # Execute analysis with retry protection
             logger.info(f"Executing AI analysis for analysis {analysis.id}")
-            
+
             # Use retry service for the analysis generation
             result = await retry_service.retry_async(
                 ai_provider.generate_analysis,
@@ -521,7 +518,7 @@ class AIAnalysisService:
         # Get all enabled providers for the user, ordered by preference
         providers = self.db.query(AIProvider).filter(
             AIProvider.user_id == user_id,
-            AIProvider.enabled == True
+            AIProvider.enabled
         ).order_by(
             # Prefer providers with valid API keys
             AIProvider.api_key_encrypted.isnot(None),
@@ -589,8 +586,8 @@ class AIAnalysisService:
     def _generate_analysis_prompt(self, analysis_type: str) -> str:
         """Generate system prompt based on analysis type"""
         prompts = {
-            "trends": """You are a health data analyst. Analyze the provided health metrics to identify trends, patterns, and changes over time. 
-                        Focus on: progression, regression, patterns, seasonal changes, and significant variations. 
+            "trends": """You are a health data analyst. Analyze the provided health metrics to identify trends, patterns, and changes over time.
+                        Focus on: progression, regression, patterns, seasonal changes, and significant variations.
                         Provide clear, actionable insights in a friendly, professional tone.""",
 
             "insights": """You are a health insights specialist. Examine the health data to provide meaningful insights about the user's health status.

@@ -66,7 +66,7 @@ class AnalysisSchedulerService:
         """Get all schedules for a user"""
         query = self.db.query(AnalysisSchedule).filter(AnalysisSchedule.user_id == user_id)
         if enabled_only:
-            query = query.filter(AnalysisSchedule.enabled == True)
+            query = query.filter(AnalysisSchedule.enabled)
         return query.order_by(desc(AnalysisSchedule.created_at)).all()
 
     def get_schedule(self, user_id: int, schedule_id: str) -> AnalysisSchedule | None:
@@ -237,7 +237,7 @@ class AnalysisSchedulerService:
         now = datetime.utcnow()
         return self.db.query(AnalysisSchedule).filter(
             and_(
-                AnalysisSchedule.enabled == True,
+                AnalysisSchedule.enabled,
                 AnalysisSchedule.next_run_at <= now
             )
         ).all()
@@ -246,12 +246,12 @@ class AnalysisSchedulerService:
         """Get schedules that should be triggered by new data"""
         return self.db.query(AnalysisSchedule).filter(
             and_(
-                AnalysisSchedule.enabled == True,
+                AnalysisSchedule.enabled,
                 AnalysisSchedule.schedule_type == "data_threshold",
                 AnalysisSchedule.user_id == user_id,
                 or_(
                     AnalysisSchedule.data_threshold_metric == metric_type,
-                    AnalysisSchedule.data_threshold_metric == None  # Any metric type
+                    AnalysisSchedule.data_threshold_metric is None  # Any metric type
                 )
             )
         ).all()

@@ -3,9 +3,9 @@ from typing import Any
 
 import httpx
 
-from .base import AIProviderError, AIProviderResponse, BaseAIProvider
-from ..retry_service import retry_on_failure
 from ...core.circuit_breaker import circuit_breaker
+from ..retry_service import retry_on_failure
+from .base import AIProviderError, AIProviderResponse, BaseAIProvider
 
 
 class AnthropicProvider(BaseAIProvider):
@@ -156,9 +156,9 @@ class AnthropicProvider(BaseAIProvider):
                 error_msg += f" - {error_detail.get('error', {}).get('message', 'Unknown error')}"
             except Exception:
                 error_msg += f" - {e.response.text}"
-            raise AIProviderError(error_msg)
+            raise AIProviderError(error_msg) from e
         except Exception as e:
-            raise AIProviderError(f"Anthropic request failed: {str(e)}")
+            raise AIProviderError(f"Anthropic request failed: {str(e)}") from e
 
     def estimate_cost(self, prompt: str, health_data: list[dict[str, Any]]) -> float:
         """Estimate cost for Anthropic analysis"""

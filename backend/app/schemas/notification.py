@@ -127,8 +127,8 @@ class NotificationPreferenceBase(BaseModel):
                 minute_int = int(minute)
                 if not (0 <= hour_int <= 23 and 0 <= minute_int <= 59):
                     raise ValueError("Invalid time format")
-            except (ValueError, IndexError):
-                raise ValueError("Time must be in HH:MM format (24-hour)")
+            except (ValueError, IndexError) as e:
+                raise ValueError("Time must be in HH:MM format (24-hour)") from e
         return v
 
 

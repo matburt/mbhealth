@@ -35,11 +35,11 @@ class HealthDataResponse(BaseModel):
 def convert_health_data_to_response(health_data, user_timezone: str | None = None) -> HealthDataResponse:
     """
     Convert HealthData model to HealthDataResponse with timezone conversion.
-    
+
     Args:
         health_data: HealthData model instance
         user_timezone: User's timezone for conversion
-        
+
     Returns:
         HealthDataResponse with timezone-converted fields
     """

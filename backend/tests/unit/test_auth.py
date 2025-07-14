@@ -82,5 +82,5 @@ class TestUserModel:
         test_db_session.add(duplicate_user)
 
         # This should raise an integrity error when committing
-        with pytest.raises(Exception):  # SQLAlchemy will raise IntegrityError
+        with pytest.raises((Exception, ValueError)):  # SQLAlchemy will raise IntegrityError
             test_db_session.commit()

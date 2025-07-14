@@ -16,7 +16,7 @@ from fastapi import HTTPException
 class AppException(HTTPException):
     """
     Base application exception with structured error response.
-    
+
     Provides consistent error format across all API endpoints with:
     - Structured error codes for client-side handling
     - User-friendly messages separate from technical details
@@ -260,7 +260,7 @@ def log_exception_context(
 ) -> None:
     """
     Log an exception with additional context information.
-    
+
     Args:
         exc: The exception to log
         context: Additional context information
@@ -283,7 +283,7 @@ def log_exception_context(
 def safe_database_operation(operation_name: str):
     """
     Decorator for safe database operations with proper error handling.
-    
+
     Usage:
         @safe_database_operation("user creation")
         def create_user(self, user_data):
@@ -311,7 +311,7 @@ def safe_database_operation(operation_name: str):
                     operation=operation_name,
                     message=str(e),
                     is_transient=is_transient
-                )
+                ) from e
         return wrapper
     return decorator
 
@@ -319,7 +319,7 @@ def safe_database_operation(operation_name: str):
 def _is_transient_db_error(error: Exception) -> bool:
     """
     Determine if a database error is likely transient (can be retried).
-    
+
     Returns True for connection issues, timeouts, deadlocks, etc.
     Returns False for constraint violations, syntax errors, etc.
     """

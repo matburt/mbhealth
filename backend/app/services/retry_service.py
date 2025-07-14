@@ -1,7 +1,7 @@
 """
 Retry Service with Exponential Backoff
 
-Provides configurable retry logic for external service calls with exponential 
+Provides configurable retry logic for external service calls with exponential
 backoff, jitter, and circuit breaker integration.
 """
 
@@ -74,7 +74,7 @@ class RetryService:
     ) -> Any:
         """
         Retry an async function with exponential backoff.
-        
+
         Args:
             func: Async function to retry
             *args: Arguments for the function
@@ -84,10 +84,10 @@ class RetryService:
             retryable_exceptions: Tuple of exceptions that should trigger retry
             circuit_breaker_name: Name of circuit breaker to use
             **kwargs: Keyword arguments for the function
-        
+
         Returns:
             Function result
-        
+
         Raises:
             Last exception if all retries fail
         """
@@ -165,7 +165,7 @@ class RetryService:
                             message=f"Failed after {config.max_attempts} attempts: {str(e)}",
                             details={"attempts": config.max_attempts, "last_error": str(e)},
                             is_transient=self._is_transient_error(e)
-                        )
+                        ) from e
                     elif service_type == "database":
                         from app.core.exceptions import DatabaseException
                         raise DatabaseException(
@@ -173,14 +173,14 @@ class RetryService:
                             message=f"Failed after {config.max_attempts} attempts: {str(e)}",
                             details={"attempts": config.max_attempts, "last_error": str(e)},
                             is_transient=self._is_transient_error(e)
-                        )
+                        ) from e
                     else:
                         raise ExternalServiceException(
                             service=service_name,
                             message=f"Failed after {config.max_attempts} attempts: {str(e)}",
                             details={"attempts": config.max_attempts, "last_error": str(e)},
                             is_transient=self._is_transient_error(e)
-                        )
+                        ) from e
 
                 # Calculate and apply delay before next attempt
                 delay = config.calculate_delay(attempt)
@@ -251,7 +251,7 @@ def retry_on_failure(
 ):
     """
     Decorator for automatic retry with exponential backoff.
-    
+
     Usage:
         @retry_on_failure("openai_api", "ai_provider", max_attempts=3)
         async def call_openai_api():

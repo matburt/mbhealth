@@ -75,7 +75,7 @@ async def create_notification_channel(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to create channel: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/channels/", response_model=list[NotificationChannel])
@@ -156,12 +156,12 @@ async def update_notification_channel(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to update channel: {str(e)}"
-        )
+        ) from e
 
 
 @router.delete("/channels/{channel_id}")
@@ -205,12 +205,12 @@ async def test_notification_channel(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to test channel: {str(e)}"
-        )
+        ) from e
 
 
 # Preference Management
@@ -238,7 +238,7 @@ async def create_notification_preference(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to create preference: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/preferences/", response_model=list[NotificationPreferenceWithChannel])
@@ -309,7 +309,7 @@ async def update_notification_preference(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to update preference: {str(e)}"
-        )
+        ) from e
 
 
 @router.delete("/preferences/{preference_id}")
@@ -377,7 +377,7 @@ async def bulk_update_preferences(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to update preferences: {str(e)}"
-        )
+        ) from e
 
 
 # Manual Notification Sending
@@ -426,7 +426,7 @@ async def send_notification(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send notification: {str(e)}"
-        )
+        ) from e
 
 
 # History and Statistics
@@ -476,7 +476,7 @@ def get_notification_templates(
     from app.models.notification import NotificationTemplate as TemplateModel
 
     query = db.query(TemplateModel).filter(
-        TemplateModel.is_active == True
+        TemplateModel.is_active
     )
 
     if event_type:
@@ -686,4 +686,4 @@ async def quick_notification_setup(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Quick setup failed: {str(e)}"
-        )
+        ) from e

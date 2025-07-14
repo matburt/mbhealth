@@ -27,7 +27,7 @@ def generate_pdf_report(
 ):
     """
     Generate a PDF report asynchronously.
-    
+
     Args:
         self: Celery task instance
         user_id: User ID
@@ -38,7 +38,7 @@ def generate_pdf_report(
         include_summary: Whether to include summary
         include_trends: Whether to include trend analysis
         user_timezone: User's timezone for timestamp conversion
-        
+
     Returns:
         bytes: PDF document as bytes
     """

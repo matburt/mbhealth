@@ -230,9 +230,6 @@ def import_health_data_csv(
         expected_headers = {
             "metric_type", "value", "unit", "recorded_at"
         }
-        optional_headers = {
-            "systolic", "diastolic", "additional_data", "notes"
-        }
 
         # Validate headers
         csv_headers = set(csv_reader.fieldnames or [])
@@ -297,6 +294,6 @@ def import_health_data_csv(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Error processing CSV file: {str(e)}"
-        )
+        ) from e
     finally:
         file.file.close()

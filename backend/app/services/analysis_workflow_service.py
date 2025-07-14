@@ -59,7 +59,7 @@ class AnalysisWorkflowService:
         """Get all workflows for a user"""
         query = self.db.query(AnalysisWorkflow).filter(AnalysisWorkflow.user_id == user_id)
         if enabled_only:
-            query = query.filter(AnalysisWorkflow.enabled == True)
+            query = query.filter(AnalysisWorkflow.enabled)
         return query.order_by(desc(AnalysisWorkflow.created_at)).all()
 
     def get_workflow(self, user_id: int, workflow_id: str) -> AnalysisWorkflow | None:
@@ -101,7 +101,7 @@ class AnalysisWorkflowService:
         workflows = self.db.query(AnalysisWorkflow).filter(
             and_(
                 AnalysisWorkflow.user_id == analysis.user_id,
-                AnalysisWorkflow.enabled == True,
+                AnalysisWorkflow.enabled,
                 AnalysisWorkflow.trigger_analysis_type == analysis.analysis_type
             )
         ).all()
@@ -372,7 +372,7 @@ class AnalysisWorkflowService:
     def get_workflow_templates(self) -> list[WorkflowTemplate]:
         """Get all available workflow templates"""
         return self.db.query(WorkflowTemplate).filter(
-            WorkflowTemplate.is_public == True
+            WorkflowTemplate.is_public
         ).order_by(WorkflowTemplate.usage_count.desc()).all()
 
     async def create_workflow_from_template(self, user_id: int, template_id: str, customizations: dict[str, Any] = None) -> AnalysisWorkflow:

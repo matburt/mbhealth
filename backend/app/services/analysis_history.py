@@ -176,7 +176,7 @@ class AnalysisHistoryService:
             daily_activity[day] = daily_activity.get(day, 0) + 1
 
         # Get unique analyses accessed
-        unique_analyses = len(set(activity.analysis_id for activity in activities))
+        unique_analyses = len({activity.analysis_id for activity in activities})
 
         return {
             'total_activities': total_activities,
@@ -202,7 +202,7 @@ class AnalysisHistoryService:
 
         # Calculate statistics
         total_interactions = len(history)
-        unique_users = len(set(h.user_id for h in history))
+        unique_users = len({h.user_id for h in history})
 
         action_counts = {}
         for h in history:
