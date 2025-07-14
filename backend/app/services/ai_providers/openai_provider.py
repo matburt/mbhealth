@@ -3,9 +3,9 @@ from typing import Any
 
 import httpx
 
-from .base import AIProviderError, AIProviderResponse, BaseAIProvider
-from ..retry_service import retry_on_failure
 from ...core.circuit_breaker import circuit_breaker
+from ..retry_service import retry_on_failure
+from .base import AIProviderError, AIProviderResponse, BaseAIProvider
 
 
 class OpenAIProvider(BaseAIProvider):
@@ -99,7 +99,7 @@ class OpenAIProvider(BaseAIProvider):
             user_message = f"Please analyze this health data:\n\n{health_data_str}"
         else:
             user_message = "Please provide a helpful response to my question based on the context provided."
-        
+
         payload = {
             "model": model,
             "messages": [
@@ -144,11 +144,11 @@ class OpenAIProvider(BaseAIProvider):
             try:
                 error_detail = e.response.json()
                 error_msg += f" - {error_detail.get('error', {}).get('message', 'Unknown error')}"
-            except:
+            except Exception:
                 error_msg += f" - {e.response.text}"
-            raise AIProviderError(error_msg)
+            raise AIProviderError(error_msg) from e
         except Exception as e:
-            raise AIProviderError(f"OpenAI request failed: {str(e)}")
+            raise AIProviderError(f"OpenAI request failed: {str(e)}") from e
 
     def estimate_cost(self, prompt: str, health_data: list[dict[str, Any]]) -> float:
         """Estimate cost for OpenAI analysis"""

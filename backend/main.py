@@ -8,7 +8,33 @@ from app.core.config import settings
 from app.core.database import init_db
 
 # Import models to ensure they're registered with SQLAlchemy
-from app.models import *
+# These imports are required even though they appear unused
+from app.models import (  # noqa: F401
+    AIAnalysis,
+    AIProvider,
+    AnalysisHistory,
+    AnalysisJob,
+    AnalysisSchedule,
+    AnalysisScheduleExecution,
+    AnalysisSettings,
+    AnalysisWorkflow,
+    AnalysisWorkflowExecution,
+    CareTeam,
+    CareTeamMember,
+    Family,
+    FamilyMember,
+    HealthData,
+    Note,
+    NotificationChannel,
+    NotificationHistory,
+    NotificationPreference,
+    NotificationQueue,
+    NotificationRateLimit,
+    NotificationTemplate,
+    User,
+    WorkflowStepResult,
+    WorkflowTemplate,
+)
 
 app = FastAPI(
     title="MBHealth API",

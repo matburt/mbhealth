@@ -249,11 +249,12 @@ class AnalysisWorkflowService {
         return previousResults.some(result => 
           result.analysis_result?.response_content?.toLowerCase().includes('trend')
         );
-      case 'result_contains':
+      case 'result_contains': {
         const searchTerm = step.condition.config?.search_term?.toLowerCase();
         return searchTerm ? previousResults.some(result => 
           result.analysis_result?.response_content?.toLowerCase().includes(searchTerm)
         ) : true;
+      }
       default:
         return true;
     }
@@ -271,7 +272,7 @@ class AnalysisWorkflowService {
       case 'inherit':
         return currentDataIds;
 
-      case 'filter':
+      case 'filter': {
         const config = step.data_selection.config;
         let filteredData = currentData;
 
@@ -296,10 +297,11 @@ class AnalysisWorkflowService {
         }
 
         return filteredData.map(d => d.id);
+      }
 
-      case 'extend':
+      case 'extend': {
         // Add more data based on extend configuration
-        let extendedData = [...currentData];
+        const extendedData = [...currentData];
         const extendConfig = step.data_selection.config?.extend_with;
 
         if (extendConfig?.metric_types) {
@@ -311,6 +313,7 @@ class AnalysisWorkflowService {
         }
 
         return extendedData.map(d => d.id);
+      }
 
       case 'custom':
         // Handle custom data selection logic

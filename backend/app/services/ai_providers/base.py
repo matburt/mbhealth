@@ -80,8 +80,8 @@ class BaseAIProvider(ABC):
     def _generate_system_prompt(self, analysis_type: str) -> str:
         """Generate system prompt based on analysis type"""
         prompts = {
-            "trends": """You are a health data analyst. Analyze the provided health metrics to identify trends, patterns, and changes over time. 
-                        Focus on: progression, regression, patterns, seasonal changes, and significant variations. 
+            "trends": """You are a health data analyst. Analyze the provided health metrics to identify trends, patterns, and changes over time.
+                        Focus on: progression, regression, patterns, seasonal changes, and significant variations.
                         Provide clear, actionable insights in a friendly, professional tone.""",
 
             "insights": """You are a health insights specialist. Examine the health data to provide meaningful insights about the user's health status.

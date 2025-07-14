@@ -55,7 +55,7 @@ async def create_ai_provider(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to create provider: {str(e)}"
-        )
+        ) from e
 
 @router.get("/providers", response_model=list[AIProviderWithoutKey])
 def get_ai_providers(
@@ -129,7 +129,7 @@ async def update_ai_provider(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to update provider: {str(e)}"
-        )
+        ) from e
 
 @router.delete("/providers/{provider_id}")
 def delete_ai_provider(
@@ -291,14 +291,14 @@ async def create_analysis(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"AI provider error: {str(e)}"
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Analysis creation failed: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Analysis failed: {str(e)}"
-        )
+        ) from e
 
 @router.get("/", response_model=list[AIAnalysisResponse])
 def get_analyses(
@@ -498,7 +498,7 @@ def get_analysis_status_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get analysis status: {str(e)}"
-        )
+        ) from e
 
 @router.post("/{analysis_id}/cancel")
 def cancel_analysis(
@@ -585,7 +585,7 @@ def cancel_analysis(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to cancel analysis: {str(e)}"
-        )
+        ) from e
 
 @router.get("/queue/status")
 def get_queue_status(
@@ -737,4 +737,4 @@ def debug_analysis(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Debug failed: {str(e)}"
-        )
+        ) from e

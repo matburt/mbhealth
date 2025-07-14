@@ -12,11 +12,11 @@ from app.core.config import settings
 def get_timezone(timezone_name: str | None = None) -> pytz.BaseTzInfo:
     """
     Get timezone object from timezone name.
-    
+
     Args:
-        timezone_name: Timezone name (e.g., 'America/New_York'). 
+        timezone_name: Timezone name (e.g., 'America/New_York').
                       If None, uses default from settings.
-    
+
     Returns:
         pytz timezone object
     """
@@ -33,11 +33,11 @@ def get_timezone(timezone_name: str | None = None) -> pytz.BaseTzInfo:
 def utc_to_user_timezone(utc_dt: datetime, user_timezone: str | None = None) -> datetime:
     """
     Convert UTC datetime to user's timezone.
-    
+
     Args:
         utc_dt: UTC datetime (naive or timezone-aware)
         user_timezone: User's timezone name
-    
+
     Returns:
         Datetime in user's timezone
     """
@@ -58,11 +58,11 @@ def utc_to_user_timezone(utc_dt: datetime, user_timezone: str | None = None) -> 
 def user_timezone_to_utc(local_dt: datetime | str, user_timezone: str | None = None) -> datetime:
     """
     Convert user's local datetime to UTC.
-    
+
     Args:
         local_dt: Local datetime or ISO string in user's timezone
         user_timezone: User's timezone name
-    
+
     Returns:
         UTC datetime (timezone-naive for database storage)
     """
@@ -79,8 +79,8 @@ def user_timezone_to_utc(local_dt: datetime | str, user_timezone: str | None = N
             try:
                 # Try parsing without timezone info
                 local_dt = datetime.fromisoformat(local_dt)
-            except ValueError:
-                raise ValueError(f"Unable to parse datetime string: {local_dt}")
+            except ValueError as e:
+                raise ValueError(f"Unable to parse datetime string: {local_dt}") from e
 
     user_tz = get_timezone(user_timezone)
 
@@ -97,12 +97,12 @@ def format_datetime_for_user(utc_dt: datetime, user_timezone: str | None = None,
                            format_str: str = "%Y-%m-%d %H:%M:%S") -> str:
     """
     Format UTC datetime for display in user's timezone.
-    
+
     Args:
         utc_dt: UTC datetime
         user_timezone: User's timezone name
         format_str: Datetime format string
-    
+
     Returns:
         Formatted datetime string in user's timezone
     """
@@ -116,7 +116,7 @@ def format_datetime_for_user(utc_dt: datetime, user_timezone: str | None = None,
 def get_available_timezones() -> list[str]:
     """
     Get list of common timezones for user selection.
-    
+
     Returns:
         List of timezone names
     """
@@ -149,10 +149,10 @@ def get_available_timezones() -> list[str]:
 def validate_timezone(timezone_name: str) -> bool:
     """
     Validate if timezone name is valid.
-    
+
     Args:
         timezone_name: Timezone name to validate
-    
+
     Returns:
         True if valid, False otherwise
     """
@@ -166,10 +166,10 @@ def validate_timezone(timezone_name: str) -> bool:
 def get_current_time_in_timezone(user_timezone: str | None = None) -> datetime:
     """
     Get current time in user's timezone.
-    
+
     Args:
         user_timezone: User's timezone name
-    
+
     Returns:
         Current datetime in user's timezone
     """

@@ -17,6 +17,7 @@ import {
   Scatter,
   ReferenceArea
 } from 'recharts';
+import type { TooltipProps } from 'recharts';
 import { subDays } from 'date-fns';
 import { HealthData } from '../types/health';
 import { useTimezone } from '../contexts/TimezoneContext';
@@ -26,6 +27,22 @@ import { createUnitConverter, shouldConvertMetric } from '../utils/units';
 export type LineType = 'monotone' | 'linear' | 'step' | 'stepBefore' | 'stepAfter';
 export type ChartType = 'line' | 'bar' | 'area' | 'scatter';
 export type ChartStyle = 'modern' | 'minimal' | 'clinical';
+
+// Chart data point interface
+interface ChartDataPoint {
+  originalData?: HealthData;
+  [key: string]: unknown;
+}
+
+// Target ranges interface
+interface TargetRanges {
+  systolic?: { min: number; max: number; optimal: number };
+  diastolic?: { min: number; max: number; optimal: number };
+  normal?: { min: number; max: number };
+  min: number;
+  max: number;
+  optimal: number | { systolic: number; diastolic: number };
+}
 
 interface ChartConfiguration {
   lineType: LineType;
@@ -254,7 +271,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
   }, [chartData, metricType]);
 
   // Get target ranges for clinical style
-  const getTargetRanges = (metricType: string) => {
+  const getTargetRanges = (metricType: string): TargetRanges | null => {
     switch (metricType) {
       case 'blood_pressure':
         return { 
@@ -281,7 +298,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
   const targetRanges = config.showTargetRanges ? getTargetRanges(metricType || '') : null;
 
   // Custom tooltip
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
+  const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
@@ -311,7 +328,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
   };
 
   // Handle data point selection
-  const handleDataPointClick = (data: any) => {
+  const handleDataPointClick = (data: ChartDataPoint) => {
     if (onDataPointClick) {
       onDataPointClick(data.originalData);
     }
@@ -428,16 +445,16 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
               {targetRanges && metricType === 'blood_pressure' && 'systolic' in targetRanges && 'diastolic' in targetRanges && (
                 <>
                   <ReferenceArea
-                    y1={(targetRanges as any).systolic.min}
-                    y2={(targetRanges as any).systolic.max}
+                    y1={targetRanges.systolic!.min}
+                    y2={targetRanges.systolic!.max}
                     fill="#10b981"
                     fillOpacity={0.1}
                     stroke="#10b981"
                     strokeOpacity={0.3}
                   />
                   <ReferenceArea
-                    y1={(targetRanges as any).diastolic.min}
-                    y2={(targetRanges as any).diastolic.max}
+                    y1={targetRanges.diastolic!.min}
+                    y2={targetRanges.diastolic!.max}
                     fill="#10b981"
                     fillOpacity={0.1}
                     stroke="#10b981"
@@ -448,8 +465,8 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
               
               {targetRanges && metricType === 'blood_sugar' && 'normal' in targetRanges && (
                 <ReferenceArea
-                  y1={(targetRanges as any).normal.min}
-                  y2={(targetRanges as any).normal.max}
+                  y1={targetRanges.normal!.min}
+                  y2={targetRanges.normal!.max}
                   fill="#10b981"
                   fillOpacity={0.15}
                   stroke="#10b981"
@@ -529,16 +546,16 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
               {targetRanges && metricType === 'blood_pressure' && 'systolic' in targetRanges && 'diastolic' in targetRanges && (
                 <>
                   <ReferenceArea
-                    y1={(targetRanges as any).systolic.min}
-                    y2={(targetRanges as any).systolic.max}
+                    y1={targetRanges.systolic!.min}
+                    y2={targetRanges.systolic!.max}
                     fill="#10b981"
                     fillOpacity={0.1}
                     stroke="#10b981"
                     strokeOpacity={0.3}
                   />
                   <ReferenceArea
-                    y1={(targetRanges as any).diastolic.min}
-                    y2={(targetRanges as any).diastolic.max}
+                    y1={targetRanges.diastolic!.min}
+                    y2={targetRanges.diastolic!.max}
                     fill="#10b981"
                     fillOpacity={0.1}
                     stroke="#10b981"
@@ -549,8 +566,8 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
               
               {targetRanges && metricType === 'blood_sugar' && 'normal' in targetRanges && (
                 <ReferenceArea
-                  y1={(targetRanges as any).normal.min}
-                  y2={(targetRanges as any).normal.max}
+                  y1={targetRanges.normal!.min}
+                  y2={targetRanges.normal!.max}
                   fill="#10b981"
                   fillOpacity={0.15}
                   stroke="#10b981"
@@ -579,16 +596,16 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
               {targetRanges && metricType === 'blood_pressure' && 'systolic' in targetRanges && 'diastolic' in targetRanges && (
                 <>
                   <ReferenceArea
-                    y1={(targetRanges as any).systolic.min}
-                    y2={(targetRanges as any).systolic.max}
+                    y1={targetRanges.systolic!.min}
+                    y2={targetRanges.systolic!.max}
                     fill="#10b981"
                     fillOpacity={0.1}
                     stroke="#10b981"
                     strokeOpacity={0.3}
                   />
                   <ReferenceArea
-                    y1={(targetRanges as any).diastolic.min}
-                    y2={(targetRanges as any).diastolic.max}
+                    y1={targetRanges.diastolic!.min}
+                    y2={targetRanges.diastolic!.max}
                     fill="#10b981"
                     fillOpacity={0.1}
                     stroke="#10b981"
@@ -599,8 +616,8 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
               
               {targetRanges && metricType === 'blood_sugar' && 'normal' in targetRanges && (
                 <ReferenceArea
-                  y1={(targetRanges as any).normal.min}
-                  y2={(targetRanges as any).normal.max}
+                  y1={targetRanges.normal!.min}
+                  y2={targetRanges.normal!.max}
                   fill="#10b981"
                   fillOpacity={0.15}
                   stroke="#10b981"
@@ -655,16 +672,16 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
               {targetRanges && metricType === 'blood_pressure' && 'systolic' in targetRanges && 'diastolic' in targetRanges && (
                 <>
                   <ReferenceArea
-                    y1={(targetRanges as any).systolic.min}
-                    y2={(targetRanges as any).systolic.max}
+                    y1={targetRanges.systolic!.min}
+                    y2={targetRanges.systolic!.max}
                     fill="#10b981"
                     fillOpacity={0.1}
                     stroke="#10b981"
                     strokeOpacity={0.3}
                   />
                   <ReferenceArea
-                    y1={(targetRanges as any).diastolic.min}
-                    y2={(targetRanges as any).diastolic.max}
+                    y1={targetRanges.diastolic!.min}
+                    y2={targetRanges.diastolic!.max}
                     fill="#10b981"
                     fillOpacity={0.1}
                     stroke="#10b981"
@@ -675,8 +692,8 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
               
               {targetRanges && metricType === 'blood_sugar' && 'normal' in targetRanges && (
                 <ReferenceArea
-                  y1={(targetRanges as any).normal.min}
-                  y2={(targetRanges as any).normal.max}
+                  y1={targetRanges.normal!.min}
+                  y2={targetRanges.normal!.max}
                   fill="#10b981"
                   fillOpacity={0.15}
                   stroke="#10b981"
@@ -712,7 +729,7 @@ const UnifiedHealthChart: React.FC<UnifiedHealthChartProps> = ({
               <p className="text-gray-600">Optimal</p>
               <p className="font-medium">
                 {targetRanges.optimal && typeof targetRanges.optimal === 'object'
-                  ? `${(targetRanges.optimal as any).systolic}/${(targetRanges.optimal as any).diastolic}`
+                  ? `${(targetRanges.optimal as { systolic: number; diastolic: number }).systolic}/${(targetRanges.optimal as { systolic: number; diastolic: number }).diastolic}`
                   : String(targetRanges.optimal)
                 } {filteredData[0]?.unit}
               </p>

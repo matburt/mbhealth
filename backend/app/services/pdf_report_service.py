@@ -95,7 +95,7 @@ class PDFReportService:
     ) -> bytes:
         """
         Generate a comprehensive PDF health report.
-        
+
         Args:
             user_id: ID of the user
             health_data: List of health data records
@@ -104,7 +104,7 @@ class PDFReportService:
             include_charts: Whether to include data visualization charts
             include_summary: Whether to include statistical summary
             include_trends: Whether to include trend analysis
-            
+
         Returns:
             bytes: PDF document as bytes
         """
@@ -137,7 +137,7 @@ class PDFReportService:
 
         # Process data by metric type
         if metric_types is None:
-            metric_types = list(set(data.metric_type for data in health_data))
+            metric_types = list({data.metric_type for data in health_data})
 
         for metric_type in metric_types:
             metric_data = [d for d in health_data if d.metric_type == metric_type]
@@ -250,17 +250,17 @@ class PDFReportService:
 
         # Calculate summary statistics
         total_readings = len(health_data)
-        unique_metrics = len(set(data.metric_type for data in health_data))
+        unique_metrics = len({data.metric_type for data in health_data})
         date_span = (date_range[1] - date_range[0]).days
 
         summary_text = f"""
-        This report contains {total_readings} health measurements across {unique_metrics} different metrics 
-        collected over a {date_span}-day period. The data includes automated trend analysis, 
+        This report contains {total_readings} health measurements across {unique_metrics} different metrics
+        collected over a {date_span}-day period. The data includes automated trend analysis,
         statistical summaries, and clinical reference comparisons where applicable.
-        
-        Key metrics analyzed: {', '.join(set(data.metric_type.replace('_', ' ').title() for data in health_data))}
-        
-        All measurements are patient-reported and should be reviewed in conjunction with 
+
+        Key metrics analyzed: {', '.join({data.metric_type.replace('_', ' ').title() for data in health_data})}
+
+        All measurements are patient-reported and should be reviewed in conjunction with
         professional medical examination and clinical assessment.
         """
 
@@ -533,19 +533,19 @@ class PDFReportService:
         elements.append(Paragraph("Summary and Recommendations", self.styles['MedicalSubHeader']))
 
         conclusions_text = f"""
-        This report summarizes {len(health_data)} health measurements across {len(metric_types)} metrics. 
-        
+        This report summarizes {len(health_data)} health measurements across {len(metric_types)} metrics.
+
         Key Observations:
         • Data collection shows consistent patient engagement in health monitoring
         • Trends and patterns are identified through statistical analysis
         • Clinical reference ranges are provided where applicable
-        
+
         Recommendations:
         • Continue regular monitoring for trend identification
         • Share this report with healthcare providers during appointments
         • Consider professional medical evaluation for any concerning patterns
         • Maintain consistent measurement timing and conditions for best data quality
-        
+
         Important Notes:
         • All data is patient-reported and may require clinical validation
         • Trends should be interpreted in context of overall health status
@@ -573,8 +573,8 @@ class PDFReportService:
 
         footer_text = f"""
         <para alignment="center">
-        Report Generated: {report_time} ({timezone_label}) | 
-        MBHealth Data Tracking System | 
+        Report Generated: {report_time} ({timezone_label}) |
+        MBHealth Data Tracking System |
         For Medical Professional Use
         </para>
         """

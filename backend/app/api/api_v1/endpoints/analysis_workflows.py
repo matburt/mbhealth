@@ -228,7 +228,7 @@ async def create_workflow_from_template(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
-        )
+        ) from e
 
 
 # Workflow Executions

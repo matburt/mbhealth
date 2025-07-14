@@ -45,12 +45,12 @@ async def export_pdf_report(
 ):
     """
     Generate and download a PDF report of health data visualizations.
-    
+
     Args:
         request: PDF report configuration
         current_user: Authenticated user
         db: Database session
-        
+
     Returns:
         StreamingResponse: PDF file download
     """
@@ -110,8 +110,6 @@ async def export_pdf_report(
         filename = f"health_report_{date_str}_to_{end_date_str}.pdf"
 
         # Return PDF as streaming response
-        pdf_stream = io.BytesIO(pdf_bytes)
-
         return StreamingResponse(
             io.BytesIO(pdf_bytes),
             media_type="application/pdf",
@@ -127,7 +125,7 @@ async def export_pdf_report(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to generate PDF report: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/export/pdf/async", response_model=ReportJobResponse)
@@ -138,12 +136,12 @@ async def export_pdf_report_async(
 ):
     """
     Generate a PDF report asynchronously for large datasets.
-    
+
     Args:
         request: PDF report configuration
         current_user: Authenticated user
         db: Database session
-        
+
     Returns:
         ReportJobResponse: Job information for tracking progress
     """
@@ -181,7 +179,7 @@ async def export_pdf_report_async(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to queue PDF report generation: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/export/pdf/status/{job_id}")
@@ -191,11 +189,11 @@ async def get_pdf_report_status(
 ):
     """
     Get the status of an async PDF report generation job.
-    
+
     Args:
         job_id: Celery task ID
         current_user: Authenticated user
-        
+
     Returns:
         Job status and result information
     """
@@ -240,7 +238,7 @@ async def get_pdf_report_status(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get job status: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/export/pdf/download/{job_id}", response_class=StreamingResponse)
@@ -250,11 +248,11 @@ async def download_pdf_report(
 ):
     """
     Download a completed PDF report from async generation.
-    
+
     Args:
         job_id: Celery task ID
         current_user: Authenticated user
-        
+
     Returns:
         StreamingResponse: PDF file download
     """
@@ -295,7 +293,7 @@ async def download_pdf_report(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to download PDF report: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/templates")
@@ -304,10 +302,10 @@ async def get_report_templates(
 ):
     """
     Get available report templates.
-    
+
     Args:
         current_user: Authenticated user
-        
+
     Returns:
         List of available report templates
     """
@@ -352,11 +350,11 @@ async def get_available_metrics(
 ):
     """
     Get available metrics for the current user.
-    
+
     Args:
         current_user: Authenticated user
         db: Database session
-        
+
     Returns:
         List of metric types available for the user
     """
@@ -416,4 +414,4 @@ async def get_available_metrics(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get available metrics: {str(e)}"
-        )
+        ) from e

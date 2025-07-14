@@ -3,9 +3,9 @@ from typing import Any
 
 import httpx
 
-from .base import AIProviderError, AIProviderResponse, BaseAIProvider
-from ..retry_service import retry_on_failure
 from ...core.circuit_breaker import circuit_breaker
+from ..retry_service import retry_on_failure
+from .base import AIProviderError, AIProviderResponse, BaseAIProvider
 
 
 class GoogleProvider(BaseAIProvider):
@@ -199,15 +199,15 @@ class GoogleProvider(BaseAIProvider):
             try:
                 error_detail = e.response.json()
                 error_msg += f" - {error_detail.get('error', {}).get('message', 'Unknown error')}"
-            except:
+            except Exception:
                 error_msg += f" - {e.response.text}"
-            raise AIProviderError(error_msg)
+            raise AIProviderError(error_msg) from e
         except AIProviderError:
             # Re-raise our custom errors as-is
             raise
         except Exception as e:
             # Add more context to generic errors
-            raise AIProviderError(f"Google AI request failed: {str(e)}. This may be due to API response format changes or network issues.")
+            raise AIProviderError(f"Google AI request failed: {str(e)}. This may be due to API response format changes or network issues.") from e
 
     def estimate_cost(self, prompt: str, health_data: list[dict[str, Any]]) -> float:
         """Estimate cost for Google AI analysis"""

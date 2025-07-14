@@ -45,7 +45,7 @@ async def create_schedule(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to create schedule: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/", response_model=ScheduleListResponse)
@@ -229,7 +229,7 @@ async def execute_schedule_now(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to execute schedule: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/{schedule_id}/executions", response_model=list[AnalysisScheduleExecution])
@@ -597,7 +597,7 @@ async def create_from_template(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to create schedule from template: {str(e)}"
-        )
+        ) from e
 
 
 # Analysis History Endpoints

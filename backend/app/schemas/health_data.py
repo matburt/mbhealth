@@ -1,7 +1,10 @@
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from app.schemas.user import User
 
 
 class HealthDataBase(BaseModel):
@@ -42,7 +45,7 @@ class HealthData(HealthDataInDBBase):
 class HealthDataWithUser(HealthData):
     user: "User"
 
-# Import User to avoid circular imports
-from app.schemas.user import User
+# Import at runtime to avoid circular imports
+from app.schemas.user import User  # noqa: E402
 
 HealthDataWithUser.model_rebuild()

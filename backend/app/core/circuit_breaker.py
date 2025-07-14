@@ -30,7 +30,7 @@ class CircuitState(Enum):
 class CircuitBreaker:
     """
     Circuit breaker implementation for protecting against cascading failures.
-    
+
     The circuit breaker monitors failures and transitions between states:
     - CLOSED: Normal operation, requests pass through
     - OPEN: Too many failures, reject requests immediately
@@ -48,7 +48,7 @@ class CircuitBreaker:
     ):
         """
         Initialize circuit breaker.
-        
+
         Args:
             name: Identifier for this circuit breaker
             failure_threshold: Number of failures before opening circuit
@@ -85,15 +85,15 @@ class CircuitBreaker:
     async def call(self, func: Callable, *args, **kwargs) -> Any:
         """
         Execute a function with circuit breaker protection.
-        
+
         Args:
             func: Function to execute (can be sync or async)
             *args: Function arguments
             **kwargs: Function keyword arguments
-            
+
         Returns:
             Function result
-            
+
         Raises:
             CircuitBreakerException: When circuit is open
             TimeoutError: When request times out
@@ -139,7 +139,7 @@ class CircuitBreaker:
         except TimeoutError:
             self.logger.error(f"Circuit breaker '{self.name}' - request timeout")
             self._on_failure()
-            raise TimeoutError(f"Request to {self.name} timed out after {self.timeout} seconds")
+            raise TimeoutError(f"Request to {self.name} timed out after {self.timeout} seconds") from None
 
         except self.expected_exception as e:
             self.logger.warning(f"Circuit breaker '{self.name}' - expected failure: {str(e)}")
@@ -284,7 +284,7 @@ def circuit_breaker(
 ):
     """
     Decorator for applying circuit breaker pattern to functions.
-    
+
     Usage:
         @circuit_breaker("external_api", failure_threshold=3)
         async def call_external_api():
@@ -311,7 +311,7 @@ def circuit_breaker(
 async def get_circuit_breaker_health() -> dict[str, Any]:
     """
     Get health status of all circuit breakers.
-    
+
     Returns:
         Dictionary with overall health and individual breaker stats
     """

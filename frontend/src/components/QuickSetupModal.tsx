@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { QuickSetupRequest, NotificationPriority } from '../services/notifications';
+import { QuickSetupRequest, NotificationPriority, NotificationChannelType } from '../services/notifications';
 
 interface QuickSetupModalProps {
   onClose: () => void;
@@ -179,7 +179,7 @@ const QuickSetupModal: React.FC<QuickSetupModalProps> = ({ onClose, onSetup }) =
                         custom_channel: { 
                           ...setup.custom_channel,
                           name: setup.custom_channel?.name || '',
-                          channel_type: e.target.value as any,
+                          channel_type: e.target.value as NotificationChannelType,
                           apprise_url: setup.custom_channel?.apprise_url || ''
                         } 
                       })}

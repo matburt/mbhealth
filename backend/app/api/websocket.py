@@ -34,7 +34,7 @@ class ConnectionManager:
             for websocket in self.active_connections[user_id]:
                 try:
                     await websocket.send_text(message)
-                except:
+                except Exception:
                     disconnected.append(websocket)
 
             # Clean up disconnected websockets
@@ -95,5 +95,5 @@ async def websocket_endpoint(websocket: WebSocket, token: str = None):
         logger.error(f"WebSocket error: {str(e)}")
         try:
             await websocket.close(code=4000, reason="Server error")
-        except:
+        except Exception:
             pass

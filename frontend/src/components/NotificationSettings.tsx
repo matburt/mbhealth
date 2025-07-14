@@ -272,7 +272,7 @@ const NotificationSettings: React.FC = () => {
                       .map(([eventType, count]) => (
                         <div key={eventType} className="flex justify-between items-center">
                           <span className="text-gray-600 text-sm capitalize">
-                            {notificationService.getEventTypeLabel(eventType as any)}
+                            {notificationService.getEventTypeLabel(eventType as NotificationEventType)}
                           </span>
                           <span className="font-medium">{count}</span>
                         </div>

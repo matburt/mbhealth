@@ -275,7 +275,7 @@ class NotificationService:
             and_(
                 NotificationPreference.user_id == user_id,
                 NotificationPreference.event_type == event_type,
-                NotificationPreference.is_enabled == True
+                NotificationPreference.is_enabled
             )
         ).all()
 
@@ -421,7 +421,7 @@ class NotificationService:
 
     def _update_rate_limits(self, preference: NotificationPreference):
         """Update rate limit counters after sending notification"""
-        now = datetime.utcnow()
+        datetime.utcnow()
 
         rate_limit = self.db.query(NotificationRateLimit).filter(
             and_(
@@ -449,7 +449,7 @@ class NotificationService:
             and_(
                 NotificationTemplate.event_type == event_type,
                 NotificationTemplate.channel_type == preference.channel.channel_type,
-                NotificationTemplate.is_active == True
+                NotificationTemplate.is_active
             )
         ).first()
 

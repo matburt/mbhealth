@@ -82,7 +82,7 @@ async def check_data_threshold_schedules_task(self, user_id: int, metric_type: s
     """
     Background task to check if any data threshold schedules should be triggered.
     This should be called whenever new health data is added.
-    
+
     Args:
         user_id: ID of the user who added data
         metric_type: Type of health metric that was added
@@ -168,7 +168,7 @@ def cleanup_old_executions_task(self, days_to_keep: int = 90):
     """
     Background task to clean up old schedule execution records.
     This should be run periodically (e.g., daily).
-    
+
     Args:
         days_to_keep: Number of days of execution history to keep
     """

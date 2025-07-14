@@ -155,7 +155,7 @@ def process_ai_analysis(self, analysis_id: int, user_id: int):
                 state="RETRY",
                 meta={"error": str(exc), "retry": self.request.retries + 1}
             )
-            raise self.retry(countdown=60 * (2 ** self.request.retries))  # Exponential backoff
+            raise self.retry(countdown=60 * (2 ** self.request.retries)) from exc  # Exponential backoff
 
         current_task.update_state(
             state="FAILURE",
