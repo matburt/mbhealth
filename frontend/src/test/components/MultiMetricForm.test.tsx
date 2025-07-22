@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import MultiMetricForm from '../../components/MultiMetricForm'
 import { healthService } from '../../services/health'
 import { useTimezone } from '../../contexts/TimezoneContext'
+import { useAuth } from '../../contexts/AuthContext'
 import { createUnitConverter } from '../../utils/units'
 
 // Mock dependencies
@@ -21,7 +22,17 @@ vi.mock('react-hot-toast', () => ({
 }))
 
 vi.mock('../../contexts/TimezoneContext', () => ({
-  useTimezone: vi.fn()
+  useTimezone: vi.fn(),
+  TimezoneContext: {
+    Provider: ({ children }: { children: React.ReactNode }) => children,
+  }
+}))
+
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: vi.fn(),
+  AuthContext: {
+    Provider: ({ children }: { children: React.ReactNode }) => children,
+  }
 }))
 
 vi.mock('../../utils/units', () => ({
@@ -62,6 +73,30 @@ describe('MultiMetricForm', () => {
     }
     
     vi.mocked(useTimezone).mockReturnValue(mockTimezone)
+    
+    // Mock useAuth
+    vi.mocked(useAuth).mockReturnValue({
+      user: {
+        id: 1,
+        email: 'test@example.com',
+        username: 'testuser',
+        full_name: 'Test User',
+        timezone: 'America/New_York',
+        weight_unit: 'lbs',
+        temperature_unit: 'f',
+        height_unit: 'ft',
+        is_active: true,
+        is_superuser: false,
+        ai_context_profile: '',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z'
+      },
+      loading: false,
+      login: vi.fn(),
+      signup: vi.fn(),
+      logout: vi.fn(),
+      updateUser: vi.fn(),
+    })
     
     // Mock unit converter
     vi.mocked(createUnitConverter).mockReturnValue(mockUnitConverter)

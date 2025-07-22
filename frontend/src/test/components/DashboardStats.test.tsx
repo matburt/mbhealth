@@ -102,17 +102,7 @@ describe('DashboardStats', () => {
       updated_at: '2024-01-01T00:00:00Z'
     }
 
-    // Mock useAuth to return user with lbs preference
-    vi.mocked(useAuth).mockReturnValue({
-      user: userWithLbsPreference,
-      loading: false,
-      login: vi.fn(),
-      signup: vi.fn(),
-      logout: vi.fn(),
-      updateUser: vi.fn(),
-    })
-
-    render(<DashboardStats />)
+    render(<DashboardStats />, { user: userWithLbsPreference })
 
     await waitFor(() => {
       expect(screen.getByText('Weight')).toBeInTheDocument()
@@ -151,17 +141,7 @@ describe('DashboardStats', () => {
       updated_at: '2024-01-01T00:00:00Z'
     }
 
-    // Mock useAuth to return user with kg preference
-    vi.mocked(useAuth).mockReturnValue({
-      user: userWithKgPreference,
-      loading: false,
-      login: vi.fn(),
-      signup: vi.fn(),
-      logout: vi.fn(),
-      updateUser: vi.fn(),
-    })
-
-    render(<DashboardStats />)
+    render(<DashboardStats />, { user: userWithKgPreference })
 
     await waitFor(() => {
       expect(screen.getByText('Weight')).toBeInTheDocument()
@@ -255,17 +235,7 @@ describe('DashboardStats', () => {
   })
 
   it('falls back to default units when no user is provided', async () => {
-    // Mock useAuth to return null user
-    vi.mocked(useAuth).mockReturnValue({
-      user: null,
-      loading: false,
-      login: vi.fn(),
-      signup: vi.fn(),
-      logout: vi.fn(),
-      updateUser: vi.fn(),
-    })
-
-    render(<DashboardStats />)
+    render(<DashboardStats />, { user: null })
 
     await waitFor(() => {
       expect(screen.getByText('Weight')).toBeInTheDocument()

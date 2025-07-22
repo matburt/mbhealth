@@ -2,6 +2,7 @@ import React, { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthContext } from '../../contexts/AuthContext'
+import { TimezoneContext } from '../../contexts/TimezoneContext'
 import { User } from '../../types/auth'
 
 // Mock user for testing
@@ -42,10 +43,25 @@ const AllTheProviders = ({
     updateUser: () => {},
   }
 
+  // Mock TimezoneContext value
+  const timezoneContextValue = {
+    userTimezone: 'America/New_York',
+    availableTimezones: ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'],
+    setUserTimezone: () => {},
+    formatDateTime: (utcDatetime: string | Date) => new Date(utcDatetime).toLocaleString(),
+    convertToDateTimeLocal: (utcDatetime: string) => utcDatetime.slice(0, 16),
+    convertToUTC: (localDatetime: string) => localDatetime + 'Z',
+    getCurrentDateTimeLocal: () => new Date().toISOString().slice(0, 16),
+    loading: false,
+    error: null,
+  }
+
   return (
     <BrowserRouter>
       <AuthContext.Provider value={authContextValue}>
-        {children}
+        <TimezoneContext.Provider value={timezoneContextValue}>
+          {children}
+        </TimezoneContext.Provider>
       </AuthContext.Provider>
     </BrowserRouter>
   )

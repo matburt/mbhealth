@@ -119,3 +119,5 @@ export const useTimezone = (): TimezoneContextType => {
   }
   return context;
 };
+
+export { TimezoneContext };

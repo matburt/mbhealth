@@ -6,7 +6,7 @@ import App from '../../App';
 import { AuthProvider } from '../../contexts/AuthContext';
 import { TimezoneProvider } from '../../contexts/TimezoneContext';
 import * as authService from '../../services/auth';
-import * as healthDataService from '../../services/healthData';
+import * as healthDataService from '../../services/health';
 import * as aiAnalysisService from '../../services/aiAnalysis';
 
 // Mock all services
@@ -17,7 +17,7 @@ vi.mock('../../services/auth', () => ({
   logout: vi.fn(),
 }));
 
-vi.mock('../../services/healthData', () => ({
+vi.mock('../../services/health', () => ({
   getHealthData: vi.fn(),
   createHealthData: vi.fn(),
   createBulkHealthData: vi.fn(),
