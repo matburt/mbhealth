@@ -31,6 +31,7 @@ from reportlab.platypus import (
 
 from app.models.health_data import HealthData
 from app.models.user import User
+from app.utils.units import UnitConverter, create_unit_converter
 
 
 class PDFReportService:
@@ -125,6 +126,9 @@ class PDFReportService:
         # Get user information
         user = await self._get_user_info(user_id, db_session)
 
+        # Create unit converter for user preferences
+        unit_converter = create_unit_converter(user)
+
         # Add header
         story.extend(self._build_header(user, date_range))
 
@@ -150,7 +154,8 @@ class PDFReportService:
                 metric_data,
                 include_charts,
                 include_trends,
-                user_timezone
+                user_timezone,
+                unit_converter
             ))
 
         # Add conclusions and recommendations
@@ -178,7 +183,10 @@ class PDFReportService:
             id=user_id,
             full_name="Patient",
             email="patient@example.com",
-            username="patient_user"
+            username="patient_user",
+            weight_unit="lbs",
+            temperature_unit="f",
+            height_unit="ft"
         )
 
     def _build_header(self, user: User, date_range: tuple[datetime, datetime]) -> list:
@@ -269,7 +277,7 @@ class PDFReportService:
 
         return elements
 
-    def _build_metric_section(self, metric_type: str, metric_data: list[HealthData], include_charts: bool, include_trends: bool, user_timezone: str = None) -> list:
+    def _build_metric_section(self, metric_type: str, metric_data: list[HealthData], include_charts: bool, include_trends: bool, user_timezone: str = None, unit_converter: UnitConverter = None) -> list:
         """Build a section for a specific metric type."""
         elements = []
 
@@ -278,12 +286,12 @@ class PDFReportService:
         elements.append(Paragraph(f"{metric_title} Analysis", self.styles['MedicalSubHeader']))
 
         # Statistical summary
-        stats = self._calculate_statistics(metric_data)
+        stats = self._calculate_statistics(metric_data, metric_type, unit_converter)
         elements.extend(self._build_statistics_table(metric_type, stats))
 
         # Generate and add chart if requested
         if include_charts and len(metric_data) > 1:
-            chart_image = self._generate_metric_chart(metric_type, metric_data, user_timezone)
+            chart_image = self._generate_metric_chart(metric_type, metric_data, user_timezone, unit_converter)
             if chart_image:
                 elements.append(Spacer(1, 10))
                 elements.append(chart_image)
@@ -304,9 +312,26 @@ class PDFReportService:
 
         return elements
 
-    def _calculate_statistics(self, metric_data: list[HealthData]) -> dict[str, Any]:
+    def _calculate_statistics(self, metric_data: list[HealthData], metric_type: str, unit_converter: UnitConverter = None) -> dict[str, Any]:
         """Calculate statistical summary for metric data."""
+        if not metric_data:
+            return {
+                'count': 0,
+                'mean': 0,
+                'std': 0,
+                'min': 0,
+                'max': 0,
+                'median': 0,
+                'unit': ""
+            }
+        
+        # Determine the display unit (user preference)
+        display_unit = metric_data[0].unit  # Fallback to first data point's unit
+        if unit_converter:
+            _, display_unit = unit_converter.convert_to_user_units(0, metric_type, metric_data[0].unit)
+
         if metric_data[0].metric_type == 'blood_pressure':
+            # Blood pressure doesn't need unit conversion
             systolic_values = [d.systolic for d in metric_data if d.systolic is not None]
             diastolic_values = [d.diastolic for d in metric_data if d.diastolic is not None]
 
@@ -320,10 +345,21 @@ class PDFReportService:
                 'diastolic_std': np.std(diastolic_values) if diastolic_values else 0,
                 'diastolic_min': np.min(diastolic_values) if diastolic_values else 0,
                 'diastolic_max': np.max(diastolic_values) if diastolic_values else 0,
-                'unit': metric_data[0].unit
+                'unit': display_unit
             }
         else:
-            values = [d.value for d in metric_data if d.value is not None]
+            # Handle each data point individually with its own unit
+            if unit_converter:
+                converted_values = []
+                for data_point in metric_data:
+                    if data_point.value is not None:
+                        converted_val, _ = unit_converter.convert_to_user_units(
+                            data_point.value, metric_type, data_point.unit
+                        )
+                        converted_values.append(converted_val)
+                values = converted_values
+            else:
+                values = [d.value for d in metric_data if d.value is not None]
 
             return {
                 'count': len(metric_data),
@@ -332,7 +368,7 @@ class PDFReportService:
                 'min': np.min(values) if values else 0,
                 'max': np.max(values) if values else 0,
                 'median': np.median(values) if values else 0,
-                'unit': metric_data[0].unit
+                'unit': display_unit
             }
 
     def _build_statistics_table(self, metric_type: str, stats: dict[str, Any]) -> list:
@@ -374,13 +410,19 @@ class PDFReportService:
         elements.append(table)
         return elements
 
-    def _generate_metric_chart(self, metric_type: str, metric_data: list[HealthData], user_timezone: str = None) -> Image | None:
+    def _generate_metric_chart(self, metric_type: str, metric_data: list[HealthData], user_timezone: str = None, unit_converter: UnitConverter = None) -> Image | None:
         """Generate a chart for the metric data."""
         try:
             from app.utils.timezone import utc_to_user_timezone
 
             # Create figure
             fig, ax = plt.subplots(figsize=(10, 6))
+
+            # Get the stored unit and display unit
+            stored_unit = metric_data[0].unit if metric_data else ""
+            display_unit = stored_unit
+            if unit_converter:
+                _, display_unit = unit_converter.convert_to_user_units(0, metric_type, stored_unit)
 
             # Convert dates to user timezone if provided
             if user_timezone:
@@ -409,18 +451,34 @@ class PDFReportService:
                 ax.axhline(y=140, color='red', linestyle='--', alpha=0.7, label='High BP Threshold')
                 ax.axhline(y=90, color='orange', linestyle='--', alpha=0.7, label='High Diastolic Threshold')
 
-                ax.set_ylabel(f'Blood Pressure ({metric_data[0].unit})')
+                ax.set_ylabel(f'Blood Pressure ({display_unit})')
 
             else:
+                # Get data points with dates, values, and individual units
                 if user_timezone:
-                    value_data = [(utc_to_user_timezone(d.recorded_at, user_timezone), d.value) for d in metric_data if d.value is not None]
+                    data_points = [(utc_to_user_timezone(d.recorded_at, user_timezone), d.value, d.unit) 
+                                 for d in metric_data if d.value is not None]
                 else:
-                    value_data = [(d.recorded_at, d.value) for d in metric_data if d.value is not None]
-                if value_data:
-                    dates, values = zip(*sorted(value_data), strict=False)
+                    data_points = [(d.recorded_at, d.value, d.unit) 
+                                 for d in metric_data if d.value is not None]
+
+                if data_points:
+                    # Sort by date
+                    data_points = sorted(data_points, key=lambda x: x[0])
+                    dates = [point[0] for point in data_points]
+                    
+                    # Convert values individually based on their own units
+                    if unit_converter:
+                        values = []
+                        for date, value, unit in data_points:
+                            converted_val, _ = unit_converter.convert_to_user_units(value, metric_type, unit)
+                            values.append(converted_val)
+                    else:
+                        values = [point[1] for point in data_points]
+
                     ax.plot(dates, values, 'g-o', linewidth=2, markersize=4)
 
-                ax.set_ylabel(f'{metric_type.replace("_", " ").title()} ({metric_data[0].unit})')
+                ax.set_ylabel(f'{metric_type.replace("_", " ").title()} ({display_unit})')
 
             # Format chart
             ax.set_xlabel('Date')
