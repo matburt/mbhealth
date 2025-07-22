@@ -19,10 +19,10 @@ from main import app
 
 
 # Test database setup
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def test_db_engine():
     """Create a test database engine using SQLite in-memory."""
-    # Use SQLite in-memory database for tests
+    # Use SQLite in-memory database for tests with function scope for isolation
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -41,6 +41,7 @@ def test_db_session(test_db_engine):
     try:
         yield session
     finally:
+        session.rollback()
         session.close()
 
 

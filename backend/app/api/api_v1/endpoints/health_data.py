@@ -21,7 +21,7 @@ from app.services.health_data import (
 
 router = APIRouter()
 
-@router.post("/", response_model=HealthData)
+@router.post("/", response_model=HealthData, status_code=status.HTTP_201_CREATED)
 def create_health_data_endpoint(
     *,
     db: Session = Depends(get_db),

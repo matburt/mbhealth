@@ -15,6 +15,13 @@ def get_user_by_email(db: Session, email: str) -> User | None:
 def get_user_by_username(db: Session, username: str) -> User | None:
     return db.query(User).filter(User.username == username).first()
 
+def get_user_by_email_or_username(db: Session, identifier: str) -> User | None:
+    """Get user by email or username."""
+    user = get_user_by_email(db, identifier)
+    if not user:
+        user = get_user_by_username(db, identifier)
+    return user
+
 def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(User).offset(skip).limit(limit).all()
 

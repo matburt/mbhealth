@@ -9,7 +9,13 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token, verify_password
 from app.schemas.auth import LoginRequest, Token
-from app.services.user import get_user_by_username
+from app.schemas.user import User, UserCreate
+from app.services.user import (
+    create_user,
+    get_user_by_email,
+    get_user_by_email_or_username,
+    get_user_by_username,
+)
 
 router = APIRouter()
 
@@ -21,7 +27,7 @@ def login(
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    user = get_user_by_username(db, username=login_data.username)
+    user = get_user_by_email_or_username(db, identifier=login_data.username)
     if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -41,6 +47,33 @@ def login(
         ),
         "token_type": "bearer",
     }
+
+
+@router.post("/register", response_model=User, status_code=status.HTTP_201_CREATED)
+def register(
+    *,
+    db: Session = Depends(get_db),
+    user_in: UserCreate,
+) -> Any:
+    """
+    Create new user registration.
+    """
+    user = get_user_by_email(db, email=user_in.email)
+    if user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A user with this email already exists in the system.",
+        )
+
+    user = get_user_by_username(db, username=user_in.username)
+    if user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A user with this username already exists in the system.",
+        )
+
+    user = create_user(db, obj_in=user_in)
+    return user
 
 @router.post("/login/access-token", response_model=Token)
 def login_access_token(

@@ -37,7 +37,7 @@ class TestAuthEndpoints:
         response = client.post("/api/v1/auth/register", json=user_data)
 
         assert response.status_code == 400
-        assert "already registered" in response.json()["detail"].lower()
+        assert "already exists" in response.json()["detail"].lower()
 
     def test_login_success(self, client, test_user):
         """Test successful login."""
@@ -46,7 +46,7 @@ class TestAuthEndpoints:
             "password": "testpassword"  # From test_user fixture
         }
 
-        response = client.post("/api/v1/auth/login", data=login_data)
+        response = client.post("/api/v1/auth/login", json=login_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -60,10 +60,10 @@ class TestAuthEndpoints:
             "password": "wrongpassword"
         }
 
-        response = client.post("/api/v1/auth/login", data=login_data)
+        response = client.post("/api/v1/auth/login", json=login_data)
 
         assert response.status_code == 401
-        assert "Incorrect email or password" in response.json()["detail"]
+        assert "Incorrect username or password" in response.json()["detail"]
 
     def test_login_nonexistent_user(self, client):
         """Test login with non-existent user."""
@@ -72,10 +72,10 @@ class TestAuthEndpoints:
             "password": "somepassword"
         }
 
-        response = client.post("/api/v1/auth/login", data=login_data)
+        response = client.post("/api/v1/auth/login", json=login_data)
 
         assert response.status_code == 401
-        assert "Incorrect email or password" in response.json()["detail"]
+        assert "Incorrect username or password" in response.json()["detail"]
 
     def test_get_current_user(self, authenticated_client, test_user):
         """Test getting current user information."""
